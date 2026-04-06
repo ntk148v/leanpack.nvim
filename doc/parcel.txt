@@ -1,0 +1,421 @@
+*parcel.nvim* A thin layer on top of Neovim's native vim.pack
+
+==============================================================================
+CONTENTS *parcel-contents*
+
+1. Introduction ........................... |parcel-introduction|
+2. Requirements ........................... |parcel-requirements|
+3. Installation ........................... |parcel-installation|
+4. Quick Start ............................ |parcel-quickstart|
+5. Configuration .......................... |parcel-configuration|
+6. Plugin Spec ............................ |parcel-spec|
+7. Lazy Loading ........................... |parcel-lazy-loading|
+8. Commands ............................... |parcel-commands|
+9. UI ..................................... |parcel-ui|
+10. Health Check .......................... |parcel-health|
+11. Migrating from lazy.nvim .............. |parcel-migrating|
+12. Migrating from zpack.nvim ............ |parcel-migrating-zpack|
+13. Comparison ............................ |parcel-comparison|
+
+==============================================================================
+1. INTRODUCTION *parcel-introduction*
+
+Neovim 0.12+ includes a built-in plugin manager (`vim.pack`) that handles
+plugin installation, updates, and version management. parcel.nvim is a thin
+layer that adds:
+
+- Lazy-loading capabilities (event, cmd, keys, ft triggers)
+- lazy.nvim-compatible declarative spec
+- Build hooks that run on install/update
+- Dependency management with topological sort
+- Quick commands for plugin management
+- Simple UI for viewing plugins
+
+All while completely leveraging the native `vim.pack` infrastructure.
+
+==============================================================================
+2. REQUIREMENTS *parcel-requirements*
+
+- Neovim 0.12.0 or later
+- Git (required by vim.pack)
+
+==============================================================================
+3. INSTALLATION *parcel-installation*
+
+Install with vim.pack directly: >
+
+vim.pack.add({ 'https://github.com/ntk148v/parcel.nvim' })
+
+<
+Or use the short name: >
+
+vim.pack.add({ 'ntk148v/parcel.nvim' })
+
+<
+==============================================================================
+4. QUICK START *parcel-quickstart*
+
+Set leader before setup: >
+
+vim.g.mapleader = " "
+vim.g.maplocalleader = "\\"
+
+-- Auto-import from lua/plugins/
+require('parcel').setup()
+
+<
+Or with inline specs: >
+
+require('parcel').setup({
+{ 'nvim-treesitter/nvim-treesitter', build = ':TSUpdate' },
+{ import = 'plugins' },
+})
+
+<
+Create plugin specs in `lua/plugins/`: >
+
+-- lua/plugins/treesitter.lua
+return {
+'nvim-treesitter/nvim-treesitter',
+build = ':TSUpdate',
+config = function()
+require('nvim-treesitter.configs').setup({
+highlight = { enable = true },
+})
+end,
+}
+
+<
+==============================================================================
+5. CONFIGURATION *parcel-configuration*
+
+Setup with options: >
+
+require('parcel').setup({
+-- Command prefix (default: "P")
+cmd_prefix = "P",
+
+-- Default options for all plugins
+defaults = {
+confirm = true, -- Ask for confirmation on install
+cond = nil, -- Global condition for all plugins
+},
+
+-- Performance options
+performance = {
+vim_loader = true, -- Enable vim.loader for faster startup
+},
+})
+
+<
+==============================================================================
+6. PLUGIN SPEC *parcel-spec*
+
+Plugin Source ~
+
+Use short name (expands to GitHub URL): >
+
+{ 'user/repo' }
+
+<
+Or full URL: >
+
+{ src = 'https://github.com/user/repo' }
+
+<
+Or local path: >
+
+{ src = '/path/to/local/plugin' }
+
+<
+Or lazy.nvim compat: >
+
+{ dir = '/path/to/plugin' } -- maps to src
+{ url = 'https://...' } -- maps to src
+
+<
+Custom name: >
+
+{ 'user/repo', name = 'my-plugin' }
+
+<
+Version Pinning ~
+
+Use branch, tag, or commit: >
+
+{ 'user/repo', version = 'main' }
+{ 'user/repo', version = 'v1.0.0' }
+{ 'user/repo', version = 'abc123' }
+
+<
+Use semver range: >
+
+{ 'user/repo', version = vim.version.range('^1.0') }
+
+<
+lazy.nvim compat: >
+
+{ 'user/repo', sem_version = '^1.0' } -- wraps vim.version.range()
+{ 'user/repo', branch = 'main' }
+{ 'user/repo', tag = 'v1.0.0' }
+{ 'user/repo', commit = 'abc123' }
+
+<
+Dependencies ~
+
+Dependencies are loaded before the parent plugin: >
+
+{
+'user/repo',
+dependencies = {
+'dep/plugin',
+{ 'other/dep', opts = {} },
+},
+}
+
+<
+Hooks ~
+
+init - Runs before plugin loads: >
+
+{
+'user/repo',
+init = function()
+vim.g.some_setting = true
+end,
+}
+
+<
+config - Runs after plugin loads: >
+
+{
+'user/repo',
+config = function()
+require('plugin').setup({ option = 'value' })
+end,
+}
+
+<
+Or use `opts` for auto-setup: >
+
+{
+'user/repo',
+opts = { option = 'value' }, -- calls require('plugin').setup(opts)
+}
+
+<
+build - Runs on install/update: >
+
+{
+'user/repo',
+build = 'make',
+-- or
+build = function()
+vim.fn.system({ 'make', '-C', plugin.path })
+end,
+}
+
+<
+Conditional Loading ~
+
+Skip installation entirely: >
+
+{
+'user/repo',
+enabled = vim.fn.has('linux') == 1,
+}
+
+<
+Skip loading (but still install): >
+
+{
+'user/repo',
+cond = function()
+return vim.fn.filereadable('.project-marker') == 1
+end,
+}
+
+<
+Priority ~
+
+Higher priority loads first (default: 50): >
+
+{
+'user/colorschemes',
+priority = 1000, -- Load colorscheme early
+config = function()
+vim.cmd('colorscheme mytheme')
+end,
+}
+
+<
+==============================================================================
+7. LAZY LOADING *parcel-lazy-loading*
+
+Event ~
+
+Load on Neovim event: >
+
+{
+'user/repo',
+event = 'InsertEnter',
+-- or multiple events
+event = { 'InsertEnter', 'CmdlineEnter' },
+-- or with pattern
+event = 'BufReadPre *.lua',
+-- or VeryLazy (after UIEnter)
+event = 'VeryLazy',
+}
+
+<
+Command ~
+
+Load on command: >
+
+{
+'user/repo',
+cmd = 'SomeCommand',
+-- or multiple commands
+cmd = { 'Cmd1', 'Cmd2' },
+}
+
+<
+Keymap ~
+
+Load on keymap: >
+
+{
+'user/repo',
+keys = {
+{ '<leader>f', function() require('plugin').action() end, desc = 'Action' },
+{ '<leader>g', '<cmd>PluginCmd<cr>', mode = 'n', desc = 'Command' },
+},
+}
+
+<
+Filetype ~
+
+Load on filetype: >
+
+{
+'user/repo',
+ft = { 'lua', 'vim' },
+}
+
+<
+==============================================================================
+8. COMMANDS *parcel-commands*
+
+:PUpdate [plugin]~
+Update all plugins, or a specific plugin if provided.
+Supports tab completion.
+
+:PClean~
+Remove plugins that are no longer in your spec.
+
+:PBuild[!] [plugin]~
+Run build hook for a specific plugin, or all plugins with `!`.
+
+:PLoad[!] [plugin]~
+Load a specific unloaded plugin, or all unloaded plugins with `!`.
+
+:PDelete[!] [plugin]~
+Remove a specific plugin, or all plugins with `!`.
+
+:PShow~
+Open the plugin manager UI.
+
+==============================================================================
+9. UI *parcel-ui*
+
+Open the plugin manager UI with `:PShow`.
+
+Keymaps in the UI:
+<Enter>/<CR> - Load plugin under cursor
+u - Update plugin under cursor
+b - Build plugin under cursor
+d - Delete plugin under cursor
+r - Refresh plugin list
+q/<Esc> - Close UI
+
+Status indicators:
+● - loaded
+○ - pending
+◐ - loading
+
+==============================================================================
+10. HEALTH CHECK *parcel-health*
+
+Run `:checkhealth parcel` to check:
+- Neovim version
+- vim.pack availability
+- Git availability
+- Unloaded plugins
+- Pending build hooks
+- Lockfile status
+
+==============================================================================
+11. MIGRATING FROM LAZY.NVIM *parcel-migrating*
+
+Most lazy.nvim specs work as-is. Key differences:
+
+- `version` maps to `sem_version`
+- No built-in profiling (use `nvim --startuptime`)
+- No dev mode (use `src = '/path/to/local'`)
+- No UI dashboard (use `:PShow`)
+
+Example migration: >
+
+-- lazy.nvim
+{
+'folke/tokyonight.nvim',
+version = '^2.0',
+lazy = false,
+priority = 1000,
+config = function()
+vim.cmd('colorscheme tokyonight')
+end,
+}
+
+-- parcel.nvim (same spec works)
+{
+'folke/tokyonight.nvim',
+sem_version = '^2.0', -- or version = vim.version.range('^2.0')
+lazy = false,
+priority = 1000,
+config = function()
+vim.cmd('colorscheme tokyonight')
+end,
+}
+
+<
+==============================================================================
+12. MIGRATING FROM ZPACK.NVIM *parcel-migrating-zpack*
+
+parcel.nvim is inspired by zpack.nvim. Key differences:
+
+- No module loader (simpler architecture)
+- Built-in health check
+- Built-in UI (`:PShow`)
+- Smaller codebase (~800 LOC vs ~1200 LOC)
+
+The spec format is nearly identical. Just change `require('zpack')` to
+`require('parcel')`.
+
+==============================================================================
+13. COMPARISON *parcel-comparison*
+
+| Feature | parcel.nvim | zpack.nvim | lazy.nvim |
+|---------|-------------|------------|-----------|
+| vim.pack based | ✅ | ✅ | ❌ |
+| Lazy loading | ✅ | ✅ | ✅ |
+| lazy.nvim spec | ✅ | ✅ | ✅ |
+| Module loader | ❌ | ✅ | ✅ |
+| UI dashboard | ✅ | ❌ (ext) | ✅ |
+| Health check | ✅ | ❌ | ✅ |
+| Profiling | ❌ | ❌ | ✅ |
+| Dev mode | ❌ | ❌ | ✅ |
+| Code size | ~800 LOC | ~1200 LOC | ~5000 LOC |
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
