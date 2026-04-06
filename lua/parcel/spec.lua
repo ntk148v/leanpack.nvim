@@ -199,9 +199,20 @@ function M.detect_main(plugin)
     name:gsub("%-nvim$", ""),
   }
 
+  -- If path is available, check filesystem
+  if path and path ~= "" then
+    for _, candidate in ipairs(candidates) do
+      local ok = vim.loop.fs_stat(path .. "/lua/" .. candidate .. ".lua")
+        or vim.loop.fs_stat(path .. "/lua/" .. candidate .. "/init.lua")
+      if ok then
+        return candidate
+      end
+    end
+  end
+
+  -- Fallback: try to require each candidate
   for _, candidate in ipairs(candidates) do
-    local ok = vim.loop.fs_stat(path .. "/lua/" .. candidate .. ".lua")
-      or vim.loop.fs_stat(path .. "/lua/" .. candidate .. "/init.lua")
+    local ok = pcall(require, candidate)
     if ok then
       return candidate
     end

@@ -74,6 +74,22 @@ local function process_all(ctx)
     confirm = ctx.confirm,
   })
 
+  -- Update plugin paths after vim.pack.add
+  for _, pack_spec in ipairs(ctx.vim_packs) do
+    local entry = state.get_entry(pack_spec.src)
+    if entry then
+      -- Get the plugin path from vim.pack
+      local ok, plugin_path = pcall(vim.fn.stdpath, "data")
+      if ok then
+        plugin_path = plugin_path .. "/pack/vim-pack/opt/" .. pack_spec.name
+        if vim.fn.isdirectory(plugin_path) == 1 then
+          entry.plugin = entry.plugin or { spec = pack_spec, path = "" }
+          entry.plugin.path = plugin_path
+        end
+      end
+    end
+  end
+
   -- Setup lazy build tracking after vim.pack.add
   hooks.setup_lazy_build_tracking()
 
