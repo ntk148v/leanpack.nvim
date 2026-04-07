@@ -177,7 +177,11 @@ local function update_plugin()
   local p = get_plugin_at_cursor()
   if p then
     vim.notify("Updating: " .. p.name)
-    vim.pack.update({ p.name })
+    vim.pack.update({ p.name }, { force = true })
+    vim.schedule(function()
+      vim.cmd("redraw")
+      vim.notify("Updated " .. p.name, vim.log.levels.INFO)
+    end)
   end
 end
 

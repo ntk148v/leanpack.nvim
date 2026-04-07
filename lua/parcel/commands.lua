@@ -106,14 +106,25 @@ function M.setup(prefix)
 
     if subcommand == "update" then
       if plugin_name == "" then
-        vim.pack.update()
+        vim.pack.update(nil, { force = true })
+        vim.schedule(function()
+          vim.cmd("redraw")
+          vim.notify("All plugins updated successfully", vim.log.levels.INFO)
+        end)
       else
         if not get_plugin_or_notify(plugin_name) then
           return
         end
-        vim.pack.update({ plugin_name })
+        vim.pack.update({ plugin_name }, { force = true })
+        vim.schedule(function()
+          vim.cmd("redraw")
+          vim.notify("Updated " .. plugin_name, vim.log.levels.INFO)
+        end)
       end
       lock.save()
+    elseif subcommand == "snapshot" then
+      lock.snapshot()
+      vim.notify("Plugin snapshot saved to lockfile", vim.log.levels.INFO)
     elseif subcommand == "clean" then
       M.clean_unused()
     elseif subcommand == "build" then
@@ -228,7 +239,7 @@ function M.setup(prefix)
     complete = function(arg_lead, cmd_line, cursor_pos)
       local parts = vim.split(cmd_line, "%s+", { trimempty = true })
       if #parts <= 2 then
-        local subcommands = { "build", "clean", "delete", "load", "update" }
+        local subcommands = { "build", "clean", "delete", "load", "snapshot", "update" }
         return filter_completions(subcommands, arg_lead)
       elseif #parts == 3 then
         local subcommand = parts[2]
