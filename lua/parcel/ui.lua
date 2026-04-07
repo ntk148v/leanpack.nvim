@@ -8,15 +8,15 @@ local ui_state = { buf = nil, win = nil, plugins = {} }
 local NS = vim.api.nvim_create_namespace("parcel-ui")
 
 local function define_highlights()
-  vim.api.nvim_set_hl(NS, "Header", { fg = "#8be9fd", bold = true })
-  vim.api.nvim_set_hl(NS, "PluginName", { fg = "#f8f8f2", bold = true })
-  vim.api.nvim_set_hl(NS, "PluginSource", { fg = "#6272a4" })
-  vim.api.nvim_set_hl(NS, "StatusLoaded", { fg = "#50fa7b" })
-  vim.api.nvim_set_hl(NS, "StatusPending", { fg = "#ffb86c" })
-  vim.api.nvim_set_hl(NS, "StatusLoading", { fg = "#f1fa8c" })
-  vim.api.nvim_set_hl(NS, "LazyTag", { fg = "#bd93f9" })
-  vim.api.nvim_set_hl(NS, "Keybind", { fg = "#8be9fd", bold = true })
-  vim.api.nvim_set_hl(NS, "Border", { fg = "#6272a4" })
+  vim.api.nvim_set_hl(NS, "ParcelHeader", { link = "Title", default = true })
+  vim.api.nvim_set_hl(NS, "ParcelPlugin", { link = "String", default = true })
+  vim.api.nvim_set_hl(NS, "ParcelCommit", { link = "Comment", default = true })
+  vim.api.nvim_set_hl(NS, "ParcelSource", { link = "Comment", default = true })
+  vim.api.nvim_set_hl(NS, "ParcelStatusLoaded", { link = "DiagnosticOk", default = true })
+  vim.api.nvim_set_hl(NS, "ParcelStatusPending", { link = "Comment", default = true })
+  vim.api.nvim_set_hl(NS, "ParcelStatusLoading", { link = "DiagnosticWarn", default = true })
+  vim.api.nvim_set_hl(NS, "ParcelLazy", { link = "Special", default = true })
+  vim.api.nvim_set_hl(NS, "ParcelKeybind", { link = "Keyword", default = true })
 end
 
 local function get_status(entry)
@@ -43,12 +43,13 @@ end
 
 local function format_content()
   local plugins = {}
-  local max_content_width = 0
-  
+  local max_name_width = 0
+  local max_type_width = 7 -- "startup" is 7 chars
+  local max_src_width = 0
+
   for src, entry in pairs(state.get_all_entries()) do
     if entry.merged_spec then
       local name = entry.merged_spec.name or src:match("([^/]+)$") or src
-      -- Get commit hash if available
       local commit = ""
       if entry.plugin and entry.plugin.path then
         local commit_hash = git.get_info(entry.plugin.path)
@@ -56,105 +57,86 @@ local function format_content()
           commit = commit_hash:sub(1, 7)
         end
       end
-      -- Format name with commit
       local display_name = commit ~= "" and (name .. " (" .. commit .. ")") or name
       table.insert(plugins, {
         name = name,
+        commit = commit,
         display_name = display_name,
         status = get_status(entry),
         lazy = is_lazy(entry),
         src = src,
         entry = entry,
       })
-      local type_str = is_lazy(entry) and "lazy" or "startup"
-      local row_content = string.format(" %s   %s %s %s", get_status(entry), display_name, type_str, src)
-      max_content_width = math.max(max_content_width, vim.fn.strdisplaywidth(row_content))
+      max_name_width = math.max(max_name_width, vim.fn.strdisplaywidth(display_name))
+      max_src_width = math.max(max_src_width, vim.fn.strdisplaywidth(src))
     end
   end
   table.sort(plugins, function(a, b) return a.name:lower() < b.name:lower() end)
   ui_state.plugins = plugins
 
-  local header_text = "📦 parcel.nvim • " .. #plugins .. " plugins"
-  local footer_text = "<Enter>:load  u:update  b:build  d:delete  r:refresh  q:quit"
-  local col_header_text = "      Name                           Type     Source"
-  
-  local content_width = math.max(
-    vim.fn.strdisplaywidth(header_text),
-    vim.fn.strdisplaywidth(col_header_text),
-    max_content_width,
-    vim.fn.strdisplaywidth(footer_text)
-  )
-  
-  local width = math.min(content_width + 4, vim.o.columns - 4)
-  local inner_width = width - 2
-  
   local lines = {}
-  local top = "┌" .. string.rep("─", inner_width) .. "┐"
-  local sep = "├" .. string.rep("─", inner_width) .. "┤"
-  local bot = "└" .. string.rep("─", inner_width) .. "┘"
-  
-  table.insert(lines, top)
-  
-  local header_left = math.floor((inner_width - vim.fn.strdisplaywidth(header_text)) / 2)
-  local header_line = string.rep(" ", header_left) .. header_text
-  table.insert(lines, "│" .. pad_to_width(header_line, inner_width) .. "│")
-  
-  table.insert(lines, sep)
-  table.insert(lines, "│" .. pad_to_width(col_header_text, inner_width) .. "│")
-  table.insert(lines, sep)
-  
+  table.insert(lines, "")
+  table.insert(lines, string.format("  %s  %s  %s  %s",
+    " ",
+    pad_to_width("Name", max_name_width),
+    pad_to_width("Type", max_type_width),
+    "Source"
+  ))
+  table.insert(lines, "")
+
   for _, p in ipairs(plugins) do
     local type_str = p.lazy and "lazy" or "startup"
-    local row_content = string.format(" %s   %-34s %-8s %s", p.status, p.display_name, type_str, p.src)
-    table.insert(lines, "│" .. pad_to_width(row_content, inner_width) .. "│")
+    local row = string.format("  %s  %s  %s  %s",
+      p.status,
+      pad_to_width(p.display_name, max_name_width),
+      pad_to_width(type_str, max_type_width),
+      p.src
+    )
+    table.insert(lines, row)
   end
-  
-  table.insert(lines, sep)
-  
-  local footer_left = math.floor((inner_width - vim.fn.strdisplaywidth(footer_text)) / 2)
-  local footer_line = string.rep(" ", footer_left) .. footer_text
-  table.insert(lines, "│" .. pad_to_width(footer_line, inner_width) .. "│")
-  table.insert(lines, bot)
-  
-  return lines, width
+
+  local content_width = math.max(
+    vim.fn.strdisplaywidth("  Name  Type  Source"),
+    max_name_width + max_type_width + max_src_width + 12
+  )
+
+  return lines, content_width
 end
 
-local function apply_highlights(lines, width)
+local function apply_highlights(lines)
   vim.api.nvim_buf_clear_namespace(ui_state.buf, NS, 0, -1)
-  local inner_width = width - 2
-  
-  vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "Header", 1, 0, -1)
-  vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "Border", 3, 0, -1)
-  
-  for i = 5, 5 + #ui_state.plugins - 1 do
-    local plugin = ui_state.plugins[i - 4]
-    if plugin then
-      local hl = plugin.status == "●" and "StatusLoaded" or (plugin.status == "◐" and "StatusLoading" or "StatusPending")
-      vim.api.nvim_buf_add_highlight(ui_state.buf, NS, hl, i - 1, 2, 5)
-      vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "PluginName", i - 1, 6, 40)
-      if plugin.lazy then
-        vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "LazyTag", i - 1, 41, 49)
-      end
-      vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "PluginSource", i - 1, 50, inner_width + 1)
+
+  vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "ParcelHeader", 2, 0, -1)
+
+  for i, plugin in ipairs(ui_state.plugins) do
+    local line_num = i + 3
+    local status_hl = plugin.status == "●" and "ParcelStatusLoaded" or
+                      (plugin.status == "◐" and "ParcelStatusLoading" or "ParcelStatusPending")
+    vim.api.nvim_buf_add_highlight(ui_state.buf, NS, status_hl, line_num, 2, 3)
+
+    local name_start = 5
+    local name_end = name_start + vim.fn.strdisplaywidth(plugin.name)
+    vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "ParcelPlugin", line_num, name_start, name_end)
+
+    if plugin.commit ~= "" then
+      local commit_start = name_end + 1
+      local commit_end = commit_start + 1 + vim.fn.strdisplaywidth(plugin.commit) + 1
+      vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "ParcelCommit", line_num, commit_start, commit_end)
     end
-  end
-  
-  vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "Keybind", #lines - 2, 0, -1)
-  
-  for i = 0, #lines - 1 do
-    local line = vim.api.nvim_buf_get_lines(ui_state.buf, i, i + 1, false)[1] or ""
-    for j = 1, #line do
-      local c = line:sub(j, j)
-      if c == "│" or c == "┌" or c == "┐" or c == "└" or c == "┘" or c == "├" or c == "┤" or c == "─" then
-        vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "Border", i, j - 1, j)
-      end
+
+    local type_start = name_start + vim.fn.strdisplaywidth(plugin.display_name) + 2
+    if plugin.lazy then
+      vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "ParcelLazy", line_num, type_start, type_start + 4)
     end
+
+    local src_start = type_start + 9
+    vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "ParcelSource", line_num, src_start, -1)
   end
 end
 
 local function get_plugin_at_cursor()
   local cursor = vim.api.nvim_win_get_cursor(ui_state.win)
-  local idx = cursor[1] - 4
+  local idx = cursor[1] - 3
   if idx >= 1 and idx <= #ui_state.plugins then
     return ui_state.plugins[idx]
   end
@@ -216,10 +198,10 @@ local function create_buffer()
 end
 
 local function create_window(buf, width)
-  local height = math.min(6 + #ui_state.plugins, math.floor(vim.o.lines * 0.8))
+  local height = math.min(4 + #ui_state.plugins, math.floor(vim.o.lines * 0.8))
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
-  
+
   local win = vim.api.nvim_open_win(buf, true, {
     relative = "editor",
     width = width,
@@ -227,14 +209,18 @@ local function create_window(buf, width)
     row = row,
     col = col,
     style = "minimal",
-    border = "none",
+    border = "rounded",
+    title = " 📦 parcel.nvim ",
+    title_pos = "center",
+    footer = " <Enter>:load  u:update  b:build  d:delete  r:refresh  q:quit ",
+    footer_pos = "center",
   })
-  
+
   vim.api.nvim_win_set_option(win, "wrap", false)
   vim.api.nvim_win_set_option(win, "cursorline", true)
   vim.api.nvim_win_set_option(win, "number", false)
   vim.api.nvim_win_set_option(win, "relativenumber", false)
-  
+
   return win
 end
 
@@ -256,11 +242,10 @@ function M.refresh()
   vim.api.nvim_buf_set_option(ui_state.buf, "modifiable", true)
   vim.api.nvim_buf_set_lines(ui_state.buf, 0, -1, false, lines)
   vim.api.nvim_buf_set_option(ui_state.buf, "modifiable", false)
-  apply_highlights(lines, width)
+  apply_highlights(lines)
 end
 
 function M.open()
-  -- Close command-line window if open
   if vim.fn.getcmdwintype() ~= "" then
     vim.cmd("close")
   end
@@ -274,10 +259,10 @@ function M.open()
   vim.api.nvim_buf_set_option(ui_state.buf, "modifiable", false)
   ui_state.win = create_window(ui_state.buf, width)
   define_highlights()
-  apply_highlights(lines, width)
+  apply_highlights(lines)
   set_keymaps()
   local line_count = vim.api.nvim_buf_line_count(ui_state.buf)
-  local cursor_line = math.min(5, line_count)
+  local cursor_line = math.min(4, line_count)
   vim.api.nvim_win_set_cursor(ui_state.win, { cursor_line, 0 })
 end
 
