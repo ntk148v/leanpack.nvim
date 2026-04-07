@@ -73,13 +73,6 @@ function M.load_plugin(pack_spec, opts)
   -- Run packadd
   vim.cmd.packadd({ pack_spec.name, bang = opts.bang })
 
-  -- Ensure plugin is in runtimepath for module resolution
-  -- This is needed because packadd might not immediately update package.searchers
-  local plugin_path = vim.fn.stdpath("data") .. "/pack/vim-pack/opt/" .. pack_spec.name
-  if vim.fn.isdirectory(plugin_path) == 1 then
-    package.loaded[pack_spec.name] = nil -- Clear any cached loads
-  end
-
   -- Run config hook
   if spec.config or spec.opts ~= nil then
     hooks.run_config(pack_spec.src)

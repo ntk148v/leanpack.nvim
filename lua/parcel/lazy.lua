@@ -28,7 +28,7 @@ function M.is_lazy(spec, plugin, src)
   end
 
   -- Is dependency of lazy plugin
-  if src and deps.is_dependency_only(src) and deps.has_lazy_parent(src) then
+  if src and deps.is_dependency_only(src) and spec.lazy == true then
     return true
   end
 

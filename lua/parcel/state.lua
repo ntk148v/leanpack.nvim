@@ -12,7 +12,6 @@ local M = {}
 ---@field plugin_names_with_build string[] Plugins that have build hooks
 ---@field unloaded_plugin_names table<string, boolean> Plugins not yet loaded
 ---@field src_with_pending_build table<string, boolean> Plugins with pending build hooks
----@field lazy_parent_cache table<string, boolean> Cache for has_lazy_parent check
 
 local state = {
   is_setup = false,
@@ -25,7 +24,6 @@ local state = {
   plugin_names_with_build = {},
   unloaded_plugin_names = {},
   src_with_pending_build = {},
-  lazy_parent_cache = {},
 }
 
 -- Autocmd groups
@@ -47,7 +45,6 @@ function M.reset()
   state.plugin_names_with_build = {}
   state.unloaded_plugin_names = {}
   state.src_with_pending_build = {}
-  state.lazy_parent_cache = {}
 end
 
 ---Check if setup has been called
@@ -195,20 +192,6 @@ function M.clear_all_pending_builds()
   state.src_with_pending_build = {}
 end
 
----Cache lazy parent check
----@param dep_src string
----@param has_lazy_parent boolean
-function M.cache_lazy_parent(dep_src, has_lazy_parent)
-  state.lazy_parent_cache[dep_src] = has_lazy_parent
-end
-
----Get cached lazy parent check
----@param dep_src string
----@return boolean?
-function M.get_cached_lazy_parent(dep_src)
-  return state.lazy_parent_cache[dep_src]
-end
-
 ---Remove plugin from all state
 ---@param name string
 ---@param src string
@@ -216,7 +199,6 @@ function M.remove_plugin(name, src)
   state.spec_registry[src] = nil
   state.src_to_pack_spec[src] = nil
   state.src_with_pending_build[src] = nil
-  state.lazy_parent_cache[src] = nil
 
   state.registered_plugins = vim.tbl_filter(function(spec)
     return spec.name ~= name

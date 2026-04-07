@@ -130,45 +130,6 @@ function M.is_dependency_only(src)
   return true
 end
 
----Check if any parent of a dependency is lazy (cached)
----@param dep_src string
----@return boolean
-function M.has_lazy_parent(dep_src)
-  local cached = state.get_cached_lazy_parent(dep_src)
-  if cached ~= nil then
-    return cached
-  end
 
-  local parents = state.get_reverse_dependencies(dep_src)
-  if not parents then
-    state.cache_lazy_parent(dep_src, false)
-    return false
-  end
-
-  for parent_src in pairs(parents) do
-    local entry = state.get_entry(parent_src)
-    if entry and entry.merged_spec then
-      local parent_spec = entry.merged_spec
-      if parent_spec.lazy == true then
-        state.cache_lazy_parent(dep_src, true)
-        return true
-      end
-      if parent_spec.lazy == nil then
-        -- Check if parent has lazy triggers
-        local event = spec_mod.resolve_field(parent_spec.event, entry.plugin)
-        local cmd = spec_mod.resolve_field(parent_spec.cmd, entry.plugin)
-        local ft = spec_mod.resolve_field(parent_spec.ft, entry.plugin)
-        local keys = spec_mod.resolve_field(parent_spec.keys, entry.plugin)
-        if event or cmd or ft or (keys and #keys > 0) then
-          state.cache_lazy_parent(dep_src, true)
-          return true
-        end
-      end
-    end
-  end
-
-  state.cache_lazy_parent(dep_src, false)
-  return false
-end
 
 return M
