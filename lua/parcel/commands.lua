@@ -2,6 +2,7 @@
 local state = require("parcel.state")
 local hooks = require("parcel.hooks")
 local loader = require("parcel.loader")
+local lock = require("parcel.lock")
 
 local M = {}
 
@@ -101,6 +102,8 @@ function M.setup(prefix)
       end
       vim.pack.update({ plugin_name })
     end
+    -- Save lockfile after update
+    lock.save()
   end, {
     nargs = "?",
     desc = "Update all plugins or a specific plugin",

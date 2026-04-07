@@ -26,6 +26,10 @@ function M.resolve_dependencies(spec, ctx)
       local normalized, src = spec_mod.normalize_spec(dep_spec, ctx.defaults)
       if normalized then
         normalized._is_dependency = true
+        -- Preserve optional flag from parent if not set
+        if spec.optional and normalized.optional == nil then
+          normalized.optional = spec.optional
+        end
         table.insert(dep_specs, normalized)
         -- Track dependency relationship
         state.add_dependency(spec.src, src)
@@ -35,6 +39,10 @@ function M.resolve_dependencies(spec, ctx)
       local normalized, src = spec_mod.normalize_spec(dep, ctx.defaults)
       if normalized then
         normalized._is_dependency = true
+        -- Preserve optional flag from parent if not set
+        if spec.optional and normalized.optional == nil then
+          normalized.optional = spec.optional
+        end
         table.insert(dep_specs, normalized)
         state.add_dependency(spec.src, src)
       end
