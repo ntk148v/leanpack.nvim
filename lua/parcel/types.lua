@@ -80,7 +80,7 @@
 
 ---@class parcel.Config
 ---@field spec? parcel.Spec[] Plugin specifications
----@field cmd_prefix? string Command prefix, default "P"
+---@field cmd_prefix? string Command prefix, default "Parcel"
 ---@field defaults? parcel.Config.Defaults
 ---@field performance? parcel.Config.Performance
 ---@field lockfile? parcel.Config.Lockfile

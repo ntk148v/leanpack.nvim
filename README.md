@@ -223,18 +223,18 @@ return {
 
 ## Commands
 
-parcel provides the following commands (default prefix: `P`, customizable via `cmd_prefix`):
+parcel provides the following commands (default: `:Parcel`, customizable via `cmd_prefix`):
 
-- `:PUpdate [plugin]` - Update all plugins, or a specific plugin
-- `:PClean` - Remove plugins that are no longer in your spec
-- `:PBuild[!] [plugin]` - Run build hook for a specific plugin, or all plugins with `!`
-- `:PLoad[!] [plugin]` - Load a specific unloaded plugin, or all unloaded plugins with `!`
-- `:PDelete[!] [plugin]` - Remove a specific plugin, or all plugins with `!`
-- `:PShow` - Open plugin manager UI
+- `:Parcel` - Open the plugin manager UI
+- `:Parcel update [plugin]` - Update all plugins, or a specific plugin
+- `:Parcel clean` - Remove plugins that are no longer in your spec
+- `:Parcel build[!] [plugin]` - Run build hook for a specific plugin, or all plugins with `!`
+- `:Parcel load[!] [plugin]` - Load a specific unloaded plugin, or all unloaded plugins with `!`
+- `:Parcel delete[!] [plugin]` - Remove a specific plugin, or all plugins with `!`
 
 ## UI
 
-Open the plugin manager UI with `:PShow`.
+Open the plugin manager UI with `:Parcel`.
 
 Keymaps in the UI:
 
@@ -263,7 +263,7 @@ require('parcel').setup({
   performance = {
     vim_loader = true,       -- enables vim.loader for faster startup
   },
-  cmd_prefix = 'P',          -- command prefix: :PUpdate, :PClean, etc.
+  cmd_prefix = 'Parcel',     -- command: :Parcel update, :Parcel clean, etc.
 
   -- Git throttling (prevents hitting rate limits)
   git = {

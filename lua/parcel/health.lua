@@ -50,7 +50,7 @@ function M.check()
   if parcel_state.has_pending_builds() then
     local pending = parcel_state.get_pending_builds()
     vim.health.warn(("There are %d plugins with pending build hooks"):format(vim.tbl_count(pending)), {
-      "Run :PBuild! to execute all pending build hooks",
+      "Run :Parcel build! to execute all pending build hooks",
     })
   else
     vim.health.ok("No pending build hooks")

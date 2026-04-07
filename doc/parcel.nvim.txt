@@ -90,8 +90,8 @@ end,
 Setup with options: >
 
 require('parcel').setup({
--- Command prefix (default: "P")
-cmd_prefix = "P",
+-- Command prefix (default: "Parcel")
+cmd_prefix = "Parcel",
 
 -- Default options for all plugins
 defaults = {
@@ -338,29 +338,29 @@ ft = { 'lua', 'vim' },
 ==============================================================================
 8. COMMANDS *parcel-commands*
 
-:PUpdate [plugin]~
+:Parcel~
+Open the plugin manager UI.
+
+:Parcel update [plugin]~
 Update all plugins, or a specific plugin if provided.
 Supports tab completion.
 
-:PClean~
+:Parcel clean~
 Remove plugins that are no longer in your spec.
 
-:PBuild[!] [plugin]~
+:Parcel build[!] [plugin]~
 Run build hook for a specific plugin, or all plugins with `!`.
 
-:PLoad[!] [plugin]~
+:Parcel load[!] [plugin]~
 Load a specific unloaded plugin, or all unloaded plugins with `!`.
 
-:PDelete[!] [plugin]~
+:Parcel delete[!] [plugin]~
 Remove a specific plugin, or all plugins with `!`.
-
-:PShow~
-Open the plugin manager UI.
 
 ==============================================================================
 9. UI *parcel-ui*
 
-Open the plugin manager UI with `:PShow`.
+Open the plugin manager UI with `:Parcel`.
 
 Keymaps in the UI:
 <Enter>/<CR> - Load plugin under cursor

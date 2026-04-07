@@ -256,9 +256,9 @@ function M.refresh()
 end
 
 function M.open()
+  -- Close command-line window if open
   if vim.fn.getcmdwintype() ~= "" then
-    vim.notify("Cannot open from command-line window")
-    return
+    vim.cmd("close")
   end
   if ui_state.win and vim.api.nvim_win_is_valid(ui_state.win) then
     vim.api.nvim_win_close(ui_state.win, true)

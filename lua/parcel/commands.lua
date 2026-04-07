@@ -13,7 +13,8 @@ local function validate_prefix(prefix)
   if prefix == "" then
     return true
   end
-  return prefix:match("^%u[%a%d]*$") ~= nil
+  -- Command must start with uppercase letter, can contain letters and digits
+  return prefix:match("^[A-Z][A-Za-z0-9]*$") ~= nil
 end
 
 ---Create a user command
@@ -24,7 +25,7 @@ end
 local function create_command(name, fn, opts)
   local ok, err = pcall(vim.api.nvim_create_user_command, name, fn, opts)
   if not ok then
-    vim.notify(("Failed to create command %s: %s"):format(name, err), vim.log.levels.ERROR)
+    vim.notify(("Failed to create command %s: %s"):format(name, tostring(err)), vim.log.levels.ERROR)
     return false
   end
   return true
@@ -91,179 +92,162 @@ function M.setup(prefix)
     return
   end
 
-  -- :PUpdate [plugin]
-  create_command(prefix .. "Update", function(opts)
-    local plugin_name = opts.args
-    if plugin_name == "" then
-      vim.pack.update()
-    else
-      if not get_plugin_or_notify(plugin_name) then
-        return
-      end
-      vim.pack.update({ plugin_name })
-    end
-    -- Save lockfile after update
-    lock.save()
-  end, {
-    nargs = "?",
-    desc = "Update all plugins or a specific plugin",
-    complete = function(arg_lead)
-      return filter_completions(state.get_all_plugin_names(), arg_lead)
-    end,
-  })
+  -- :Parcel {subcommand} [args]
+  local ok = create_command(prefix, function(opts)
+    local args = vim.split(opts.args, "%s+", { trimempty = true })
+    local subcommand = args[1]
+    local plugin_name = args[2] or ""
 
-  -- :PClean
-  create_command(prefix .. "Clean", function()
-    M.clean_unused()
-  end, {
-    desc = "Remove unused plugins",
-  })
-
-  -- :PBuild[!] [plugin]
-  create_command(prefix .. "Build", function(opts)
-    local plugin_name = opts.args
-    if plugin_name == "" then
-      if not opts.bang then
-        vim.notify(("Use :%sBuild! to run build hooks for all plugins"):format(prefix), vim.log.levels.WARN)
-        return
-      end
-      hooks.run_all_builds()
+    if not subcommand then
+      -- Open UI when no subcommand provided
+      require("parcel.ui").open()
       return
     end
 
-    local pack = get_plugin_or_notify(plugin_name)
-    if not pack then
-      return
-    end
-
-    local entry = state.get_entry(pack.spec.src)
-    local spec = entry and entry.merged_spec
-    if not spec or not spec.build then
-      vim.notify(('Plugin "%s" has no build hook'):format(plugin_name), vim.log.levels.WARN)
-      return
-    end
-
-    local pack_spec = state.get_pack_spec(pack.spec.src)
-    if pack_spec then
-      loader.load_plugin(pack_spec, { bang = true })
-    end
-    hooks.execute_build(spec.build, entry.plugin)
-    vim.notify(("Running build hook for %s"):format(plugin_name), vim.log.levels.INFO)
-  end, {
-    nargs = "?",
-    bang = true,
-    desc = "Run build hook for a specific plugin or all plugins",
-    complete = function(arg_lead)
-      return filter_completions(state.get_plugins_with_build(), arg_lead)
-    end,
-  })
-
-  -- :PLoad[!] [plugin]
-  create_command(prefix .. "Load", function(opts)
-    local plugin_name = opts.args
-    if plugin_name == "" then
-      if not opts.bang then
-        vim.notify(("Use :%sLoad! to load all unloaded plugins"):format(prefix), vim.log.levels.WARN)
-        return
-      end
-      local unloaded = state.get_unloaded_names()
-      if #unloaded == 0 then
-        vim.notify("All plugins are already loaded", vim.log.levels.INFO)
-        return
-      end
-      for _, pack_spec in ipairs(state.get_all_pack_specs()) do
-        local entry = state.get_entry(pack_spec.src)
-        if entry and entry.load_status ~= "loaded" then
-          loader.load_plugin(pack_spec)
+    if subcommand == "update" then
+      if plugin_name == "" then
+        vim.pack.update()
+      else
+        if not get_plugin_or_notify(plugin_name) then
+          return
         end
+        vim.pack.update({ plugin_name })
       end
-      vim.notify(("Loaded %d plugin(s)"):format(#unloaded), vim.log.levels.INFO)
-      return
-    end
-
-    local pack = get_plugin_or_notify(plugin_name)
-    if not pack then
-      return
-    end
-
-    local entry = state.get_entry(pack.spec.src)
-    if not entry then
-      vim.notify(('Plugin "%s" not found in registry'):format(plugin_name), vim.log.levels.ERROR)
-      return
-    end
-
-    if entry.load_status == "loaded" then
-      vim.notify(('Plugin "%s" is already loaded'):format(plugin_name), vim.log.levels.INFO)
-      return
-    end
-
-    loader.load_plugin(pack.spec)
-    vim.notify(("Loaded %s"):format(plugin_name), vim.log.levels.INFO)
-  end, {
-    nargs = "?",
-    bang = true,
-    desc = "Load all unloaded plugins or a specific plugin",
-    complete = function(arg_lead)
-      local names = state.get_unloaded_names()
-      table.sort(names, function(a, b)
-        return a:lower() < b:lower()
-      end)
-      return filter_completions(names, arg_lead)
-    end,
-  })
-
-  -- :PDelete[!] [plugin]
-  create_command(prefix .. "Delete", function(opts)
-    local plugin_name = opts.args
-    if plugin_name == "" then
-      if not opts.bang then
-        vim.notify(("Use :%sDelete! to confirm deletion of all installed plugin(s)"):format(prefix), vim.log.levels.WARN)
+      lock.save()
+    elseif subcommand == "clean" then
+      M.clean_unused()
+    elseif subcommand == "build" then
+      if plugin_name == "" then
+        if not opts.bang then
+          vim.notify(("Use :%s build! to run build hooks for all plugins"):format(prefix), vim.log.levels.WARN)
+          return
+        end
+        hooks.run_all_builds()
         return
       end
-      local names = {}
-      for _, pack_spec in ipairs(state.get_all_pack_specs()) do
-        table.insert(names, pack_spec.name)
-      end
-      table.insert(names, "parcel.nvim")
 
-      vim.notify(("Deleting all %d installed plugin(s)..."):format(#names), vim.log.levels.INFO)
-      vim.pack.del(names, { force = true })
-      state.reset()
+      local pack = get_plugin_or_notify(plugin_name)
+      if not pack then
+        return
+      end
+
+      local entry = state.get_entry(pack.spec.src)
+      local spec = entry and entry.merged_spec
+      if not spec or not spec.build then
+        vim.notify(('Plugin "%s" has no build hook'):format(plugin_name), vim.log.levels.WARN)
+        return
+      end
+
+      local pack_spec = state.get_pack_spec(pack.spec.src)
+      if pack_spec then
+        loader.load_plugin(pack_spec, { bang = true })
+      end
+      hooks.execute_build(spec.build, entry.plugin)
+      vim.notify(("Running build hook for %s"):format(plugin_name), vim.log.levels.INFO)
+    elseif subcommand == "load" then
+      if plugin_name == "" then
+        if not opts.bang then
+          vim.notify(("Use :%s load! to load all unloaded plugins"):format(prefix), vim.log.levels.WARN)
+          return
+        end
+        local unloaded = state.get_unloaded_names()
+        if #unloaded == 0 then
+          vim.notify("All plugins are already loaded", vim.log.levels.INFO)
+          return
+        end
+        for _, pack_spec in ipairs(state.get_all_pack_specs()) do
+          local entry = state.get_entry(pack_spec.src)
+          if entry and entry.load_status ~= "loaded" then
+            loader.load_plugin(pack_spec)
+          end
+        end
+        vim.notify(("Loaded %d plugin(s)"):format(#unloaded), vim.log.levels.INFO)
+        return
+      end
+
+      local pack = get_plugin_or_notify(plugin_name)
+      if not pack then
+        return
+      end
+
+      local entry = state.get_entry(pack.spec.src)
+      if not entry then
+        vim.notify(('Plugin "%s" not found in registry'):format(plugin_name), vim.log.levels.ERROR)
+        return
+      end
+
+      if entry.load_status == "loaded" then
+        vim.notify(('Plugin "%s" is already loaded'):format(plugin_name), vim.log.levels.INFO)
+        return
+      end
+
+      loader.load_plugin(pack.spec)
+      vim.notify(("Loaded %s"):format(plugin_name), vim.log.levels.INFO)
+    elseif subcommand == "delete" then
+      if plugin_name == "" then
+        if not opts.bang then
+          vim.notify(("Use :%s delete! to confirm deletion of all installed plugin(s)"):format(prefix), vim.log.levels.WARN)
+          return
+        end
+        local names = {}
+        for _, pack_spec in ipairs(state.get_all_pack_specs()) do
+          table.insert(names, pack_spec.name)
+        end
+        table.insert(names, "parcel.nvim")
+
+        vim.notify(("Deleting all %d installed plugin(s)..."):format(#names), vim.log.levels.INFO)
+        vim.pack.del(names, { force = true })
+        state.reset()
+        vim.notify(
+          "All plugins deleted. This can result in errors in your current session. Restart Neovim to re-install them or remove them from your spec.",
+          vim.log.levels.WARN
+        )
+        return
+      end
+
+      local pack = get_plugin_or_notify(plugin_name)
+      if not pack then
+        return
+      end
+
+      vim.pack.del({ plugin_name }, { force = true })
+      state.remove_plugin(plugin_name, pack.spec.src)
       vim.notify(
-        "All plugins deleted. This can result in errors in your current session. Restart Neovim to re-install them or remove them from your spec.",
+        ("%s deleted. This can result in errors in your current session. Restart Neovim to re-install it or remove it from your spec."):format(
+          plugin_name
+        ),
         vim.log.levels.WARN
       )
-      return
+    else
+      vim.notify(("Unknown subcommand: %s"):format(subcommand), vim.log.levels.ERROR)
     end
-
-    local pack = get_plugin_or_notify(plugin_name)
-    if not pack then
-      return
-    end
-
-    vim.pack.del({ plugin_name }, { force = true })
-    state.remove_plugin(plugin_name, pack.spec.src)
-    vim.notify(
-      ("%s deleted. This can result in errors in your current session. Restart Neovim to re-install it or remove it from your spec."):format(
-        plugin_name
-      ),
-      vim.log.levels.WARN
-    )
   end, {
-    nargs = "?",
+    nargs = "*",
     bang = true,
-    desc = "Delete all plugins or a specific plugin",
-    complete = function(arg_lead)
-      return filter_completions(state.get_all_plugin_names(), arg_lead)
+    desc = "Parcel plugin manager commands",
+    complete = function(arg_lead, cmd_line, cursor_pos)
+      local parts = vim.split(cmd_line, "%s+", { trimempty = true })
+      if #parts <= 2 then
+        local subcommands = { "build", "clean", "delete", "load", "update" }
+        return filter_completions(subcommands, arg_lead)
+      elseif #parts == 3 then
+        local subcommand = parts[2]
+        if subcommand == "build" then
+          return filter_completions(state.get_plugins_with_build(), arg_lead)
+        elseif subcommand == "load" then
+          local names = state.get_unloaded_names()
+          table.sort(names, function(a, b)
+            return a:lower() < b:lower()
+          end)
+          return filter_completions(names, arg_lead)
+        elseif subcommand == "delete" or subcommand == "update" then
+          return filter_completions(state.get_all_plugin_names(), arg_lead)
+        end
+      end
+      return {}
     end,
   })
 
-  -- :PShow - Open plugin UI
-  create_command(prefix .. "Show", function()
-    require("parcel.ui").open()
-  end, {
-    desc = "Open plugin manager UI",
-  })
 end
 
 return M

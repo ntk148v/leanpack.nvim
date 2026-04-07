@@ -63,7 +63,7 @@ end
 
 ---@class parcel.Config
 ---@field spec? parcel.Spec[] Plugin specifications
----@field cmd_prefix? string Command prefix, default "P"
+---@field cmd_prefix? string Command prefix, default "Parcel"
 ---@field defaults? parcel.Config.Defaults
 ---@field performance? parcel.Config.Performance
 
@@ -75,7 +75,7 @@ end
 ---@field vim_loader? boolean Enable vim.loader for faster startup, default true
 
 local config = {
-  cmd_prefix = "P",
+  cmd_prefix = "Parcel",
   defaults = { confirm = true },
   performance = { vim_loader = true },
   lockfile = {},
