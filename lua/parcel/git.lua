@@ -64,4 +64,29 @@ function M.get_info(path)
   end)
 end
 
+---Execute an asynchronous git command via vim.system
+---@param cmd string[]
+---@param callback fun(obj: vim.SystemCompleted)
+function M.system_async(cmd, callback)
+  vim.system(cmd, { text = true }, callback)
+end
+
+---Get git info for a plugin path asynchronously
+---@param path string
+---@param callback fun(commit?: string, branch?: string)
+function M.get_info_async(path, callback)
+  M.system_async({ "git", "-C", path, "rev-parse", "HEAD" }, function(res1)
+    if res1.code ~= 0 then
+      vim.schedule(function() callback(nil, nil) end)
+      return
+    end
+    local commit = res1.stdout:match("^%s*(.-)%s*$")
+    
+    M.system_async({ "git", "-C", path, "rev-parse", "--abbrev-ref", "HEAD" }, function(res2)
+      local branch = res2.code == 0 and res2.stdout:match("^%s*(.-)%s*$") or nil
+      vim.schedule(function() callback(commit, branch) end)
+    end)
+  end)
+end
+
 return M
