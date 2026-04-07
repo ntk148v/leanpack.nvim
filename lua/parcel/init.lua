@@ -46,20 +46,7 @@ local function check_version()
   return true
 end
 
----Record git info for all plugins in the lockfile
-local function record_git_info()
-  for src, entry in pairs(state.get_all_entries()) do
-    if entry and entry.plugin and entry.plugin.path then
-      local plugin_path = entry.plugin.path
-      if vim.fn.isdirectory(plugin_path) == 1 then
-        local commit, branch = git.get_info(plugin_path)
-        if commit and branch then
-          lock.update(entry.merged_spec and entry.merged_spec.name or src, branch, commit, src)
-        end
-      end
-    end
-  end
-end
+
 
 ---@class parcel.Config
 ---@field spec? parcel.Spec[] Plugin specifications
@@ -165,8 +152,12 @@ local function register_spec(spec, ctx, is_dependency)
   end
 
   -- Resolve dependencies
+  local is_lazy_parent = normalized.lazy == true or lazy_mod.is_lazy(normalized, nil, src)
   local dep_specs = deps_mod.resolve_dependencies(normalized, ctx)
   for _, dep_spec in ipairs(dep_specs) do
+    if is_lazy_parent and dep_spec.lazy == nil then
+      dep_spec.lazy = true
+    end
     register_spec(dep_spec, ctx, true)
   end
 
@@ -293,9 +284,7 @@ function M.setup(opts)
   -- Process all plugins
   process_all(ctx)
 
-  -- Record git info for lockfile
-  record_git_info()
-  lock.save()
+
 
   -- Setup commands
   commands.setup(config.cmd_prefix)

@@ -62,4 +62,22 @@ function M.remove(name)
   M.lock.plugins[name] = nil
 end
 
+---Snapshot the lockfile with current git state
+function M.snapshot()
+  local state = require("parcel.state")
+  local git = require("parcel.git")
+  for src, entry in pairs(state.get_all_entries()) do
+    if entry and entry.plugin and entry.plugin.path then
+      local plugin_path = entry.plugin.path
+      if vim.fn.isdirectory(plugin_path) == 1 then
+        local commit, branch = git.get_info(plugin_path)
+        if commit and branch then
+          M.update(entry.merged_spec and entry.merged_spec.name or src, branch, commit, src)
+        end
+      end
+    end
+  end
+  M.save()
+end
+
 return M
