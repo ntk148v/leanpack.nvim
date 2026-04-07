@@ -14,8 +14,6 @@ CONTENTS *parcel-contents*
 9. UI ..................................... |parcel-ui|
 10. Health Check .......................... |parcel-health|
 11. Migrating from lazy.nvim .............. |parcel-migrating|
-12. Migrating from zpack.nvim ............ |parcel-migrating-zpack|
-13. Comparison ............................ |parcel-comparison|
 
 ==============================================================================
 1. INTRODUCTION *parcel-introduction*
@@ -104,6 +102,20 @@ cond = nil, -- Global condition for all plugins
 -- Performance options
 performance = {
 vim_loader = true, -- Enable vim.loader for faster startup
+},
+
+-- Git throttling (prevents hitting rate limits)
+git = {
+throttle = {
+requests = 10, -- Max concurrent git operations
+interval = 1000, -- Interval in ms between requests
+},
+},
+
+-- Update checker
+checker = {
+enabled = true, -- Enable periodic update checking
+frequency = 3600, -- Check every hour (in seconds)
 },
 })
 
@@ -236,20 +248,40 @@ end,
 }
 
 <
-Priority ~
+Dev Mode ~
 
-Higher priority loads first (default: 50): >
+Local development with `dev = true`: >
 
 {
-'user/colorschemes',
-priority = 1000, -- Load colorscheme early
-config = function()
-vim.cmd('colorscheme mytheme')
-end,
+'user/repo',
+dev = true,
+dir = '~/projects/plugin-name', -- path to local development copy
 }
 
 <
-==============================================================================
+Optional Dependencies ~
+
+Dependencies that won't block plugin loading: >
+
+{
+'user/repo',
+dependencies = {
+{ 'optional/dep', optional = true },
+},
+}
+
+<
+Module-based Loading ~
+
+Load when a Lua module is required: >
+
+{
+'user/repo',
+module = 'plugin.*', -- pattern matches require('plugin.foo')
+}
+
+<
+================================================================================
 7. LAZY LOADING *parcel-lazy-loading*
 
 Event ~
@@ -361,8 +393,6 @@ Most lazy.nvim specs work as-is. Key differences:
 
 - `version` maps to `sem_version`
 - No built-in profiling (use `nvim --startuptime`)
-- No dev mode (use `src = '/path/to/local'`)
-- No UI dashboard (use `:PShow`)
 
 Example migration: >
 
@@ -389,33 +419,5 @@ end,
 }
 
 <
-==============================================================================
-12. MIGRATING FROM ZPACK.NVIM *parcel-migrating-zpack*
-
-parcel.nvim is inspired by zpack.nvim. Key differences:
-
-- No module loader (simpler architecture)
-- Built-in health check
-- Built-in UI (`:PShow`)
-- Smaller codebase (~800 LOC vs ~1200 LOC)
-
-The spec format is nearly identical. Just change `require('zpack')` to
-`require('parcel')`.
-
-==============================================================================
-13. COMPARISON *parcel-comparison*
-
-| Feature | parcel.nvim | zpack.nvim | lazy.nvim |
-|---------|-------------|------------|-----------|
-| vim.pack based | ✅ | ✅ | ❌ |
-| Lazy loading | ✅ | ✅ | ✅ |
-| lazy.nvim spec | ✅ | ✅ | ✅ |
-| Module loader | ❌ | ✅ | ✅ |
-| UI dashboard | ✅ | ❌ (ext) | ✅ |
-| Health check | ✅ | ❌ | ✅ |
-| Profiling | ❌ | ❌ | ✅ |
-| Dev mode | ❌ | ❌ | ✅ |
-| Code size | ~800 LOC | ~1200 LOC | ~5000 LOC |
-
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:

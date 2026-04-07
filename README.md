@@ -86,6 +86,10 @@ return {
   lazy = true|false,                    -- Force eager loading when false
   priority = 50,                        -- Load priority (higher = earlier)
 
+  -- Development mode
+  dev = true,                           -- Enable dev mode (use with dir)
+  dir = "~/projects/plugin-name",       -- Local path for development
+
   -- Plugin configuration
   opts = {},                            -- Options passed to setup()
   init = function(plugin) end,          -- Runs before plugin loads
@@ -97,6 +101,10 @@ return {
   cmd = string|string[],                -- Load on command(s)
   keys = string|table|table[],          -- Load on keymap(s)
   ft = string|string[],                 -- Load on filetype(s)
+  module = "pattern",                   -- Load when Lua module matches pattern
+
+  -- Optional dependencies
+  optional = true|false,                -- Won't block plugin loading if missing
 
   -- Version control
   version = "main",                     -- Git branch, tag, or commit
@@ -254,6 +262,20 @@ require('parcel').setup({
     vim_loader = true,       -- enables vim.loader for faster startup
   },
   cmd_prefix = 'P',          -- command prefix: :PUpdate, :PClean, etc.
+
+  -- Git throttling (prevents hitting rate limits)
+  git = {
+    throttle = {
+      requests = 10,        -- max concurrent git operations
+      interval = 1000,      -- interval in ms between requests
+    },
+  },
+
+  -- Update checker
+  checker = {
+    enabled = true,          -- enable periodic update checking
+    frequency = 3600,        -- check every hour (in seconds)
+  },
 })
 ```
 
@@ -262,24 +284,14 @@ require('parcel').setup({
 Most of your lazy.nvim plugin specs will work as-is with parcel. Key differences:
 
 - **version pinning**: lazy.nvim's `version` field maps to parcel's `sem_version`
-- **dev mode**: Use `src = vim.fn.expand('~/projects/my_plugin.nvim')` for local development
+- **dev mode**: Use `dev = true` with `dir = '~/projects/plugin-name'` for local development
+- **optional dependencies**: Use `optional = true` for dependencies that won't block plugin loading
+- **module trigger**: Use `module = "pattern"` for require()-based lazy loading
 - **profiling**: Use `nvim --startuptime startuptime.log`
-
-## Comparison with zpack.nvim
-
-Both parcel.nvim and zpack.nvim are thin layers on top of `vim.pack`. Key differences:
-
-| Feature | parcel.nvim | zpack.nvim |
-|---------|-------------|------------|
-| Module loader | ❌ | ✅ |
-| Health check | ✅ | ❌ |
-| Code size | ~800 LOC | ~1200 LOC |
-| Architecture | Explicit state | Global state |
 
 ## Acknowledgements
 
 - Inspired by [lazy.nvim](https://github.com/folke/lazy.nvim) for the declarative spec design
-- Inspired by [zpack.nvim](https://github.com/zuqini/zpack.nvim) for the thin layer philosophy
 
 ## License
 
