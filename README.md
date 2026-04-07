@@ -237,6 +237,7 @@ parcel provides the following commands (default prefix: `P`, customizable via `c
 Open the plugin manager UI with `:PShow`.
 
 Keymaps in the UI:
+
 - `<Enter>/<CR>` - Load plugin under cursor
 - `u` - Update plugin under cursor
 - `b` - Build plugin under cursor
@@ -245,6 +246,7 @@ Keymaps in the UI:
 - `q/<Esc>` - Close UI
 
 Status indicators:
+
 - `●` - loaded
 - `○` - pending
 - `◐` - loading
