@@ -45,9 +45,11 @@
 ---@field pattern? string|string[] Global fallback pattern for events
 ---@field cmd? parcel.CmdValue|fun(plugin: parcel.Plugin):parcel.CmdValue Lazy load on command
 ---@field keys? parcel.KeysValue|fun(plugin: parcel.Plugin):parcel.KeysValue Lazy load on keymap
----@field ft? parcel.FtValue|fun(plugin: parcel.Plugin):parcel.FtValue Lazy load on filetype
----@field module? boolean Auto-load when require()'d, default true for lazy plugins
----@field import? string Module path to import specs from
+  ---@field ft? parcel.FtValue|fun(plugin: parcel.Plugin):parcel.FtValue Lazy load on filetype
+  ---@field module? string|string[] Auto-load when require()'d with matching module pattern
+  ---@field import? string Module path to import specs from
+  ---@field dev? boolean Development mode, use ~/projects/{plugin-name} as source
+  ---@field optional? boolean Optional dependency, warn instead of error if not found
 
 ---@alias parcel.LoadStatus "pending"|"loading"|"loaded"
 
@@ -64,10 +66,25 @@
 ---@class parcel.Config.Performance
 ---@field vim_loader? boolean Enable vim.loader for faster startup, default true
 
+---@class parcel.Config.Lockfile
+---@field path? string Path to lockfile, default "{config}/parcel-lock.json"
+
+---@class parcel.Config.Checker
+---@field enabled? boolean Default false
+---@field frequency? number Seconds between checks, default 3600
+---@field notify? boolean Show notification on updates, default true
+
+---@class parcel.Config.Git
+---@field throttle? { enabled?: boolean, rate?: number, duration?: number }
+---@field timeout? number Git timeout in seconds, default 120
+
 ---@class parcel.Config
 ---@field spec? parcel.Spec[] Plugin specifications
 ---@field cmd_prefix? string Command prefix, default "P"
 ---@field defaults? parcel.Config.Defaults
 ---@field performance? parcel.Config.Performance
+---@field lockfile? parcel.Config.Lockfile
+---@field checker? parcel.Config.Checker
+---@field git? parcel.Config.Git
 
 return {}

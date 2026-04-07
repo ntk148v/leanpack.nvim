@@ -7,6 +7,9 @@ local hooks = require("parcel.hooks")
 local lazy_mod = require("parcel.lazy")
 local loader = require("parcel.loader")
 local commands = require("parcel.commands")
+local lock = require("parcel.lock")
+local checker = require("parcel.checker")
+local git = require("parcel.git")
 
 local M = {}
 
@@ -43,6 +46,21 @@ local function check_version()
   return true
 end
 
+---Record git info for all plugins in the lockfile
+local function record_git_info()
+  for src, entry in pairs(state.get_all_entries()) do
+    if entry and entry.plugin and entry.plugin.path then
+      local plugin_path = entry.plugin.path
+      if vim.fn.isdirectory(plugin_path) == 1 then
+        local commit, branch = git.get_info(plugin_path)
+        if commit and branch then
+          lock.update(entry.merged_spec and entry.merged_spec.name or src, branch, commit, src)
+        end
+      end
+    end
+  end
+end
+
 ---@class parcel.Config
 ---@field spec? parcel.Spec[] Plugin specifications
 ---@field cmd_prefix? string Command prefix, default "P"
@@ -60,6 +78,9 @@ local config = {
   cmd_prefix = "P",
   defaults = { confirm = true },
   performance = { vim_loader = true },
+  lockfile = {},
+  checker = { enabled = false, frequency = 3600, notify = true },
+  git = {},
 }
 
 ---Process all specs and register plugins
@@ -211,6 +232,9 @@ function M.setup(opts)
 
   opts = opts or {}
 
+  -- Load lockfile
+  lock.load()
+
   -- Apply config
   if opts.cmd_prefix ~= nil then
     config.cmd_prefix = opts.cmd_prefix
@@ -220,6 +244,16 @@ function M.setup(opts)
   end
   if opts.performance ~= nil then
     config.performance = vim.tbl_extend("force", config.performance, opts.performance)
+  end
+  if opts.lockfile ~= nil then
+    config.lockfile = vim.tbl_extend("force", config.lockfile, opts.lockfile)
+  end
+  if opts.checker ~= nil then
+    config.checker = vim.tbl_extend("force", config.checker, opts.checker)
+  end
+  if opts.git ~= nil then
+    config.git = vim.tbl_extend("force", config.git or {}, opts.git)
+    git.setup(config.git)
   end
 
   -- Enable vim.loader for performance
@@ -259,8 +293,17 @@ function M.setup(opts)
   -- Process all plugins
   process_all(ctx)
 
+  -- Record git info for lockfile
+  record_git_info()
+  lock.save()
+
   -- Setup commands
   commands.setup(config.cmd_prefix)
+
+  -- Start update checker if enabled
+  if config.checker.enabled then
+    checker.start(config.checker.frequency)
+  end
 end
 
 return M

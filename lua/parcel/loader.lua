@@ -44,10 +44,18 @@ function M.load_plugin(pack_spec, opts)
         if dep_pack_spec then
           M.load_plugin(dep_pack_spec, opts)
         else
-          vim.notify(
-            ("Dependency %s not found for %s"):format(dep_src, pack_spec.src),
-            vim.log.levels.WARN
-          )
+          local is_optional = dep_entry.merged_spec and dep_entry.merged_spec.optional
+          if is_optional then
+            vim.notify(
+              ("Optional dependency %s not found for %s"):format(dep_src, pack_spec.src),
+              vim.log.levels.WARN
+            )
+          else
+            vim.notify(
+              ("Dependency %s not found for %s"):format(dep_src, pack_spec.src),
+              vim.log.levels.ERROR
+            )
+          end
         end
       end
     end

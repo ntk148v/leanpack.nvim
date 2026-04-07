@@ -66,6 +66,12 @@ end
 ---@param spec parcel.Spec
 ---@return string
 local function resolve_src(spec)
+  -- Dev mode: use local ~/projects/{plugin-name}
+  if spec.dev then
+    local name = spec.name or extract_name(spec[1] or spec.src or "")
+    return vim.fn.expand("~/projects/" .. name)
+  end
+
   if spec.src then
     return spec.src
   end
@@ -79,7 +85,7 @@ local function resolve_src(spec)
     return expand_short_name(spec[1])
   end
 
-  error("Plugin spec must have src, url, dir, or short name")
+  error("Plugin spec must have src, url, dir, dev, or short name")
 end
 
 ---Check if spec is enabled
@@ -130,6 +136,8 @@ function M.normalize_spec(spec, defaults)
     keys = spec.keys,
     ft = spec.ft,
     module = spec.module,
+    dev = spec.dev,
+    optional = spec.optional,
   }
 
   return normalized, src
@@ -276,7 +284,7 @@ function M.merge_specs(specs)
     -- Take first non-nil value for other fields
     for _, key in ipairs({
       "src", "name", "version", "cond", "lazy", "priority",
-      "init", "config", "build", "main", "pattern", "module"
+      "init", "config", "build", "main", "pattern", "module", "dev", "optional"
     }) do
       if spec[key] ~= nil and merged[key] == nil then
         merged[key] = spec[key]
