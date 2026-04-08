@@ -20,9 +20,13 @@ local function define_highlights()
 end
 
 local function get_status(entry)
-  if entry.load_status == "loaded" then return "●"
-  elseif entry.load_status == "loading" then return "◐"
-  else return "○" end
+  if entry.load_status == "loaded" then
+    return "●"
+  elseif entry.load_status == "loading" then
+    return "◐"
+  else
+    return "○"
+  end
 end
 
 local function is_lazy(entry)
@@ -111,7 +115,7 @@ local function apply_highlights(lines)
   for i, plugin in ipairs(ui_state.plugins) do
     local line_num = i + 3
     local status_hl = plugin.status == "●" and "ParcelStatusLoaded" or
-                      (plugin.status == "◐" and "ParcelStatusLoading" or "ParcelStatusPending")
+        (plugin.status == "◐" and "ParcelStatusLoading" or "ParcelStatusPending")
     vim.api.nvim_buf_add_highlight(ui_state.buf, NS, status_hl, line_num, 2, 3)
 
     local name_start = 5
@@ -167,6 +171,36 @@ local function update_plugin()
   end
 end
 
+local function update_all_plugins()
+  vim.notify("Updating all plugins...")
+  vim.pack.update(nil, { force = true })
+  vim.schedule(function()
+    vim.cmd("redraw")
+    vim.notify("All plugins updated successfully", vim.log.levels.INFO)
+  end)
+end
+
+local function update_loaded_plugins()
+  local loaded_names = {}
+  for _, p in ipairs(ui_state.plugins) do
+    if p.status == "●" then
+      table.insert(loaded_names, p.name)
+    end
+  end
+
+  if #loaded_names == 0 then
+    vim.notify("No loaded plugins to update", vim.log.levels.INFO)
+    return
+  end
+
+  vim.notify("Updating " .. #loaded_names .. " loaded plugins...")
+  vim.pack.update(loaded_names, { force = true })
+  vim.schedule(function()
+    vim.cmd("redraw")
+    vim.notify("Loaded plugins updated successfully", vim.log.levels.INFO)
+  end)
+end
+
 local function build_plugin()
   local p = get_plugin_at_cursor()
   if p and p.entry.merged_spec and p.entry.merged_spec.build then
@@ -212,7 +246,7 @@ local function create_window(buf, width)
     border = "rounded",
     title = " 📦 parcel.nvim ",
     title_pos = "center",
-    footer = " <Enter>:load  u:update  b:build  d:delete  r:refresh  q:quit ",
+    footer = " <Enter>:load  u:update  U:update-all  b:build  d:delete  q:quit ",
     footer_pos = "center",
   })
 
@@ -228,6 +262,8 @@ local function set_keymaps()
   local opts = { buffer = ui_state.buf, silent = true }
   vim.keymap.set("n", "<CR>", load_plugin, opts)
   vim.keymap.set("n", "u", update_plugin, opts)
+  vim.keymap.set("n", "U", update_all_plugins, opts)
+  vim.keymap.set("n", "<C-u>", update_loaded_plugins, opts)
   vim.keymap.set("n", "b", build_plugin, opts)
   vim.keymap.set("n", "d", delete_plugin, opts)
   vim.keymap.set("n", "r", M.refresh, opts)
