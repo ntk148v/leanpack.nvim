@@ -76,17 +76,6 @@ local function process_all(ctx)
   -- Setup build tracking before vim.pack.add
   hooks.setup_build_tracking()
 
-  -- Validate dependencies before loading
-  local missing_deps = deps_mod.validate_dependencies()
-  if next(missing_deps) ~= nil then
-    for src, missing in pairs(missing_deps) do
-      vim.notify(
-        ("Plugin %s has missing dependencies: %s"):format(src, table.concat(missing, ", ")),
-        vim.log.levels.WARN
-      )
-    end
-  end
-
   -- Register all plugins with vim.pack
   vim.pack.add(ctx.vim_packs, {
     load = ctx.load,
@@ -114,7 +103,7 @@ local function process_all(ctx)
         -- Add plugin's lua/ directory to rtp so require() works
         -- even before the plugin is loaded via packadd
         local lua_dir = installed_plugin.path .. "/lua"
-        if vim.fn.isdirectory(lua_dir) == 1 then
+        if vim.uv.fs_stat(lua_dir) then
           vim.opt.rtp:append(installed_plugin.path)
         end
       end
@@ -319,9 +308,11 @@ function M.setup(opts)
   -- Setup commands
   commands.setup(config.cmd_prefix)
 
-  -- Start update checker if enabled
+  -- Start update checker if enabled (deferred to avoid blocking startup)
   if config.checker.enabled then
-    checker.start(config.checker.frequency)
+    vim.schedule(function()
+      checker.start(config.checker.frequency)
+    end)
   end
 end
 
