@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Test runner script for parcel.nvim
+# Usage: ./scripts/test [test_file_pattern]
+# Example: ./scripts/test spec_spec
+# Example: ./scripts/test (runs all tests)
+
+set -e
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Run tests in headless Neovim
+# -u NONE: Don't load any init.vim
+# -l: Execute Lua script
+# --headless: Run without UI
+# "$@": Pass any additional arguments to the test runner
+nvim -u NONE --headless -l "$PROJECT_ROOT/tests/minit.lua" "$@"
