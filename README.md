@@ -78,7 +78,7 @@ return {
   url = "https://...",                  -- Custom git URL (lazy.nvim compat)
 
   -- Dependencies
-  dependencies = string|string[]|parcel.Spec|parcel.Spec[],
+  dependencies = string|string[]|parcel.Spec|parcel.Spec[]|table, -- Supports multi-string table { "a", "b" }
 
   -- Loading control
   enabled = true|false|function,        -- Enable/disable plugin
@@ -93,7 +93,7 @@ return {
   -- Plugin configuration
   opts = {},                            -- Options passed to setup()
   init = function(plugin) end,          -- Runs before plugin loads
-  config = function(plugin, opts) end,  -- Runs after plugin loads
+  config = function(plugin, opts) end,  -- Runs after plugin loads. Modules from all deps are available.
   build = string|function(plugin),      -- Build command or function
 
   -- Lazy loading triggers
@@ -186,16 +186,24 @@ return {
 
 ### Dependencies
 
+parcel.nvim automatically resolves and loads dependencies before the parent plugin. It also supports lazy.nvim's multi-plugin dependency format:
+
 ```lua
 return {
   'nvim-telescope/telescope.nvim',
   cmd = 'Telescope',
   dependencies = {
     'nvim-lua/plenary.nvim',
+    -- List multiple dependencies in one table (lazy.nvim style)
+    { 'hrsh7th/cmp-nvim-lsp', 'hrsh7th/cmp-buffer' },
+    -- Or full specs
     { 'nvim-tree/nvim-web-devicons', opts = {} },
   },
 }
 ```
+
+> [!TIP]
+> **Module Availability**: parcel.nvim adds all plugin `lua/` directories to the runtimepath during startup. This means you can `require()` modules from any plugin (including lazy ones) inside your `config` functions without manually adding them to dependencies, as long as the module path is unique.
 
 ### Version Pinning
 

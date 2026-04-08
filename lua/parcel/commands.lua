@@ -192,7 +192,10 @@ function M.setup(prefix)
         return
       end
 
-      loader.load_plugin(pack.spec)
+      local pack_spec = state.get_pack_spec(pack.spec.src)
+      if pack_spec then
+        loader.load_plugin(pack_spec)
+      end
       vim.notify(("Loaded %s"):format(plugin_name), vim.log.levels.INFO)
     elseif subcommand == "delete" then
       if plugin_name == "" then

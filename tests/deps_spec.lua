@@ -78,6 +78,41 @@ T["resolve_dependencies()"]["resolves multiple dependencies"] = function()
 	MiniTest.expect.equality(#result, 2)
 end
 
+T["resolve_dependencies()"]["resolves multi-string table (lazy.nvim format)"] = function()
+	child.lua([[
+		-- lazy.nvim allows { "a", "b", "c" } as a single entry in dependencies
+		-- meaning three separate dependencies
+		_G.result = deps.resolve_dependencies({
+			src = "parent",
+			dependencies = {
+				{ "owner/dep1", "owner/dep2", "owner/dep3" }
+			}
+		}, {})
+	]])
+
+	local result = child.lua_get("_G.result")
+	MiniTest.expect.equality(#result, 3)
+	MiniTest.expect.equality(result[1].src, "https://github.com/owner/dep1")
+	MiniTest.expect.equality(result[2].src, "https://github.com/owner/dep2")
+	MiniTest.expect.equality(result[3].src, "https://github.com/owner/dep3")
+end
+
+T["resolve_dependencies()"]["multi-string table tracks all dependency relationships"] = function()
+	child.lua([[
+		deps.resolve_dependencies({
+			src = "https://github.com/parent/plugin",
+			dependencies = {
+				{ "owner/dep1", "owner/dep2" }
+			}
+		}, {})
+		_G.deps_result = state.get_dependencies("https://github.com/parent/plugin")
+	]])
+
+	local deps_result = child.lua_get("_G.deps_result")
+	MiniTest.expect.equality(deps_result["https://github.com/owner/dep1"] ~= nil, true)
+	MiniTest.expect.equality(deps_result["https://github.com/owner/dep2"] ~= nil, true)
+end
+
 T["resolve_dependencies()"]["preserves optional flag from parent"] = function()
 	child.lua([[
 		_G.result = deps.resolve_dependencies({

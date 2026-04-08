@@ -76,26 +76,56 @@ local function process_all(ctx)
   -- Setup build tracking before vim.pack.add
   hooks.setup_build_tracking()
 
+  -- Validate dependencies before loading
+  local missing_deps = deps_mod.validate_dependencies()
+  if next(missing_deps) ~= nil then
+    for src, missing in pairs(missing_deps) do
+      vim.notify(
+        ("Plugin %s has missing dependencies: %s"):format(src, table.concat(missing, ", ")),
+        vim.log.levels.WARN
+      )
+    end
+  end
+
   -- Register all plugins with vim.pack
   vim.pack.add(ctx.vim_packs, {
     load = ctx.load,
     confirm = ctx.confirm,
   })
 
-  -- Update plugin paths after vim.pack.add
+  -- Update plugin paths from vim.pack.get() (actual installed paths)
+  -- and add all plugin lua/ directories to runtimepath early.
+  -- This ensures require() can find modules from ANY plugin (even lazy ones)
+  -- before any config hooks run — matching lazy.nvim's behavior.
+  local installed = vim.pack.get() or {}
+  local installed_by_name = {}
+  for _, p in ipairs(installed) do
+    installed_by_name[p.spec.name] = p
+  end
+
   for _, pack_spec in ipairs(ctx.vim_packs) do
     local entry = state.get_entry(pack_spec.src)
     if entry then
-      -- Get the plugin path from vim.pack
-      local ok, plugin_path = pcall(vim.fn.stdpath, "data")
-      if ok then
-        plugin_path = plugin_path .. "/pack/vim-pack/opt/" .. pack_spec.name
-        if vim.fn.isdirectory(plugin_path) == 1 then
-          entry.plugin = entry.plugin or { spec = pack_spec, path = "" }
-          entry.plugin.path = plugin_path
+      local installed_plugin = installed_by_name[pack_spec.name]
+      if installed_plugin and installed_plugin.path then
+        entry.plugin = entry.plugin or { spec = pack_spec, path = "" }
+        entry.plugin.path = installed_plugin.path
+
+        -- Add plugin's lua/ directory to rtp so require() works
+        -- even before the plugin is loaded via packadd
+        local lua_dir = installed_plugin.path .. "/lua"
+        if vim.fn.isdirectory(lua_dir) == 1 then
+          vim.opt.rtp:append(installed_plugin.path)
         end
       end
     end
+  end
+
+  -- Reset vim.loader cache so it re-indexes the updated rtp.
+  -- Without this, vim.loader (if enabled) won't find modules from the
+  -- paths we just added above.
+  if vim.loader and vim.loader.reset then
+    vim.loader.reset()
   end
 
   -- Setup lazy build tracking after vim.pack.add

@@ -178,11 +178,14 @@ Dependencies ~
 Dependencies are loaded before the parent plugin: >
 
 {
-'user/repo',
-dependencies = {
-'dep/plugin',
-{ 'other/dep', opts = {} },
-},
+  'user/repo',
+  dependencies = {
+    'dep/plugin',
+    -- Multi-string table format (lazy.nvim style)
+    { 'hrsh7th/cmp-nvim-lsp', 'hrsh7th/cmp-buffer' },
+    -- Full spec table
+    { 'other/dep', opts = {} },
+  },
 }
 
 <
@@ -201,11 +204,17 @@ end,
 config - Runs after plugin loads: >
 
 {
-'user/repo',
-config = function()
-require('plugin').setup({ option = 'value' })
-end,
+  'user/repo',
+  config = function()
+    require('plugin').setup({ option = 'value' })
+  end,
 }
+
+<
+Note: Lua modules from ALL plugins (including lazy ones) are added to the
+runtimepath during startup. This means you can |require()| modules from any
+plugin inside your `config` functions without manually adding them as
+dependencies, provided the module path is unique.
 
 <
 Or use `opts` for auto-setup: >

@@ -19,32 +19,58 @@ function M.resolve_dependencies(spec, ctx)
   end
 
   local dep_specs = {}
+
+  ---Register a single dependency spec
+  ---@param normalized parcel.Spec
+  ---@param src string
+  local function add_dep(normalized, src)
+    normalized._is_dependency = true
+    -- Preserve optional flag from parent if not set
+    if spec.optional and normalized.optional == nil then
+      normalized.optional = spec.optional
+    end
+    table.insert(dep_specs, normalized)
+    -- Track dependency relationship
+    state.add_dependency(spec.src, src)
+  end
+
   for _, dep in ipairs(deps) do
     if type(dep) == "string" then
       -- Convert short name to spec
-      local dep_spec = { dep }
-      local normalized, src = spec_mod.normalize_spec(dep_spec, ctx.defaults)
+      local normalized, src = spec_mod.normalize_spec({ dep }, ctx.defaults)
       if normalized then
-        normalized._is_dependency = true
-        -- Preserve optional flag from parent if not set
-        if spec.optional and normalized.optional == nil then
-          normalized.optional = spec.optional
-        end
-        table.insert(dep_specs, normalized)
-        -- Track dependency relationship
-        state.add_dependency(spec.src, src)
+        add_dep(normalized, src)
       end
     elseif type(dep) == "table" then
-      -- Already a spec
-      local normalized, src = spec_mod.normalize_spec(dep, ctx.defaults)
-      if normalized then
-        normalized._is_dependency = true
-        -- Preserve optional flag from parent if not set
-        if spec.optional and normalized.optional == nil then
-          normalized.optional = spec.optional
+      -- Check if this is a multi-string list (lazy.nvim format):
+      -- { "owner/plugin-a", "owner/plugin-b", "owner/plugin-c" }
+      -- All numeric keys are strings → treat each as a separate dependency
+      local is_multi_string = #dep > 1
+      if is_multi_string then
+        local all_strings = true
+        for i = 1, #dep do
+          if type(dep[i]) ~= "string" then
+            all_strings = false
+            break
+          end
         end
-        table.insert(dep_specs, normalized)
-        state.add_dependency(spec.src, src)
+        is_multi_string = all_strings
+      end
+
+      if is_multi_string then
+        -- Each string is a separate dependency
+        for _, name in ipairs(dep) do
+          local normalized, src = spec_mod.normalize_spec({ name }, ctx.defaults)
+          if normalized then
+            add_dep(normalized, src)
+          end
+        end
+      else
+        -- Single spec table (e.g., { "owner/plugin", opts = {} })
+        local normalized, src = spec_mod.normalize_spec(dep, ctx.defaults)
+        if normalized then
+          add_dep(normalized, src)
+        end
       end
     end
   end
@@ -53,7 +79,7 @@ function M.resolve_dependencies(spec, ctx)
 end
 
 ---Topological sort for startup plugins respecting dependencies
----Returns sorted packs with lazy deps loaded inline during traversal
+---Returns sorted packs (pure sort, no side effects)
 ---@param packs vim.pack.Spec[]
 ---@return vim.pack.Spec[] sorted_packs
 function M.toposort_startup(packs)
@@ -77,23 +103,13 @@ function M.toposort_startup(packs)
 
     in_progress[pack.src] = true
 
-    -- Process dependencies: startup deps get sorted, lazy deps loaded now
+    -- Visit dependencies first (only those in the startup set)
     local deps = state.get_dependencies(pack.src)
     if deps then
       for dep_src in pairs(deps) do
         local dep_pack = src_to_pack[dep_src]
         if dep_pack then
-          visit(dep_pack) -- Topological sort for startup deps
-        else
-          -- Lazy/optional dependency: load immediately if available
-          local dep_entry = state.get_entry(dep_src)
-          if dep_entry then
-            local loader = require("parcel.loader")
-            local dep_spec = state.get_pack_spec(dep_src)
-            if dep_spec then
-              loader.load_plugin(dep_spec)
-            end
-          end
+          visit(dep_pack)
         end
       end
     end
@@ -131,6 +147,35 @@ function M.is_dependency_only(src)
   return true
 end
 
+---Validate all dependencies before loading
+---Returns list of missing dependencies
+---@return table<string, string[]> missing_deps Map of plugin src to missing dependencies
+function M.validate_dependencies()
+  local missing_deps = {}
+  local all_entries = state.get_all_entries()
+  
+  for src, entry in pairs(all_entries) do
+    if entry.merged_spec and entry.merged_spec.dependencies then
+      local deps = entry.merged_spec.dependencies
+      if type(deps) == "string" then
+        deps = { deps }
+      end
+      
+      for _, dep in ipairs(deps) do
+        local dep_name = type(dep) == "string" and dep or dep[1]
+        local normalized = spec_mod.normalize_spec({ dep_name }, {})
+        
+        -- Check if dependency exists
+        if normalized and normalized.src and not state.get_entry(normalized.src) then
+          missing_deps[src] = missing_deps[src] or {}
+          table.insert(missing_deps[src], normalized.src)
+        end
+      end
+    end
+  end
+  
+  return missing_deps
+end
 
 
 return M

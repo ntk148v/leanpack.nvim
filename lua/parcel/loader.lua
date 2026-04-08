@@ -42,7 +42,8 @@ function M.load_plugin(pack_spec, opts)
       if dep_entry and dep_entry.load_status ~= "loaded" then
         local dep_pack_spec = state.get_pack_spec(dep_src)
         if dep_pack_spec then
-          M.load_plugin(dep_pack_spec, opts)
+          -- Always source plugin files for dependencies to ensure Lua modules are available
+          M.load_plugin(dep_pack_spec, { bang = true })
         else
           local is_optional = dep_entry.merged_spec and dep_entry.merged_spec.optional
           if is_optional then
@@ -110,31 +111,14 @@ function M.process_startup(ctx)
     hooks.run_init(src)
   end
 
-  -- Topological sort for dependencies (handles lazy deps inline)
+  -- Topological sort for dependencies
   local sorted_packs = require("parcel.deps").toposort_startup(ctx.startup_packs)
 
-  -- Load plugins in order
+  -- Load plugins and their configs in dependency order
+  -- This ensures dependencies are loaded before dependents' configs run
   for _, pack_spec in ipairs(sorted_packs) do
-    vim.cmd.packadd({ pack_spec.name, bang = not ctx.load })
-  end
-
-  -- Run config hooks and apply keymaps
-  for _, pack_spec in ipairs(sorted_packs) do
-    local entry = state.get_entry(pack_spec.src)
-    if entry and entry.merged_spec then
-      local spec = entry.merged_spec
-      if spec.config or spec.opts ~= nil then
-        hooks.run_config(pack_spec.src)
-      end
-
-      local keys = spec_mod.resolve_field(spec.keys, entry.plugin)
-      if keys then
-        keymap.apply_keys(keys)
-      end
-    end
-
-    entry.load_status = "loaded"
-    state.mark_loaded(pack_spec.name)
+    -- Use load_plugin which handles dependency loading recursively
+    M.load_plugin(pack_spec, { bang = not ctx.load })
   end
 end
 

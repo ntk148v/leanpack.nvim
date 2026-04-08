@@ -487,4 +487,51 @@ T["integration"]["handles complex dependency graph"] = function()
 	MiniTest.expect.equality(child.lua_get("_G.all_loaded"), true)
 end
 
-return T
+T["integration"]["loads dependencies before config runs"] = function()
+	child.lua([[
+		-- Simulate nvim-lspconfig depending on cmp-nvim-lsp
+		-- Plugin A (nvim-lspconfig) depends on Plugin B (cmp-nvim-lsp)
+		-- Plugin A's config requires Plugin B's module
+		
+		_G.load_order = {}
+		
+		state.set_entry("plugin-a", {
+			specs = { { src = "plugin-a", name = "plugin-a", dependencies = { "plugin-b" } } },
+			merged_spec = { 
+				src = "plugin-a", 
+				name = "plugin-a",
+				dependencies = { "plugin-b" },
+				config = function() 
+					-- Simulate requiring plugin-b's module
+					_G.config_a_called = true
+					-- Check if plugin-b is loaded before this config runs
+					_G.plugin_b_loaded_before_config_a = state.get_entry("plugin-b").load_status == "loaded"
+				end
+			},
+			plugin = { spec = { src = "plugin-a", name = "plugin-a" }, path = "/tmp/plugin-a" },
+			load_status = "pending"
+		})
+		state.set_entry("plugin-b", {
+			specs = { { src = "plugin-b", name = "plugin-b" } },
+			merged_spec = { src = "plugin-b", name = "plugin-b" },
+			plugin = { spec = { src = "plugin-b", name = "plugin-b" }, path = "/tmp/plugin-b" },
+			load_status = "pending"
+		})
+		state.add_dependency("plugin-a", "plugin-b")
+		state.register_pack_spec({ src = "plugin-a", name = "plugin-a" })
+		state.register_pack_spec({ src = "plugin-b", name = "plugin-b" })
+		
+		loader.load_plugin({ src = "plugin-a", name = "plugin-a" })
+		
+		_G.all_loaded = (
+			state.get_entry("plugin-a").load_status == "loaded" and
+			state.get_entry("plugin-b").load_status == "loaded"
+		)
+	]])
+
+MiniTest.expect.equality(child.lua_get("_G.all_loaded"), true)
+	MiniTest.expect.equality(child.lua_get("_G.config_a_called"), true)
+	MiniTest.expect.equality(child.lua_get("_G.plugin_b_loaded_before_config_a"), true)
+end
+
+	return T
