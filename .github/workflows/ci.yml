@@ -1,4 +1,4 @@
-name: Tests
+name: ci
 
 on:
   push:
@@ -11,7 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        neovim_version: ["nightly", "stable"]
+        # parcel requires Neovim 0.12.0+
+        # Once 0.12.0 is released, add 'v0.12.0' to test against stable
+        neovim_version: ["nightly"]
 
     steps:
       - uses: actions/checkout@v4
@@ -28,3 +30,13 @@ jobs:
         run: |
           chmod +x scripts/test
           ./scripts/test
+  stylua:
+    name: stylua
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --check lua
