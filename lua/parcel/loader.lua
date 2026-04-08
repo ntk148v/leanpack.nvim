@@ -110,8 +110,8 @@ function M.process_startup(ctx)
     hooks.run_init(src)
   end
 
-  -- Topological sort for dependencies
-  local sorted_packs, lazy_deps_map = require("parcel.deps").toposort_startup(ctx.startup_packs)
+  -- Topological sort for dependencies (handles lazy deps inline)
+  local sorted_packs = require("parcel.deps").toposort_startup(ctx.startup_packs)
 
   -- Load plugins in order
   for _, pack_spec in ipairs(sorted_packs) do
@@ -120,17 +120,6 @@ function M.process_startup(ctx)
 
   -- Run config hooks and apply keymaps
   for _, pack_spec in ipairs(sorted_packs) do
-    -- Load lazy dependencies first
-    local lazy_deps = lazy_deps_map[pack_spec.src]
-    if lazy_deps then
-      for _, dep_src in ipairs(lazy_deps) do
-        local dep_pack = state.get_pack_spec(dep_src)
-        if dep_pack then
-          M.load_plugin(dep_pack, { bang = not ctx.load })
-        end
-      end
-    end
-
     local entry = state.get_entry(pack_spec.src)
     if entry and entry.merged_spec then
       local spec = entry.merged_spec
