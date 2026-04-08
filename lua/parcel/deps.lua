@@ -53,8 +53,9 @@ function M.resolve_dependencies(spec, ctx)
 end
 
 ---Topological sort for startup plugins respecting dependencies
+---Returns sorted packs with lazy deps loaded inline during traversal
 ---@param packs vim.pack.Spec[]
----@return vim.pack.Spec[] sorted_packs, table<string, string[]> lazy_deps_map
+---@return vim.pack.Spec[] sorted_packs
 function M.toposort_startup(packs)
   local src_to_pack = {}
   for _, pack in ipairs(packs) do
@@ -64,54 +65,54 @@ function M.toposort_startup(packs)
   local in_progress = {}
   local done = {}
   local result = {}
-  local lazy_deps_map = {}
 
   local function visit(pack)
     if done[pack.src] then
       return
     end
-
     if in_progress[pack.src] then
-      vim.notify(
-        ("Circular dependency detected in startup plugins involving: %s"):format(pack.src),
-        vim.log.levels.WARN
-      )
+      vim.notify(("Circular dependency: %s"):format(pack.src), vim.log.levels.WARN)
       return
     end
 
     in_progress[pack.src] = true
 
+    -- Process dependencies: startup deps get sorted, lazy deps loaded now
     local deps = state.get_dependencies(pack.src)
     if deps then
       for dep_src in pairs(deps) do
         local dep_pack = src_to_pack[dep_src]
         if dep_pack then
-          visit(dep_pack)
-        elseif state.get_entry(dep_src) then
-          -- Dependency is a lazy plugin
-          lazy_deps_map[pack.src] = lazy_deps_map[pack.src] or {}
-          table.insert(lazy_deps_map[pack.src], dep_src)
+          visit(dep_pack) -- Topological sort for startup deps
+        else
+          -- Lazy/optional dependency: load immediately if available
+          local dep_entry = state.get_entry(dep_src)
+          if dep_entry then
+            local loader = require("parcel.loader")
+            local dep_spec = state.get_pack_spec(dep_src)
+            if dep_spec then
+              loader.load_plugin(dep_spec)
+            end
+          end
         end
       end
     end
 
     in_progress[pack.src] = nil
     done[pack.src] = true
-    result[#result + 1] = pack
+    table.insert(result, pack)
   end
 
-  -- Sort by priority first
+  -- Sort by priority first (higher priority first)
   table.sort(packs, function(a, b)
-    local pa = (a.data and a.data.priority) or 50
-    local pb = (b.data and b.data.priority) or 50
-    return pa > pb
+    return ((a.data and a.data.priority) or 50) > ((b.data and b.data.priority) or 50)
   end)
 
   for _, pack in ipairs(packs) do
     visit(pack)
   end
 
-  return result, lazy_deps_map
+  return result
 end
 
 ---Check if a plugin is only defined as a dependency
