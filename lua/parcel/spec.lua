@@ -192,37 +192,35 @@ function M.normalize_list(value)
   return value
 end
 
----Detect main module name from plugin path
+---Detect main module name from plugin name
+---Simplified: relies on explicit `main` field or plugin name
 ---@param plugin parcel.Plugin
 ---@return string?
 function M.detect_main(plugin)
-  local path = plugin.path
   local name = plugin.spec.name
+  if not name then
+    return nil
+  end
 
-  -- Try common patterns
-  local candidates = {
-    name,
+  -- Try plugin name directly first
+  local ok = pcall(require, name)
+  if ok then
+    return name
+  end
+
+  -- Try common variations
+  local variations = {
     name:gsub("%.nvim$", ""),
     name:gsub("^nvim%-", ""),
     name:gsub("%-nvim$", ""),
   }
 
-  -- If path is available, check filesystem
-  if path and path ~= "" then
-    for _, candidate in ipairs(candidates) do
-      local ok = vim.loop.fs_stat(path .. "/lua/" .. candidate .. ".lua")
-        or vim.loop.fs_stat(path .. "/lua/" .. candidate .. "/init.lua")
+  for _, variant in ipairs(variations) do
+    if variant ~= name then
+      ok = pcall(require, variant)
       if ok then
-        return candidate
+        return variant
       end
-    end
-  end
-
-  -- Fallback: try to require each candidate
-  for _, candidate in ipairs(candidates) do
-    local ok = pcall(require, candidate)
-    if ok then
-      return candidate
     end
   end
 
@@ -243,45 +241,34 @@ function M.merge_specs(specs)
   local merged = {}
 
   for _, spec in ipairs(specs) do
-    -- Merge opts tables
+    -- Merge opts tables (function takes precedence)
     if spec.opts then
-      merged.opts = merged.opts or {}
       if type(spec.opts) == "function" then
         merged.opts = spec.opts
-      elseif type(merged.opts) == "table" and type(spec.opts) == "table" then
-        merged.opts = vim.tbl_deep_extend("force", merged.opts, spec.opts)
       else
-        merged.opts = spec.opts
+        merged.opts = vim.tbl_deep_extend("force", merged.opts or {}, spec.opts)
       end
     end
 
-    -- Merge dependencies
+    -- Merge dependencies (append unique strings, all tables)
     if spec.dependencies then
       merged.dependencies = merged.dependencies or {}
       local deps = type(spec.dependencies) == "table" and spec.dependencies or { spec.dependencies }
       for _, dep in ipairs(deps) do
-        if type(dep) == "string" then
-          if not vim.tbl_contains(merged.dependencies, dep) then
-            table.insert(merged.dependencies, dep)
-          end
-        else
+        if type(dep) ~= "string" or not vim.tbl_contains(merged.dependencies, dep) then
           table.insert(merged.dependencies, dep)
         end
       end
     end
 
-    -- Merge arrays (event, cmd, keys, ft)
+    -- Merge arrays (event, cmd, keys, ft) - inline append
     for _, key in ipairs({ "event", "cmd", "keys", "ft" }) do
       if spec[key] then
-        merged[key] = merged[key] or {}
-        local values = M.normalize_list(spec[key]) or {}
-        for _, v in ipairs(values) do
-          table.insert(merged[key], v)
-        end
+        merged[key] = vim.list_extend(merged[key] or {}, M.normalize_list(spec[key]) or {})
       end
     end
 
-    -- Take first non-nil value for other fields
+    -- Take first non-nil value for scalar fields
     for _, key in ipairs({
       "src", "name", "version", "cond", "lazy", "priority",
       "init", "config", "build", "main", "pattern", "module", "dev", "optional"
