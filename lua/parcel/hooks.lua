@@ -21,12 +21,7 @@ local M = {}
 local function execute_hook(hook_name, plugin, hook)
   local ok, err = pcall(hook, plugin)
   if not ok then
-    vim.schedule(function()
-      vim.notify(
-        ("Failed to run %s hook for %s: %s"):format(hook_name, plugin.spec.name, err),
-        vim.log.levels.ERROR
-      )
-    end)
+    vim.notify(("%s hook failed for %s: %s"):format(hook_name, plugin.spec.name, err), vim.log.levels.ERROR)
     return false
   end
   return true
@@ -71,58 +66,34 @@ function M.run_config(src)
     opts = opts or {}
   end
 
-  -- Run config function
+  -- Run explicit config function
   if type(spec.config) == "function" then
     return execute_hook("config", plugin, function()
       spec.config(plugin, opts)
     end)
   end
 
-  -- Auto-setup with opts
+  -- Auto-setup with opts: require(main) and call setup()
   if spec.config == true or spec.opts ~= nil then
     local main = spec.main or spec_mod.detect_main(plugin)
     if not main then
-      vim.schedule(function()
-        vim.notify(
-          ("Could not determine main module for %s. Set `main` explicitly or use `config = function() ... end`"):format(
-            src
-          ),
-          vim.log.levels.WARN
-        )
-      end)
+      vim.notify(("No main module for %s. Set `main` field or use `config = function() ... end`"):format(src), vim.log.levels.WARN)
       return false
     end
 
     local ok, mod = pcall(require, main)
     if not ok then
-      vim.schedule(function()
-        vim.notify(
-          ("Failed to require '%s' for %s: %s"):format(main, src, mod),
-          vim.log.levels.ERROR
-        )
-      end)
-      return false
+      error(("Failed to require '%s' for %s: %s"):format(main, src, mod))
     end
 
     if type(mod) ~= "table" or type(mod.setup) ~= "function" then
-      vim.schedule(function()
-        vim.notify(
-          ("Module '%s' for %s has no setup() function"):format(main, src),
-          vim.log.levels.WARN
-        )
-      end)
+      vim.notify(("Module '%s' has no setup() function"):format(main), vim.log.levels.WARN)
       return false
     end
 
     local setup_ok, err = pcall(mod.setup, opts)
     if not setup_ok then
-      vim.schedule(function()
-        vim.notify(
-          ("Failed to run setup for %s: %s"):format(src, err),
-          vim.log.levels.ERROR
-        )
-      end)
-      return false
+      error(("setup() failed for %s: %s"):format(src, err))
     end
   end
 
@@ -134,13 +105,9 @@ end
 ---@param plugin parcel.Plugin
 function M.execute_build(build, plugin)
   if type(build) == "string" then
-    vim.schedule(function()
-      vim.cmd(build)
-    end)
+    vim.cmd(build)
   elseif type(build) == "function" then
-    vim.schedule(function()
-      build(plugin)
-    end)
+    build(plugin)
   end
 end
 
@@ -232,15 +199,7 @@ function M.run_all_builds()
     end
   end
 
-  if count > 0 then
-    vim.schedule(function()
-      vim.notify(("Running build hooks for %d plugin(s)"):format(count), vim.log.levels.INFO)
-    end)
-  else
-    vim.schedule(function()
-      vim.notify("No plugins with build hooks found", vim.log.levels.INFO)
-    end)
-  end
+  vim.notify(("Ran build hooks for %d plugin(s)"):format(count), vim.log.levels.INFO)
 end
 
 return M
