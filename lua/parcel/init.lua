@@ -7,9 +7,7 @@ local hooks = require("parcel.hooks")
 local lazy_mod = require("parcel.lazy")
 local loader = require("parcel.loader")
 local commands = require("parcel.commands")
-local lock = require("parcel.lock")
-local checker = require("parcel.checker")
-local git = require("parcel.git")
+local log = require("parcel.log")
 
 local M = {}
 
@@ -65,9 +63,6 @@ local config = {
   cmd_prefix = "Parcel",
   defaults = { confirm = true },
   performance = { vim_loader = true },
-  lockfile = {},
-  checker = { enabled = false, frequency = 3600, notify = true },
-  git = {},
 }
 
 ---Process all specs and register plugins
@@ -83,9 +78,6 @@ local function process_all(ctx)
   })
 
   -- Update plugin paths from vim.pack.get() (actual installed paths)
-  -- and add all plugin lua/ directories to runtimepath early.
-  -- This ensures require() can find modules from ANY plugin (even lazy ones)
-  -- before any config hooks run — matching lazy.nvim's behavior.
   local installed = vim.pack.get() or {}
   local installed_by_name = {}
   for _, p in ipairs(installed) do
@@ -99,22 +91,8 @@ local function process_all(ctx)
       if installed_plugin and installed_plugin.path then
         entry.plugin = entry.plugin or { spec = pack_spec, path = "" }
         entry.plugin.path = installed_plugin.path
-
-        -- Add plugin's lua/ directory to rtp so require() works
-        -- even before the plugin is loaded via packadd
-        local lua_dir = installed_plugin.path .. "/lua"
-        if vim.uv.fs_stat(lua_dir) then
-          vim.opt.rtp:append(installed_plugin.path)
-        end
       end
     end
-  end
-
-  -- Reset vim.loader cache so it re-indexes the updated rtp.
-  -- Without this, vim.loader (if enabled) won't find modules from the
-  -- paths we just added above.
-  if vim.loader and vim.loader.reset then
-    vim.loader.reset()
   end
 
   -- Setup lazy build tracking after vim.pack.add
@@ -240,10 +218,11 @@ function M.setup(opts)
   end
   state.mark_setup()
 
-  opts = opts or {}
+  -- Initialize logging
+  log.init()
+  log.info("parcel.nvim setup started")
 
-  -- Load lockfile
-  lock.load()
+  opts = opts or {}
 
   -- Apply config
   if opts.cmd_prefix ~= nil then
@@ -254,16 +233,6 @@ function M.setup(opts)
   end
   if opts.performance ~= nil then
     config.performance = vim.tbl_extend("force", config.performance, opts.performance)
-  end
-  if opts.lockfile ~= nil then
-    config.lockfile = vim.tbl_extend("force", config.lockfile, opts.lockfile)
-  end
-  if opts.checker ~= nil then
-    config.checker = vim.tbl_extend("force", config.checker, opts.checker)
-  end
-  if opts.git ~= nil then
-    config.git = vim.tbl_extend("force", config.git or {}, opts.git)
-    git.setup(config.git)
   end
 
   -- Enable vim.loader for performance
@@ -303,17 +272,10 @@ function M.setup(opts)
   -- Process all plugins
   process_all(ctx)
 
-
+  log.info("parcel.nvim setup completed")
 
   -- Setup commands
   commands.setup(config.cmd_prefix)
-
-  -- Start update checker if enabled (deferred to avoid blocking startup)
-  if config.checker.enabled then
-    vim.schedule(function()
-      checker.start(config.checker.frequency)
-    end)
-  end
 end
 
 return M

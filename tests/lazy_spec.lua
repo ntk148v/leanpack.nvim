@@ -70,14 +70,6 @@ T["is_lazy()"]["detects keys trigger"] = function()
 	MiniTest.expect.equality(child.lua_get("_G.result"), true)
 end
 
-T["is_lazy()"]["detects module trigger"] = function()
-	child.lua([[
-		_G.result = lazy.is_lazy({ module = "some.module" })
-	]])
-
-	MiniTest.expect.equality(child.lua_get("_G.result"), true)
-end
-
 T["is_lazy()"]["returns false for no triggers"] = function()
 	child.lua([[
 		_G.result = lazy.is_lazy({ src = "test" })
@@ -319,46 +311,6 @@ T["keys trigger"]["handles complex key specs"] = function()
 	]])
 
 	MiniTest.expect.equality(child.lua_get("_G.setup_ok"), true)
-end
-
--- ============================================================================
--- Module trigger tests
--- ============================================================================
-
-T["module trigger"] = MiniTest.new_set()
-
-T["module trigger"]["sets up module loader"] = function()
-	child.lua([[
-		local module_handler = require("parcel.lazy_trigger.module")
-		
-		state.set_entry("test-src", {
-			specs = {},
-			merged_spec = { module = "test_module" }
-		})
-		
-		-- Setup module trigger
-		module_handler.setup({
-			lazy_packs = {
-				{ src = "test-src", name = "test", data = { parcel = true } }
-			}
-		})
-		
-		-- Check if package.loaders was modified
-		_G.has_parcel_loader = false
-		for _, loader in ipairs(package.loaders or package.searchers) do
-			if type(loader) == "function" then
-				-- Check if it's our loader by looking at the source
-				local info = debug.getinfo(loader, "S")
-				if info and info.source:match("parcel") then
-					_G.has_parcel_loader = true
-					break
-				end
-			end
-		end
-	]])
-
-	-- Module loader should be installed
-	MiniTest.expect.equality(child.lua_get("_G.has_parcel_loader"), true)
 end
 
 -- ============================================================================

@@ -21,9 +21,8 @@ function M.is_lazy(spec, plugin, src)
   local cmd = spec_mod.resolve_field(spec.cmd, plugin)
   local ft = spec_mod.resolve_field(spec.ft, plugin)
   local keys = spec_mod.resolve_field(spec.keys, plugin)
-  local module = spec_mod.resolve_field(spec.module, plugin)
 
-  if event or cmd or ft or (keys and #keys > 0) or module then
+  if event or cmd or ft or (keys and #keys > 0) then
     return true
   end
 
@@ -47,7 +46,6 @@ function M.process_lazy(ctx)
   local cmd_handler = require("parcel.lazy_trigger.cmd")
   local keys_handler = require("parcel.lazy_trigger.keys")
   local ft_handler = require("parcel.lazy_trigger.ft")
-  local module_handler = require("parcel.lazy_trigger.module")
 
   for _, pack_spec in ipairs(ctx.lazy_packs) do
     local entry = state.get_entry(pack_spec.src)
@@ -78,9 +76,6 @@ function M.process_lazy(ctx)
 
   -- Setup keymap triggers
   keys_handler.setup(ctx.lazy_packs)
-
-  -- Setup module triggers
-  module_handler.setup(ctx)
 end
 
 return M

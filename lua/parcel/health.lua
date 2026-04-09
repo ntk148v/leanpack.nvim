@@ -56,28 +56,12 @@ function M.check()
     vim.health.ok("No pending build hooks")
   end
 
-  -- Check lockfile
-  local lock = require("parcel.lock")
-  local lockfile_path = vim.fn.stdpath("data") .. "/pack/vim-pack/lock"
+  -- Check native lockfile
+  local lockfile_path = vim.fn.stdpath("data") .. "/nvim-pack-lock.json"
   if vim.fn.filereadable(lockfile_path) == 1 then
-    local count = vim.tbl_count(lock.lock.plugins)
-    vim.health.ok(("Lockfile exists with %d entries: %s"):format(count, lockfile_path))
+    vim.health.ok(("Native lockfile exists: %s"):format(lockfile_path))
   else
-    vim.health.info("No lockfile found. It will be created on first plugin install.")
-  end
-
-  -- Check checker status
-  local checker = require("parcel.checker")
-  local state = require("parcel.state")
-  if state.is_configured() then
-    local config = rawget(require("parcel.init"), "config") or {}
-    if config.checker and config.checker.enabled then
-      vim.health.ok("Update checker is enabled (frequency: " .. (config.checker.frequency or 3600) .. "s)")
-    else
-      vim.health.info("Update checker is disabled")
-    end
-  else
-    vim.health.info("Update checker status: not yet configured")
+    vim.health.info("No lockfile found. It will be created by vim.pack on first plugin install.")
   end
 end
 

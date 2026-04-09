@@ -3,6 +3,7 @@ local state = require("parcel.state")
 local hooks = require("parcel.hooks")
 local spec_mod = require("parcel.spec")
 local keymap = require("parcel.keymap")
+local log = require("parcel.log")
 
 local M = {}
 
@@ -14,7 +15,9 @@ function M.load_plugin(pack_spec, opts)
   local entry = state.get_entry(pack_spec.src)
 
   if not entry then
-    vim.notify(("Plugin %s not found in registry"):format(pack_spec.src), vim.log.levels.ERROR)
+    local msg = ("Plugin %s not found in registry"):format(pack_spec.src)
+    vim.notify(msg, vim.log.levels.ERROR)
+    log.error(msg)
     return
   end
 
@@ -25,14 +28,14 @@ function M.load_plugin(pack_spec, opts)
 
   -- Circular dependency detection
   if entry.load_status == "loading" then
-    vim.notify(
-      ("Circular dependency detected: %s is already being loaded"):format(pack_spec.src),
-      vim.log.levels.ERROR
-    )
+    local msg = ("Circular dependency detected: %s is already being loaded"):format(pack_spec.src)
+    vim.notify(msg, vim.log.levels.ERROR)
+    log.error(msg)
     return
   end
 
   entry.load_status = "loading"
+  log.info(("Loading plugin: %s"):format(pack_spec.name))
 
   -- Load dependencies first
   local deps = state.get_dependencies(pack_spec.src)
@@ -88,6 +91,7 @@ function M.load_plugin(pack_spec, opts)
   -- Mark as loaded
   entry.load_status = "loaded"
   state.mark_loaded(pack_spec.name)
+  log.info(("Successfully loaded plugin: %s"):format(pack_spec.name))
 end
 
 ---Process startup plugins

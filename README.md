@@ -18,6 +18,30 @@ All while completely leveraging the native `vim.pack` infrastructure.
 
 ## Installation
 
+### Bootstrap (Recommended)
+
+Add this to the top of your `init.lua` to automatically install parcel.nvim:
+
+```lua
+-- Bootstrap parcel.nvim
+local lazypath = vim.fn.stdpath("data") .. "/site/pack/parcel/opt/parcel.nvim"
+if not vim.uv.fs_stat(lazypath) then
+  vim.fn.system({
+    "git",
+    "clone",
+    "--filter=blob:none",
+    "https://github.com/ntk148v/parcel.nvim",
+    lazypath,
+  })
+end
+vim.opt.rtp:prepend(lazypath)
+
+-- Setup parcel.nvim
+require("parcel").setup()
+```
+
+### Manual Installation
+
 ```lua
 -- Install with vim.pack directly
 vim.pack.add({ 'https://github.com/ntk148v/parcel.nvim' })
@@ -279,12 +303,6 @@ require('parcel').setup({
       requests = 10,        -- max concurrent git operations
       interval = 1000,      -- interval in ms between requests
     },
-  },
-
-  -- Update checker
-  checker = {
-    enabled = true,          -- enable periodic update checking
-    frequency = 3600,        -- check every hour (in seconds)
   },
 })
 ```

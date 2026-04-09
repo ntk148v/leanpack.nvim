@@ -1,7 +1,6 @@
 ---@module 'parcel.ui'
 local state = require("parcel.state")
 local loader = require("parcel.loader")
-local git = require("parcel.git")
 
 local M = {}
 local ui_state = { buf = nil, win = nil, plugins = {} }
@@ -54,24 +53,14 @@ local function format_content()
   for src, entry in pairs(state.get_all_entries()) do
     if entry.merged_spec then
       local name = entry.merged_spec.name or src:match("([^/]+)$") or src
-      local commit = ""
-      if entry.plugin and entry.plugin.path then
-        local commit_hash = git.get_info(entry.plugin.path)
-        if commit_hash then
-          commit = commit_hash:sub(1, 7)
-        end
-      end
-      local display_name = commit ~= "" and (name .. " (" .. commit .. ")") or name
       table.insert(plugins, {
         name = name,
-        commit = commit,
-        display_name = display_name,
         status = get_status(entry),
         lazy = is_lazy(entry),
         src = src,
         entry = entry,
       })
-      max_name_width = math.max(max_name_width, vim.fn.strdisplaywidth(display_name))
+      max_name_width = math.max(max_name_width, vim.fn.strdisplaywidth(name))
       max_src_width = math.max(max_src_width, vim.fn.strdisplaywidth(src))
     end
   end
@@ -92,7 +81,7 @@ local function format_content()
     local type_str = p.lazy and "lazy" or "startup"
     local row = string.format("  %s  %s  %s  %s",
       p.status,
-      pad_to_width(p.display_name, max_name_width),
+      pad_to_width(p.name, max_name_width),
       pad_to_width(type_str, max_type_width),
       p.src
     )
@@ -122,13 +111,7 @@ local function apply_highlights(lines)
     local name_end = name_start + vim.fn.strdisplaywidth(plugin.name)
     vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "ParcelPlugin", line_num, name_start, name_end)
 
-    if plugin.commit ~= "" then
-      local commit_start = name_end + 1
-      local commit_end = commit_start + 1 + vim.fn.strdisplaywidth(plugin.commit) + 1
-      vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "ParcelCommit", line_num, commit_start, commit_end)
-    end
-
-    local type_start = name_start + vim.fn.strdisplaywidth(plugin.display_name) + 2
+    local type_start = name_start + vim.fn.strdisplaywidth(plugin.name) + 2
     if plugin.lazy then
       vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "ParcelLazy", line_num, type_start, type_start + 4)
     end

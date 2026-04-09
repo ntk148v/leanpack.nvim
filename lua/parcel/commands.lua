@@ -2,7 +2,7 @@
 local state = require("parcel.state")
 local hooks = require("parcel.hooks")
 local loader = require("parcel.loader")
-local lock = require("parcel.lock")
+local log = require("parcel.log")
 
 local M = {}
 
@@ -72,11 +72,15 @@ function M.clean_unused()
 
   if #to_delete == 0 then
     vim.notify("No unused plugins to clean", vim.log.levels.INFO)
+    log.info("No unused plugins to clean")
     return
   end
 
-  vim.notify(("Deleting %d unused plugin(s)..."):format(#to_delete), vim.log.levels.INFO)
+  local msg = ("Deleting %d unused plugin(s)..."):format(#to_delete)
+  vim.notify(msg, vim.log.levels.INFO)
+  log.info(msg)
   vim.pack.del(to_delete)
+  log.info(("Deleted %d unused plugin(s)"):format(#to_delete))
 end
 
 ---Setup commands
@@ -106,25 +110,25 @@ function M.setup(prefix)
 
     if subcommand == "update" then
       if plugin_name == "" then
+        log.info("Updating all plugins")
         vim.pack.update(nil, { force = true })
         vim.schedule(function()
           vim.cmd("redraw")
           vim.notify("All plugins updated successfully", vim.log.levels.INFO)
+          log.info("All plugins updated successfully")
         end)
       else
         if not get_plugin_or_notify(plugin_name) then
           return
         end
+        log.info(("Updating plugin: %s"):format(plugin_name))
         vim.pack.update({ plugin_name }, { force = true })
         vim.schedule(function()
           vim.cmd("redraw")
           vim.notify("Updated " .. plugin_name, vim.log.levels.INFO)
+          log.info(("Plugin updated successfully: %s"):format(plugin_name))
         end)
       end
-      lock.save()
-    elseif subcommand == "snapshot" then
-      lock.snapshot()
-      vim.notify("Plugin snapshot saved to lockfile", vim.log.levels.INFO)
     elseif subcommand == "clean" then
       M.clean_unused()
     elseif subcommand == "build" then
@@ -154,7 +158,9 @@ function M.setup(prefix)
         loader.load_plugin(pack_spec, { bang = true })
       end
       hooks.execute_build(spec.build, entry.plugin)
-      vim.notify(("Running build hook for %s"):format(plugin_name), vim.log.levels.INFO)
+      local msg = ("Running build hook for %s"):format(plugin_name)
+      vim.notify(msg, vim.log.levels.INFO)
+      log.info(msg)
     elseif subcommand == "load" then
       if plugin_name == "" then
         if not opts.bang then
@@ -196,7 +202,9 @@ function M.setup(prefix)
       if pack_spec then
         loader.load_plugin(pack_spec)
       end
-      vim.notify(("Loaded %s"):format(plugin_name), vim.log.levels.INFO)
+      local msg = ("Loaded %s"):format(plugin_name)
+      vim.notify(msg, vim.log.levels.INFO)
+      log.info(msg)
     elseif subcommand == "delete" then
       if plugin_name == "" then
         if not opts.bang then
@@ -226,12 +234,11 @@ function M.setup(prefix)
 
       vim.pack.del({ plugin_name }, { force = true })
       state.remove_plugin(plugin_name, pack.spec.src)
-      vim.notify(
-        ("%s deleted. This can result in errors in your current session. Restart Neovim to re-install it or remove it from your spec."):format(
+      local msg = ("%s deleted. This can result in errors in your current session. Restart Neovim to re-install it or remove it from your spec."):format(
           plugin_name
-        ),
-        vim.log.levels.WARN
-      )
+        )
+      vim.notify(msg, vim.log.levels.WARN)
+      log.warn(("Deleted plugin: %s"):format(plugin_name))
     else
       vim.notify(("Unknown subcommand: %s"):format(subcommand), vim.log.levels.ERROR)
     end
@@ -242,7 +249,7 @@ function M.setup(prefix)
     complete = function(arg_lead, cmd_line, cursor_pos)
       local parts = vim.split(cmd_line, "%s+", { trimempty = true })
       if #parts <= 2 then
-        local subcommands = { "build", "clean", "delete", "load", "snapshot", "update" }
+        local subcommands = { "build", "clean", "delete", "load", "update" }
         return filter_completions(subcommands, arg_lead)
       elseif #parts == 3 then
         local subcommand = parts[2]

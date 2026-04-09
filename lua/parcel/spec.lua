@@ -162,6 +162,12 @@ function M.to_pack_spec(spec)
     priority = spec.priority or 50,
   }
 
+  -- Set load=false for lazy plugins to force them into opt/ directory
+  -- This prevents automatic loading and enables lazy loading
+  if spec.lazy == true then
+    pack_spec.load = false
+  end
+
   return pack_spec
 end
 
