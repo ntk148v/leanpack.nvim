@@ -1,21 +1,21 @@
----@module 'parcel.ui'
-local state = require("parcel.state")
-local loader = require("parcel.loader")
+---@module 'leanpack.ui'
+local state = require("leanpack.state")
+local loader = require("leanpack.loader")
 
 local M = {}
 local ui_state = { buf = nil, win = nil, plugins = {} }
-local NS = vim.api.nvim_create_namespace("parcel-ui")
+local NS = vim.api.nvim_create_namespace("leanpack-ui")
 
 local function define_highlights()
-  vim.api.nvim_set_hl(NS, "ParcelHeader", { link = "Title", default = true })
-  vim.api.nvim_set_hl(NS, "ParcelPlugin", { link = "String", default = true })
-  vim.api.nvim_set_hl(NS, "ParcelCommit", { link = "Comment", default = true })
-  vim.api.nvim_set_hl(NS, "ParcelSource", { link = "Comment", default = true })
-  vim.api.nvim_set_hl(NS, "ParcelStatusLoaded", { link = "DiagnosticOk", default = true })
-  vim.api.nvim_set_hl(NS, "ParcelStatusPending", { link = "Comment", default = true })
-  vim.api.nvim_set_hl(NS, "ParcelStatusLoading", { link = "DiagnosticWarn", default = true })
-  vim.api.nvim_set_hl(NS, "ParcelLazy", { link = "Special", default = true })
-  vim.api.nvim_set_hl(NS, "ParcelKeybind", { link = "Keyword", default = true })
+  vim.api.nvim_set_hl(NS, "LeanpackHeader", { link = "Title", default = true })
+  vim.api.nvim_set_hl(NS, "LeanpackPlugin", { link = "String", default = true })
+  vim.api.nvim_set_hl(NS, "LeanpackCommit", { link = "Comment", default = true })
+  vim.api.nvim_set_hl(NS, "LeanpackSource", { link = "Comment", default = true })
+  vim.api.nvim_set_hl(NS, "LeanpackStatusLoaded", { link = "DiagnosticOk", default = true })
+  vim.api.nvim_set_hl(NS, "LeanpackStatusPending", { link = "Comment", default = true })
+  vim.api.nvim_set_hl(NS, "LeanpackStatusLoading", { link = "DiagnosticWarn", default = true })
+  vim.api.nvim_set_hl(NS, "LeanpackLazy", { link = "Special", default = true })
+  vim.api.nvim_set_hl(NS, "LeanpackKeybind", { link = "Keyword", default = true })
 end
 
 local function get_status(entry)
@@ -99,25 +99,25 @@ end
 local function apply_highlights(lines)
   vim.api.nvim_buf_clear_namespace(ui_state.buf, NS, 0, -1)
 
-  vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "ParcelHeader", 2, 0, -1)
+  vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "LeanpackHeader", 2, 0, -1)
 
   for i, plugin in ipairs(ui_state.plugins) do
     local line_num = i + 3
-    local status_hl = plugin.status == "●" and "ParcelStatusLoaded" or
-        (plugin.status == "◐" and "ParcelStatusLoading" or "ParcelStatusPending")
+    local status_hl = plugin.status == "●" and "LeanpackStatusLoaded" or
+        (plugin.status == "◐" and "LeanpackStatusLoading" or "LeanpackStatusPending")
     vim.api.nvim_buf_add_highlight(ui_state.buf, NS, status_hl, line_num, 2, 3)
 
     local name_start = 5
     local name_end = name_start + vim.fn.strdisplaywidth(plugin.name)
-    vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "ParcelPlugin", line_num, name_start, name_end)
+    vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "LeanpackPlugin", line_num, name_start, name_end)
 
     local type_start = name_start + vim.fn.strdisplaywidth(plugin.name) + 2
     if plugin.lazy then
-      vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "ParcelLazy", line_num, type_start, type_start + 4)
+      vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "LeanpackLazy", line_num, type_start, type_start + 4)
     end
 
     local src_start = type_start + 9
-    vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "ParcelSource", line_num, src_start, -1)
+    vim.api.nvim_buf_add_highlight(ui_state.buf, NS, "LeanpackSource", line_num, src_start, -1)
   end
 end
 
@@ -189,7 +189,7 @@ local function build_plugin()
   if p and p.entry.merged_spec and p.entry.merged_spec.build then
     local spec = state.get_pack_spec(p.src)
     if spec then loader.load_plugin(spec, { bang = true }) end
-    require("parcel.hooks").execute_build(p.entry.merged_spec.build, p.entry.plugin)
+    require("leanpack.hooks").execute_build(p.entry.merged_spec.build, p.entry.plugin)
     vim.notify("Building: " .. p.name)
   elseif p then
     vim.notify("No build hook: " .. p.name, vim.log.levels.WARN)
@@ -209,7 +209,7 @@ end
 local function create_buffer()
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
-  vim.api.nvim_buf_set_option(buf, "filetype", "parcel-ui")
+  vim.api.nvim_buf_set_option(buf, "filetype", "leanpack-ui")
   vim.api.nvim_buf_set_option(buf, "modifiable", false)
   return buf
 end
@@ -227,7 +227,7 @@ local function create_window(buf, width)
     col = col,
     style = "minimal",
     border = "rounded",
-    title = " 📦 parcel.nvim ",
+    title = " 📦 leanpack.nvim ",
     title_pos = "center",
     footer = " <Enter>:load  u:update  U:update-all  b:build  d:delete  q:quit ",
     footer_pos = "center",

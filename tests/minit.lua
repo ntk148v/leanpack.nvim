@@ -1,5 +1,5 @@
 ---@module 'tests.minit'
--- Test bootstrap for parcel.nvim
+-- Test bootstrap for leanpack.nvim
 -- This file is executed by: nvim -l tests/minit.lua
 
 local M = {}
@@ -135,7 +135,7 @@ end
 
 -- Run tests
 print("\n" .. string.rep("=", 60))
-print("Running parcel.nvim tests")
+print("Running leanpack.nvim tests")
 print(string.rep("=", 60) .. "\n")
 
 local success = MiniTest.run()

@@ -1,12 +1,12 @@
 # API Reference
 
-This document covers the Lua API for programmatic access to parcel.nvim.
+This document covers the Lua API for programmatic access to leanpack.nvim.
 
 ## Module Functions
 
-### `parcel.setup(opts)`
+### `leanpack.setup(opts)`
 
-Initialize parcel.nvim with configuration.
+Initialize leanpack.nvim with configuration.
 
 **Parameters:**
 
@@ -15,13 +15,13 @@ Initialize parcel.nvim with configuration.
 **Returns:** `nil`
 
 ```lua
-require('parcel').setup({
-  cmd_prefix = 'Parcel',
+require('leanpack').setup({
+  cmd_prefix = 'leanpack',
   defaults = { confirm = true },
 })
 ```
 
-### `parcel.update([plugin])`
+### `leanpack.update([plugin])`
 
 Update plugins.
 
@@ -33,13 +33,13 @@ Update plugins.
 
 ```lua
 -- Update all
-require('parcel').update()
+require('leanpack').update()
 
 -- Update specific
-require('parcel').update('nvim-lspconfig')
+require('leanpack').update('nvim-lspconfig')
 ```
 
-### `parcel.build([plugin])`
+### `leanpack.build([plugin])`
 
 Run build hooks for plugins.
 
@@ -51,13 +51,13 @@ Run build hooks for plugins.
 
 ```lua
 -- Build all
-require('parcel').build()
+require('leanpack').build()
 
 -- Build specific
-require('parcel').build('telescope-fzf-native')
+require('leanpack').build('telescope-fzf-native')
 ```
 
-### `parcel.load([plugin])`
+### `leanpack.load([plugin])`
 
 Load lazy plugins.
 
@@ -69,49 +69,49 @@ Load lazy plugins.
 
 ```lua
 -- Load all pending
-require('parcel').load()
+require('leanpack').load()
 
 -- Load specific
-require('parcel').load('nvim-tree')
+require('leanpack').load('nvim-tree')
 ```
 
-### `parcel.clean()`
+### `leanpack.clean()`
 
 Remove plugins not in spec.
 
 **Returns:** `nil`
 
 ```lua
-require('parcel').clean()
+require('leanpack').clean()
 ```
 
-### `parcel.status()`
+### `leanpack.status()`
 
 Get plugin status summary.
 
 **Returns:** `table` with plugin counts
 
 ```lua
-local status = require('parcel').status()
+local status = require('leanpack').status()
 -- { loaded = 10, pending = 5, total = 15 }
 ```
 
 ## State Functions
 
-### `parcel.state.get_all_entries()`
+### `leanpack.state.get_all_entries()`
 
 Get all plugin entries.
 
 **Returns:** `table` of plugin entries
 
 ```lua
-local entries = require('parcel.state').get_all_entries()
+local entries = require('leanpack.state').get_all_entries()
 for src, entry in pairs(entries) do
   print(src, entry.load_status)
 end
 ```
 
-### `parcel.state.get_entry(src)`
+### `leanpack.state.get_entry(src)`
 
 Get specific plugin entry.
 
@@ -122,24 +122,24 @@ Get specific plugin entry.
 **Returns:** `table` or `nil`
 
 ```lua
-local entry = require('parcel.state').get_entry('nvim-treesitter/nvim-treesitter')
+local entry = require('leanpack.state').get_entry('nvim-treesitter/nvim-treesitter')
 ```
 
-### `parcel.state.is_configured()`
+### `leanpack.state.is_configured()`
 
-Check if parcel is configured.
+Check if leanpack is configured.
 
 **Returns:** `boolean`
 
 ```lua
-if require('parcel.state').is_configured() then
-  -- Parcel is ready
+if require('leanpack.state').is_configured() then
+  -- leanpack is ready
 end
 ```
 
 ## Utility Functions
 
-### `parcel.spec.normalize_spec(spec)`
+### `leanpack.spec.normalize_spec(spec)`
 
 Normalize a plugin spec.
 
@@ -150,13 +150,13 @@ Normalize a plugin spec.
 **Returns:** `table` normalized spec
 
 ```lua
-local normalized = require('parcel.spec').normalize_spec({
+local normalized = require('leanpack.spec').normalize_spec({
   'user/repo',
   opts = {},
 })
 ```
 
-### `parcel.spec.detect_main(plugin)`
+### `leanpack.spec.detect_main(plugin)`
 
 Detect main module for a plugin.
 
@@ -167,20 +167,20 @@ Detect main module for a plugin.
 **Returns:** `string` or `nil`
 
 ```lua
-local main = require('parcel.spec').detect_main(plugin)
+local main = require('leanpack.spec').detect_main(plugin)
 ```
 
 ## Events
 
-parcel.nvim uses Neovim autocommands. You can hook into these:
+leanpack.nvim uses Neovim autocommands. You can hook into these:
 
-### `ParcelInstalled`
+### `leanpackInstalled`
 
 Fires after a plugin is installed.
 
 ```lua
 vim.api.nvim_create_autocmd('User', {
-  pattern = 'ParcelInstalled',
+  pattern = 'leanpackInstalled',
   callback = function(args)
     local plugin = args.data.plugin
     print('Installed: ' .. plugin.name)
@@ -188,13 +188,13 @@ vim.api.nvim_create_autocmd('User', {
 })
 ```
 
-### `ParcelUpdated`
+### `leanpackUpdated`
 
 Fires after a plugin is updated.
 
 ```lua
 vim.api.nvim_create_autocmd('User', {
-  pattern = 'ParcelUpdated',
+  pattern = 'leanpackUpdated',
   callback = function(args)
     local plugin = args.data.plugin
     print('Updated: ' .. plugin.name)
@@ -202,13 +202,13 @@ vim.api.nvim_create_autocmd('User', {
 })
 ```
 
-### `ParcelLoaded`
+### `leanpackLoaded`
 
 Fires after a plugin is loaded.
 
 ```lua
 vim.api.nvim_create_autocmd('User', {
-  pattern = 'ParcelLoaded',
+  pattern = 'leanpackLoaded',
   callback = function(args)
     local plugin = args.data.plugin
     print('Loaded: ' .. plugin.name)
@@ -264,7 +264,7 @@ return {
 ### Plugin Object
 
 ```lua
----@class parcel.Plugin
+---@class leanpack.Plugin
 ---@field name string Plugin name
 ---@field path string Plugin directory path
 ---@field spec vim.pack.Spec The vim.pack spec
@@ -273,7 +273,7 @@ return {
 ### Spec Table
 
 ```lua
----@class parcel.Spec
+---@class leanpack.Spec
 ---@field [1] string Short name (user/repo)
 ---@field src? string Source URL or path
 ---@field dir? string Local directory

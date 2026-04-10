@@ -1,5 +1,5 @@
 ---@module 'tests.lazy_spec'
--- Tests for parcel.lazy module and lazy loading triggers
+-- Tests for leanpack.lazy module and lazy loading triggers
 
 local MiniTest = require("mini.test")
 
@@ -12,10 +12,10 @@ local T = MiniTest.new_set({
 			child.lua([[
 				vim.opt.rtp:prepend("]] .. vim.fn.getcwd() .. [[")
 				_G.helpers = require("tests.helpers")
-				_G.helpers.reset_parcel_state()
-				_G.lazy = require("parcel.lazy")
-				_G.spec_mod = require("parcel.spec")
-				_G.state = require("parcel.state")
+				_G.helpers.reset_leanpack_state()
+				_G.lazy = require("leanpack.lazy")
+				_G.spec_mod = require("leanpack.spec")
+				_G.state = require("leanpack.state")
 			]])
 		end,
 		post_once = child.stop,
@@ -104,14 +104,14 @@ T["ft trigger"] = MiniTest.new_set()
 
 T["ft trigger"]["creates FileType autocmd"] = function()
 	child.lua([[
-		local ft_handler = require("parcel.lazy_trigger.ft")
-		
+		local ft_handler = require("leanpack.lazy_trigger.ft")
+
 		-- Setup a mock pack_spec
 		local pack_spec = { src = "test", name = "test" }
-		
+
 		-- Setup filetype trigger
 		ft_handler.setup(pack_spec, "lua")
-		
+
 		-- Check autocmd was created
 		local autocmds = vim.api.nvim_get_autocmds({
 			group = state.lazy_group,
@@ -133,10 +133,10 @@ end
 
 T["ft trigger"]["creates autocmd for multiple filetypes"] = function()
 	child.lua([[
-		local ft_handler = require("parcel.lazy_trigger.ft")
-		
+		local ft_handler = require("leanpack.lazy_trigger.ft")
+
 		ft_handler.setup({ src = "test", name = "test" }, { "lua", "python", "javascript" })
-		
+
 		local autocmds = vim.api.nvim_get_autocmds({
 			group = state.lazy_group,
 			event = "FileType"
@@ -164,14 +164,14 @@ T["event trigger"] = MiniTest.new_set()
 
 T["event trigger"]["creates event autocmd"] = function()
 	child.lua([[
-		local event_handler = require("parcel.lazy_trigger.event")
-		
+		local event_handler = require("leanpack.lazy_trigger.event")
+
 		event_handler.setup(
 			{ src = "test", name = "test" },
 			{ src = "test", name = "test" }, -- spec
 			"BufRead" -- event
 		)
-		
+
 		local autocmds = vim.api.nvim_get_autocmds({
 			group = state.lazy_group,
 			event = "BufRead"
@@ -184,14 +184,14 @@ end
 
 T["event trigger"]["creates autocmd for multiple events"] = function()
 	child.lua([[
-		local event_handler = require("parcel.lazy_trigger.event")
-		
+		local event_handler = require("leanpack.lazy_trigger.event")
+
 		event_handler.setup(
 			{ src = "test", name = "test" },
 			{ src = "test", name = "test" },
 			{ "BufRead", "BufWrite" }
 		)
-		
+
 		local bufread = vim.api.nvim_get_autocmds({
 			group = state.lazy_group,
 			event = "BufRead"
@@ -216,19 +216,19 @@ T["cmd trigger"] = MiniTest.new_set()
 
 T["cmd trigger"]["creates command for lazy plugin"] = function()
 	child.lua([[
-		local cmd_handler = require("parcel.lazy_trigger.cmd")
-		
+		local cmd_handler = require("leanpack.lazy_trigger.cmd")
+
 		-- Setup state
 		state.set_entry("test-src", {
 			specs = {},
 			merged_spec = { cmd = "TestCommand" }
 		})
-		
+
 		-- Setup command trigger
 		cmd_handler.setup({
-			{ src = "test-src", name = "test", data = { parcel = true } }
+			{ src = "test-src", name = "test", data = { leanpack = true } }
 		})
-		
+
 		-- Check if command exists
 		_G.cmd_exists = vim.fn.exists(":TestCommand") == 2
 	]])
@@ -238,8 +238,8 @@ end
 
 T["cmd trigger"]["creates commands for multiple plugins"] = function()
 	child.lua([[
-		local cmd_handler = require("parcel.lazy_trigger.cmd")
-		
+		local cmd_handler = require("leanpack.lazy_trigger.cmd")
+
 		state.set_entry("src1", {
 			specs = {},
 			merged_spec = { cmd = "Cmd1" }
@@ -248,12 +248,12 @@ T["cmd trigger"]["creates commands for multiple plugins"] = function()
 			specs = {},
 			merged_spec = { cmd = { "Cmd2", "Cmd3" } }
 		})
-		
+
 		cmd_handler.setup({
-			{ src = "src1", name = "plugin1", data = { parcel = true } },
-			{ src = "src2", name = "plugin2", data = { parcel = true } }
+			{ src = "src1", name = "plugin1", data = { leanpack = true } },
+			{ src = "src2", name = "plugin2", data = { leanpack = true } }
 		})
-		
+
 		_G.cmd1_exists = vim.fn.exists(":Cmd1") == 2
 		_G.cmd2_exists = vim.fn.exists(":Cmd2") == 2
 		_G.cmd3_exists = vim.fn.exists(":Cmd3") == 2
@@ -272,16 +272,16 @@ T["keys trigger"] = MiniTest.new_set()
 
 T["keys trigger"]["creates keymap for lazy plugin"] = function()
 	child.lua([[
-		local keys_handler = require("parcel.lazy_trigger.keys")
-		
+		local keys_handler = require("leanpack.lazy_trigger.keys")
+
 		state.set_entry("test-src", {
 			specs = {},
 			merged_spec = { keys = { "<leader>x" } }
 		})
-		
+
 		-- Setup should run without error
 		local ok, err = pcall(keys_handler.setup, {
-			{ src = "test-src", name = "test", data = { parcel = true } }
+			{ src = "test-src", name = "test", data = { leanpack = true } }
 		})
 		_G.setup_ok = ok
 	]])
@@ -291,8 +291,8 @@ end
 
 T["keys trigger"]["handles complex key specs"] = function()
 	child.lua([[
-		local keys_handler = require("parcel.lazy_trigger.keys")
-		
+		local keys_handler = require("leanpack.lazy_trigger.keys")
+
 		state.set_entry("test-src", {
 			specs = {},
 			merged_spec = {
@@ -302,10 +302,10 @@ T["keys trigger"]["handles complex key specs"] = function()
 				}
 			}
 		})
-		
+
 		-- Setup should run without error
 		local ok, err = pcall(keys_handler.setup, {
-			{ src = "test-src", name = "test", data = { parcel = true } }
+			{ src = "test-src", name = "test", data = { leanpack = true } }
 		})
 		_G.setup_ok = ok
 	]])
@@ -323,18 +323,18 @@ T["process_lazy()"]["skips when pending builds exist"] = function()
 	child.lua([[
 		-- Mark a pending build
 		state.mark_pending_build("test-src")
-		
+
 		-- Track if lazy triggers were processed
 		_G.processed = false
-		local orig_event_setup = require("parcel.lazy_trigger.event").setup
-		require("parcel.lazy_trigger.event").setup = function()
+		local orig_event_setup = require("leanpack.lazy_trigger.event").setup
+		require("leanpack.lazy_trigger.event").setup = function()
 			_G.processed = true
 		end
-		
+
 		-- Try to process lazy plugins
 		lazy.process_lazy({ lazy_packs = {} })
-		
-		require("parcel.lazy_trigger.event").setup = orig_event_setup
+
+		require("leanpack.lazy_trigger.event").setup = orig_event_setup
 	]])
 
 	MiniTest.expect.equality(child.lua_get("_G.processed"), false)
@@ -347,14 +347,14 @@ T["process_lazy()"]["processes lazy plugins with triggers"] = function()
 			specs = {},
 			merged_spec = { event = "BufRead" }
 		})
-		
+
 		-- Process lazy plugins
 		lazy.process_lazy({
 			lazy_packs = {
-				{ src = "test-src", name = "test", data = { parcel = true } }
+				{ src = "test-src", name = "test", data = { leanpack = true } }
 			}
 		})
-		
+
 		-- Check autocmd was created
 		local autocmds = vim.api.nvim_get_autocmds({
 			group = state.lazy_group,

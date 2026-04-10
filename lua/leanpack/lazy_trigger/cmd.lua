@@ -1,7 +1,7 @@
----@module 'parcel.lazy_trigger.cmd'
-local state = require("parcel.state")
-local loader = require("parcel.loader")
-local spec_mod = require("parcel.spec")
+---@module 'leanpack.lazy_trigger.cmd'
+local state = require("leanpack.state")
+local loader = require("leanpack.loader")
+local spec_mod = require("leanpack.spec")
 
 local M = {}
 

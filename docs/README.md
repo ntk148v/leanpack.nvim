@@ -1,30 +1,30 @@
-# parcel.nvim Documentation
+# leanpack.nvim Documentation
 
-Welcome to the parcel.nvim documentation. This folder contains comprehensive guides for using parcel.nvim as your Neovim plugin manager.
+Welcome to the leanpack.nvim documentation. This folder contains comprehensive guides for using leanpack.nvim as your Neovim plugin manager.
 
 ## Table of Contents
 
-| Document                              | Description                                  |
-| ------------------------------------- | -------------------------------------------- |
-| [Getting Started](getting-started.md) | Quick start guide to get parcel.nvim running |
-| [Installation](installation.md)       | Detailed installation options                |
-| [Configuration](configuration.md)     | All configuration options                    |
-| [Plugin Spec](spec.md)                | Complete plugin specification reference      |
-| [Lazy Loading](lazy-loading.md)       | Lazy loading triggers and patterns           |
-| [Commands](commands.md)               | CLI commands reference                       |
-| [API](api.md)                         | Lua API reference                            |
-| [Migrating](migrating.md)             | Migration guides from other managers         |
-| [Troubleshooting](troubleshooting.md) | Common issues and solutions                  |
+| Document                              | Description                                    |
+| ------------------------------------- | ---------------------------------------------- |
+| [Getting Started](getting-started.md) | Quick start guide to get leanpack.nvim running |
+| [Installation](installation.md)       | Detailed installation options                  |
+| [Configuration](configuration.md)     | All configuration options                      |
+| [Plugin Spec](spec.md)                | Complete plugin specification reference        |
+| [Lazy Loading](lazy-loading.md)       | Lazy loading triggers and patterns             |
+| [Commands](commands.md)               | CLI commands reference                         |
+| [API](api.md)                         | Lua API reference                              |
+| [Migrating](migrating.md)             | Migration guides from other managers           |
+| [Troubleshooting](troubleshooting.md) | Common issues and solutions                    |
 
 ## Quick Links
 
-- **GitHub**: https://github.com/ntk148v/parcel.nvim
+- **GitHub**: https://github.com/ntk148v/leanpack.nvim
 - **Requirements**: Neovim 0.12+
 - **License**: MIT
 
 ## Overview
 
-parcel.nvim is a minimal, lazy-loading plugin manager for Neovim 0.12+ that acts as a thin layer over the native `vim.pack` API. It provides:
+leanpack.nvim is a minimal, lazy-loading plugin manager for Neovim 0.12+ that acts as a thin layer over the native `vim.pack` API. It provides:
 
 - **Lazy-loading** - Load plugins on demand via events, commands, keymaps, or filetypes
 - **Dependency resolution** - Automatic topological sorting for plugin dependencies

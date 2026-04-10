@@ -1,5 +1,5 @@
 ---@module 'tests.loader_spec'
--- Tests for parcel.loader module
+-- Tests for leanpack.loader module
 
 local MiniTest = require("mini.test")
 
@@ -12,10 +12,10 @@ local T = MiniTest.new_set({
 			child.lua([[
 				vim.opt.rtp:prepend("]] .. vim.fn.getcwd() .. [[")
 				_G.helpers = require("tests.helpers")
-				_G.helpers.reset_parcel_state()
-				_G.loader = require("parcel.loader")
-				_G.state = require("parcel.state")
-				_G.spec_mod = require("parcel.spec")
+				_G.helpers.reset_leanpack_state()
+				_G.loader = require("leanpack.loader")
+				_G.state = require("leanpack.state")
+				_G.spec_mod = require("leanpack.spec")
 			]])
 		end,
 		post_once = child.stop,
@@ -37,9 +37,9 @@ T["load_plugin()"]["returns early if plugin not in registry"] = function()
 				table.insert(_G.errors, msg)
 			end
 		end
-		
+
 		loader.load_plugin({ src = "unknown", name = "unknown" })
-		
+
 		vim.notify = orig_notify
 		_G.has_error = #_G.errors > 0
 	]])
@@ -55,7 +55,7 @@ T["load_plugin()"]["returns early if already loaded"] = function()
 			merged_spec = { src = "test-src", name = "test" },
 			load_status = "loaded"
 		})
-		
+
 		_G.loaded_before = state.get_entry("test-src").load_status
 		loader.load_plugin({ src = "test-src", name = "test" })
 		_G.loaded_after = state.get_entry("test-src").load_status
@@ -73,7 +73,7 @@ T["load_plugin()"]["detects circular dependencies"] = function()
 			merged_spec = { src = "a", name = "a" },
 			load_status = "loading"
 		})
-		
+
 		_G.errors = {}
 		local orig_notify = vim.notify
 		vim.notify = function(msg, level)
@@ -81,9 +81,9 @@ T["load_plugin()"]["detects circular dependencies"] = function()
 				table.insert(_G.errors, msg)
 			end
 		end
-		
+
 		loader.load_plugin({ src = "a", name = "a" })
-		
+
 		vim.notify = orig_notify
 		_G.has_circular_error = false
 		for _, e in ipairs(_G.errors) do
@@ -115,7 +115,7 @@ T["load_plugin()"]["loads dependencies first"] = function()
 		state.add_dependency("parent", "child")
 		state.register_pack_spec({ src = "parent", name = "parent" })
 		state.register_pack_spec({ src = "child", name = "child" })
-		
+
 		_G.child_loaded_before = state.get_entry("child").load_status
 		loader.load_plugin({ src = "parent", name = "parent" })
 		_G.child_loaded_after = state.get_entry("child").load_status
@@ -141,7 +141,7 @@ T["load_plugin()"]["warns about missing optional dependencies"] = function()
 		})
 		state.add_dependency("parent", "missing")
 		state.register_pack_spec({ src = "parent", name = "parent" })
-		
+
 		_G.warnings = {}
 		local orig_notify = vim.notify
 		vim.notify = function(msg, level)
@@ -149,9 +149,9 @@ T["load_plugin()"]["warns about missing optional dependencies"] = function()
 				table.insert(_G.warnings, msg)
 			end
 		end
-		
+
 		loader.load_plugin({ src = "parent", name = "parent" })
-		
+
 		vim.notify = orig_notify
 		_G.has_optional_warning = false
 		for _, w in ipairs(_G.warnings) do
@@ -181,7 +181,7 @@ T["load_plugin()"]["errors on missing required dependencies"] = function()
 		})
 		state.add_dependency("parent", "missing")
 		state.register_pack_spec({ src = "parent", name = "parent" })
-		
+
 		_G.errors = {}
 		local orig_notify = vim.notify
 		vim.notify = function(msg, level)
@@ -189,9 +189,9 @@ T["load_plugin()"]["errors on missing required dependencies"] = function()
 				table.insert(_G.errors, msg)
 			end
 		end
-		
+
 		loader.load_plugin({ src = "parent", name = "parent" })
-		
+
 		vim.notify = orig_notify
 		_G.has_error = false
 		for _, e in ipairs(_G.errors) do
@@ -215,7 +215,7 @@ T["load_plugin()"]["marks plugin as loaded"] = function()
 			load_status = "pending"
 		})
 		state.register_pack_spec({ src = "test-src", name = "test" })
-		
+
 		_G.loaded_before = state.get_entry("test-src").load_status
 		loader.load_plugin({ src = "test-src", name = "test" })
 		_G.loaded_after = state.get_entry("test-src").load_status
@@ -236,7 +236,7 @@ T["process_startup()"] = MiniTest.new_set()
 T["process_startup()"]["runs init hooks in priority order"] = function()
 	child.lua([[
 		_G.init_order = {}
-		
+
 		state.set_entry("low", {
 			specs = { { src = "low", name = "low", priority = 10, init = function() table.insert(_G.init_order, "low") end } },
 			merged_spec = { src = "low", name = "low", priority = 10, init = function() table.insert(_G.init_order, "low") end },
@@ -247,7 +247,7 @@ T["process_startup()"]["runs init hooks in priority order"] = function()
 			merged_spec = { src = "high", name = "high", priority = 100, init = function() table.insert(_G.init_order, "high") end },
 			load_status = "pending"
 		})
-		
+
 		local ctx = {
 			srcs_with_init = { "low", "high" },
 			startup_packs = {
@@ -255,7 +255,7 @@ T["process_startup()"]["runs init hooks in priority order"] = function()
 				{ src = "high", name = "high" }
 			}
 		}
-		
+
 		loader.process_startup(ctx)
 	]])
 
@@ -282,7 +282,7 @@ T["process_startup()"]["loads plugins in dependency order"] = function()
 		state.add_dependency("parent", "child")
 		state.register_pack_spec({ src = "parent", name = "parent" })
 		state.register_pack_spec({ src = "child", name = "child" })
-		
+
 		local ctx = {
 			srcs_with_init = {},
 			startup_packs = {
@@ -290,7 +290,7 @@ T["process_startup()"]["loads plugins in dependency order"] = function()
 				{ src = "child", name = "child" }
 			}
 		}
-		
+
 		_G.child_loaded_before = state.get_entry("child").load_status
 		loader.process_startup(ctx)
 		_G.child_loaded_after = state.get_entry("child").load_status
@@ -316,7 +316,7 @@ T["process_startup()"]["marks all startup plugins as loaded"] = function()
 		})
 		state.register_pack_spec({ src = "plugin1", name = "plugin1" })
 		state.register_pack_spec({ src = "plugin2", name = "plugin2" })
-		
+
 		local ctx = {
 			srcs_with_init = {},
 			startup_packs = {
@@ -324,7 +324,7 @@ T["process_startup()"]["marks all startup plugins as loaded"] = function()
 				{ src = "plugin2", name = "plugin2" }
 			}
 		}
-		
+
 		loader.process_startup(ctx)
 		_G.p1_loaded = state.get_entry("plugin1").load_status
 		_G.p2_loaded = state.get_entry("plugin2").load_status
@@ -348,7 +348,7 @@ T["error handling"]["handles missing plugin object"] = function()
 			load_status = "pending"
 		})
 		state.register_pack_spec({ src = "test-src", name = "test" })
-		
+
 		_G.errors = {}
 		local orig_notify = vim.notify
 		vim.notify = function(msg, level)
@@ -356,9 +356,9 @@ T["error handling"]["handles missing plugin object"] = function()
 				table.insert(_G.errors, msg)
 			end
 		end
-		
+
 		loader.load_plugin({ src = "test-src", name = "test" })
-		
+
 		vim.notify = orig_notify
 		_G.has_error = false
 		for _, e in ipairs(_G.errors) do
@@ -376,8 +376,8 @@ T["error handling"]["handles failed config hook"] = function()
 	child.lua([[
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
-			merged_spec = { 
-				src = "test-src", 
+			merged_spec = {
+				src = "test-src",
 				name = "test",
 				config = function() error("config failed") end
 			},
@@ -385,7 +385,7 @@ T["error handling"]["handles failed config hook"] = function()
 			load_status = "pending"
 		})
 		state.register_pack_spec({ src = "test-src", name = "test" })
-		
+
 		_G.errors = {}
 		local orig_notify = vim.notify
 		vim.notify = function(msg, level)
@@ -393,9 +393,9 @@ T["error handling"]["handles failed config hook"] = function()
 				table.insert(_G.errors, msg)
 			end
 		end
-		
+
 		loader.load_plugin({ src = "test-src", name = "test" })
-		
+
 		vim.notify = orig_notify
 		_G.has_config_error = false
 		for _, e in ipairs(_G.errors) do
@@ -419,11 +419,11 @@ T["integration"]["loads plugin with config and keymaps"] = function()
 	child.lua([[
 		_G.config_called = false
 		_G.keys_applied = false
-		
+
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
-			merged_spec = { 
-				src = "test-src", 
+			merged_spec = {
+				src = "test-src",
 				name = "test",
 				config = function() _G.config_called = true end,
 				keys = "<leader>t"
@@ -432,7 +432,7 @@ T["integration"]["loads plugin with config and keymaps"] = function()
 			load_status = "pending"
 		})
 		state.register_pack_spec({ src = "test-src", name = "test" })
-		
+
 		loader.load_plugin({ src = "test-src", name = "test" })
 	]])
 
@@ -473,9 +473,9 @@ T["integration"]["handles complex dependency graph"] = function()
 		state.register_pack_spec({ src = "b", name = "b" })
 		state.register_pack_spec({ src = "c", name = "c" })
 		state.register_pack_spec({ src = "d", name = "d" })
-		
+
 		loader.load_plugin({ src = "a", name = "a" })
-		
+
 		_G.all_loaded = (
 			state.get_entry("a").load_status == "loaded" and
 			state.get_entry("b").load_status == "loaded" and
@@ -492,16 +492,16 @@ T["integration"]["loads dependencies before config runs"] = function()
 		-- Simulate nvim-lspconfig depending on cmp-nvim-lsp
 		-- Plugin A (nvim-lspconfig) depends on Plugin B (cmp-nvim-lsp)
 		-- Plugin A's config requires Plugin B's module
-		
+
 		_G.load_order = {}
-		
+
 		state.set_entry("plugin-a", {
 			specs = { { src = "plugin-a", name = "plugin-a", dependencies = { "plugin-b" } } },
-			merged_spec = { 
-				src = "plugin-a", 
+			merged_spec = {
+				src = "plugin-a",
 				name = "plugin-a",
 				dependencies = { "plugin-b" },
-				config = function() 
+				config = function()
 					-- Simulate requiring plugin-b's module
 					_G.config_a_called = true
 					-- Check if plugin-b is loaded before this config runs
@@ -520,9 +520,9 @@ T["integration"]["loads dependencies before config runs"] = function()
 		state.add_dependency("plugin-a", "plugin-b")
 		state.register_pack_spec({ src = "plugin-a", name = "plugin-a" })
 		state.register_pack_spec({ src = "plugin-b", name = "plugin-b" })
-		
+
 		loader.load_plugin({ src = "plugin-a", name = "plugin-a" })
-		
+
 		_G.all_loaded = (
 			state.get_entry("plugin-a").load_status == "loaded" and
 			state.get_entry("plugin-b").load_status == "loaded"

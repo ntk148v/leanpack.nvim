@@ -1,6 +1,6 @@
 # Installation
 
-parcel.nvim offers multiple installation methods. Choose the one that best fits your workflow.
+leanpack.nvim offers multiple installation methods. Choose the one that best fits your workflow.
 
 ## Requirements
 
@@ -14,28 +14,28 @@ parcel.nvim offers multiple installation methods. Choose the one that best fits 
 This is the recommended method for most users. Add this to the top of your `init.lua`:
 
 ```lua
--- Bootstrap parcel.nvim
-local lazypath = vim.fn.stdpath("data") .. "/site/pack/parcel/opt/parcel.nvim"
+-- Bootstrap leanpack.nvim
+local lazypath = vim.fn.stdpath("data") .. "/site/pack/leanpack/opt/leanpack.nvim"
 if not vim.uv.fs_stat(lazypath) then
   vim.fn.system({
     "git",
     "clone",
     "--filter=blob:none",
-    "https://github.com/ntk148v/parcel.nvim",
+    "https://github.com/ntk148v/leanpack.nvim",
     lazypath,
   })
 end
 vim.opt.rtp:prepend(lazypath)
 
--- Now you can require parcel
-require("parcel").setup({
+-- Now you can require leanpack
+require("leanpack").setup({
   -- your config here
 })
 ```
 
 This method:
 
-- Automatically installs parcel.nvim if not present
+- Automatically installs leanpack.nvim if not present
 - Works on fresh systems without manual setup
 - Can be combined with other bootstrap managers
 
@@ -45,10 +45,10 @@ If you already have Neovim set up:
 
 ```lua
 -- Install with vim.pack directly
-vim.pack.add({ 'ntk148v/parcel.nvim' })
+vim.pack.add({ 'ntk148v/leanpack.nvim' })
 
 -- Then setup in your init.lua
-require("parcel").setup()
+require("leanpack").setup()
 ```
 
 ### 3. Using a Package Manager
@@ -56,32 +56,32 @@ require("parcel").setup()
 #### Using packer.nvim
 
 ```lua
-use 'ntk148v/parcel.nvim'
+use 'ntk148v/leanpack.nvim'
 ```
 
 #### Using lazy.nvim
 
 ```lua
-{ 'ntk148v/parcel.nvim' }
+{ 'ntk148v/leanpack.nvim' }
 ```
 
 #### Using vim-plug
 
 ```vim
-Plug 'ntk148v/parcel.nvim'
+Plug 'ntk148v/leanpack.nvim'
 ```
 
 ## Directory Structure
 
-After installation, parcel.nvim will manage plugins in:
+After installation, leanpack.nvim will manage plugins in:
 
 ```
 ~/.local/share/nvim/
 └── site/
     ├── pack/
-    │   ├── parcel/
+    │   ├── leanpack/
     │   │   ├── opt/
-    │   │   │   └── parcel.nvim/  (parcel.nvim itself)
+    │   │   │   └── leanpack.nvim/  (leanpack.nvim itself)
     │   │   └── start/
     │   │       └── ...           (eager-loaded plugins)
     │   └── nvim-pack/            (managed plugins)
@@ -91,29 +91,29 @@ After installation, parcel.nvim will manage plugins in:
         └── plugin/               (compiled Lua)
 ```
 
-## Updating parcel.nvim
+## Updating leanpack.nvim
 
-To update parcel.nvim itself:
+To update leanpack.nvim itself:
 
 ```vim
-:Parcel update parcel.nvim
+:Leanpack update leanpack.nvim
 ```
 
 Or via Lua:
 
 ```lua
-vim.pack.add({ 'ntk148v/parcel.nvim', update = true })
+vim.pack.add({ 'ntk148v/leanpack.nvim', update = true })
 ```
 
 ## Uninstalling
 
-To uninstall parcel.nvim:
+To uninstall leanpack.nvim:
 
 ```bash
-rm -rf ~/.local/share/nvim/site/pack/parcel/opt/parcel.nvim
+rm -rf ~/.local/share/nvim/site/pack/leanpack/opt/leanpack.nvim
 ```
 
-Note: This will not remove your other plugins. To clean those, use `:Parcel clean`.
+Note: This will not remove your other plugins. To clean those, use `:Leanpack clean`.
 
 ## Next Steps
 

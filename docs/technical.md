@@ -1,23 +1,23 @@
 # Technical Architecture
 
-This document provides in-depth technical details about parcel.nvim's implementation.
+This document provides in-depth technical details about leanpack.nvim's implementation.
 
 ## Overview
 
-parcel.nvim is a thin layer over Neovim's native `vim.pack` (Neovim 0.12+) that adds lazy-loading, dependency management, and a native UI while delegating all disk operations to the native API.
+leanpack.nvim is a thin layer over Neovim's native `vim.pack` (Neovim 0.12+) that adds lazy-loading, dependency management, and a native UI while delegating all disk operations to the native API.
 
 ## Architecture Blueprint
 
-parcel.nvim follows a 6-phase architectural blueprint:
+leanpack.nvim follows a 6-phase architectural blueprint:
 
 ### Phase 0: Automated Bootstrapping
 
-Bootstrap snippet automatically installs parcel.nvim if not present:
+Bootstrap snippet automatically installs leanpack.nvim if not present:
 
 ```lua
-local lazypath = vim.fn.stdpath("data") .. "/site/pack/parcel/opt/parcel.nvim"
+local lazypath = vim.fn.stdpath("data") .. "/site/pack/leanpack/opt/leanpack.nvim"
 if not vim.uv.fs_stat(lazypath) then
-  vim.fn.system({ 'git', 'clone', 'https://github.com/ntk148v/parcel.nvim', lazypath })
+  vim.fn.system({ 'git', 'clone', 'https://github.com/ntk148v/leanpack.nvim', lazypath })
 end
 vim.opt.rtp:prepend(lazypath)
 ```
@@ -50,9 +50,9 @@ Implements four trigger types without package.loaders interception:
 
 ### Phase 5: Command Orchestration
 
-- Unified `:Parcel` command with subcommands
+- Unified `:Leanpack` command with subcommands
 - Native floating UI with scratch buffer
-- Logging to `stdpath("log")/parcel.log`
+- Logging to `stdpath("log")/leanpack.log`
 
 ### Phase 6: Post-Load Re-triggering
 
@@ -62,7 +62,7 @@ Implements four trigger types without package.loaders interception:
 ## Module Structure
 
 ```
-lua/parcel/
+lua/leanpack/
 ├── init.lua          -- Entry point, setup()
 ├── state.lua         -- Centralized state management
 ├── spec.lua          -- Spec parsing, normalization
@@ -72,7 +72,7 @@ lua/parcel/
 ├── deps.lua          -- Topological sort
 ├── hooks.lua         -- init/config/build hooks
 ├── keymap.lua        -- Keymap utilities
-├── commands.lua      -- :Parcel commands
+├── commands.lua      -- :Leanpack commands
 ├── health.lua        -- :checkhealth integration
 ├── log.lua           -- Logging infrastructure
 ├── ui.lua            -- Native floating UI
@@ -87,7 +87,7 @@ lua/parcel/
 
 ### Lazy Loading
 
-parcel.nvim uses lightweight traps instead of package.loaders:
+leanpack.nvim uses lightweight traps instead of package.loaders:
 
 - **No require() interception** - This is computationally expensive
 - **Explicit dependencies** - Instead of magic module loading
@@ -112,7 +112,7 @@ Centralized in `state.lua`:
 
 ### Logging
 
-All operations logged to `stdpath("log")/parcel.log`:
+All operations logged to `stdpath("log")/leanpack.log`:
 
 - `log.info()` - General info
 - `log.warn()` - Warnings
@@ -130,13 +130,13 @@ All operations logged to `stdpath("log")/parcel.log`:
 
 ## Comparison with lazy.nvim
 
-| Feature         | parcel.nvim | lazy.nvim  |
-| --------------- | ----------- | ---------- |
-| package.loaders | ❌          | ✅         |
-| vim.pack-based  | ✅          | ❌         |
-| Native lockfile | ✅          | Custom     |
-| Code size       | ~2,680 LOC  | ~3,100 LOC |
-| bytecode cache  | vim.loader  | Custom     |
+| Feature         | leanpack.nvim | lazy.nvim  |
+| --------------- | ------------- | ---------- |
+| package.loaders | ❌            | ✅         |
+| vim.pack-based  | ✅            | ❌         |
+| Native lockfile | ✅            | Custom     |
+| Code size       | ~2,680 LOC    | ~3,100 LOC |
+| bytecode cache  | vim.loader    | Custom     |
 
 ## Testing
 
@@ -150,12 +150,12 @@ Tests use `mini.test` framework with isolated test environment.
 
 ## Debugging
 
-1. Check logs: `vim.fn.stdpath("log") .. "/parcel.log"`
-2. Health check: `:checkhealth parcel`
+1. Check logs: `vim.fn.stdpath("log") .. "/leanpack.log"`
+2. Health check: `:checkhealth leanpack`
 3. Startup profiling: `nvim --startuptime startuptime.log`
 
 ## References
 
 - [vim.pack documentation](https://neovim.io/doc/user/pack/)
 - [A Guide to vim.pack](https://echasnovski.com/blog/2026-03-13-a-guide-to-vim-pack)
-- [Architectural Analysis](../parcelnvim-analysis.md)
+- [Architectural Analysis](../leanpacknvim-analysis.md)

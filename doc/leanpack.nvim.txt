@@ -1,25 +1,25 @@
-*parcel.nvim* A thin layer on top of Neovim's native vim.pack
+*leanpack.nvim* A thin layer on top of Neovim's native vim.pack
 
 ==============================================================================
-CONTENTS *parcel-contents*
+CONTENTS *leanpack-contents*
 
-1. Introduction ........................... |parcel-introduction|
-2. Requirements ........................... |parcel-requirements|
-3. Installation ........................... |parcel-installation|
-4. Quick Start ............................ |parcel-quickstart|
-5. Configuration .......................... |parcel-configuration|
-6. Plugin Spec ............................ |parcel-spec|
-7. Lazy Loading ........................... |parcel-lazy-loading|
-8. Commands ............................... |parcel-commands|
-9. UI ..................................... |parcel-ui|
-10. Health Check .......................... |parcel-health|
-11. Migrating from lazy.nvim .............. |parcel-migrating|
+1. Introduction ........................... |leanpack-introduction|
+2. Requirements ........................... |leanpack-requirements|
+3. Installation ........................... |leanpack-installation|
+4. Quick Start ............................ |leanpack-quickstart|
+5. Configuration .......................... |leanpack-configuration|
+6. Plugin Spec ............................ |leanpack-spec|
+7. Lazy Loading ........................... |leanpack-lazy-loading|
+8. Commands ............................... |leanpack-commands|
+9. UI ..................................... |leanpack-ui|
+10. Health Check .......................... |leanpack-health|
+11. Migrating from lazy.nvim .............. |leanpack-migrating|
 
 ==============================================================================
-1. INTRODUCTION *parcel-introduction*
+1. INTRODUCTION *leanpack-introduction*
 
 Neovim 0.12+ includes a built-in plugin manager (`vim.pack`) that handles
-plugin installation, updates, and version management. parcel.nvim is a thin
+plugin installation, updates, and version management. leanpack.nvim is a thin
 layer that adds:
 
 - Lazy-loading capabilities (event, cmd, keys, ft triggers)
@@ -32,26 +32,26 @@ layer that adds:
 All while completely leveraging the native `vim.pack` infrastructure.
 
 ==============================================================================
-2. REQUIREMENTS *parcel-requirements*
+2. REQUIREMENTS *leanpack-requirements*
 
 - Neovim 0.12.0 or later
 - Git (required by vim.pack)
 
 ==============================================================================
-3. INSTALLATION *parcel-installation*
+3. INSTALLATION *leanpack-installation*
 
 Install with vim.pack directly: >
 
-vim.pack.add({ 'https://github.com/ntk148v/parcel.nvim' })
+vim.pack.add({ 'https://github.com/ntk148v/leanpack.nvim' })
 
 <
 Or use the short name: >
 
-vim.pack.add({ 'ntk148v/parcel.nvim' })
+vim.pack.add({ 'ntk148v/leanpack.nvim' })
 
 <
 ==============================================================================
-4. QUICK START *parcel-quickstart*
+4. QUICK START *leanpack-quickstart*
 
 Set leader before setup: >
 
@@ -59,12 +59,12 @@ vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
 -- Auto-import from lua/plugins/
-require('parcel').setup()
+require('leanpack').setup()
 
 <
 Or with inline specs: >
 
-require('parcel').setup({
+require('leanpack').setup({
 { 'nvim-treesitter/nvim-treesitter', build = ':TSUpdate' },
 { import = 'plugins' },
 })
@@ -85,13 +85,13 @@ end,
 
 <
 ==============================================================================
-5. CONFIGURATION *parcel-configuration*
+5. CONFIGURATION *leanpack-configuration*
 
 Setup with options: >
 
-require('parcel').setup({
--- Command prefix (default: "Parcel")
-cmd_prefix = "Parcel",
+require('leanpack').setup({
+-- Command prefix (default: "Leanpack")
+cmd_prefix = "Leanpack",
 
 -- Default options for all plugins
 defaults = {
@@ -121,7 +121,7 @@ frequency = 3600, -- Check every hour (in seconds)
 
 <
 ==============================================================================
-6. PLUGIN SPEC *parcel-spec*
+6. PLUGIN SPEC *leanpack-spec*
 
 Plugin Source ~
 
@@ -291,7 +291,7 @@ module = 'plugin.*', -- pattern matches require('plugin.foo')
 
 <
 ================================================================================
-7. LAZY LOADING *parcel-lazy-loading*
+7. LAZY LOADING *leanpack-lazy-loading*
 
 Event ~
 
@@ -345,31 +345,31 @@ ft = { 'lua', 'vim' },
 
 <
 ==============================================================================
-8. COMMANDS *parcel-commands*
+8. COMMANDS *leanpack-commands*
 
-:Parcel~
+:Leanpack~
 Open the plugin manager UI.
 
-:Parcel update [plugin]~
+:Leanpack update [plugin]~
 Update all plugins, or a specific plugin if provided.
 Supports tab completion.
 
-:Parcel clean~
+:Leanpack clean~
 Remove plugins that are no longer in your spec.
 
-:Parcel build[!] [plugin]~
+:Leanpack build[!] [plugin]~
 Run build hook for a specific plugin, or all plugins with `!`.
 
-:Parcel load[!] [plugin]~
+:Leanpack load[!] [plugin]~
 Load a specific unloaded plugin, or all unloaded plugins with `!`.
 
-:Parcel delete[!] [plugin]~
+:Leanpack delete[!] [plugin]~
 Remove a specific plugin, or all plugins with `!`.
 
 ==============================================================================
-9. UI *parcel-ui*
+9. UI *leanpack-ui*
 
-Open the plugin manager UI with `:Parcel`.
+Open the plugin manager UI with `:Leanpack`.
 
 Keymaps in the UI:
 <Enter>/<CR> - Load plugin under cursor
@@ -385,9 +385,9 @@ Status indicators:
 ◐ - loading
 
 ==============================================================================
-10. HEALTH CHECK *parcel-health*
+10. HEALTH CHECK *leanpack-health*
 
-Run `:checkhealth parcel` to check:
+Run `:checkhealth leanpack` to check:
 - Neovim version
 - vim.pack availability
 - Git availability
@@ -396,7 +396,7 @@ Run `:checkhealth parcel` to check:
 - Lockfile status
 
 ==============================================================================
-11. MIGRATING FROM LAZY.NVIM *parcel-migrating*
+11. MIGRATING FROM LAZY.NVIM *leanpack-migrating*
 
 Most lazy.nvim specs work as-is. Key differences:
 
@@ -416,7 +416,7 @@ vim.cmd('colorscheme tokyonight')
 end,
 }
 
--- parcel.nvim (same spec works)
+-- leanpack.nvim (same spec works)
 {
 'folke/tokyonight.nvim',
 sem_version = '^2.0', -- or version = vim.version.range('^2.0')

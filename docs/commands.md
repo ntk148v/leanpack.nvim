@@ -1,76 +1,76 @@
 # Commands
 
-parcel.nvim provides a unified command interface for plugin management.
+leanpack.nvim provides a unified command interface for plugin management.
 
 ## Command Prefix
 
-By default, all commands are prefixed with `Parcel`. This can be customized in setup:
+By default, all commands are prefixed with `leanpack`. This can be customized in setup:
 
 ```lua
-require('parcel').setup({
+require('leanpack').setup({
   cmd_prefix = 'MyPrefix',  -- Commands: MyPrefix update, etc.
 })
 ```
 
 ## Available Commands
 
-### `:Parcel`
+### `:Leanpack`
 
 Open the plugin manager UI.
 
 ```vim
-:Parcel
+:Leanpack
 ```
 
-### `:Parcel update` [plugin]
+### `:Leanpack update` [plugin]
 
 Update all plugins, or a specific plugin.
 
 ```vim
-:Parcel update              " Update all
-:Parcel update nvim-lspconfig  " Update specific
+:Leanpack update              " Update all
+:Leanpack update nvim-lspconfig  " Update specific
 ```
 
 With tab completion for plugin names.
 
-### `:Parcel clean`
+### `:Leanpack clean`
 
 Remove plugins that are no longer in your spec.
 
 ```vim
-:Parcel clean
+:Leanpack clean
 ```
 
-### `:Parcel build[!]` [plugin]
+### `:Leanpack build[!]` [plugin]
 
 Run the build hook for a plugin.
 
 ```vim
-:Parcel build telescope  " Build specific plugin
-:Parcel build!         " Build all plugins with build hooks
+:Leanpack build telescope  " Build specific plugin
+:Leanpack build!         " Build all plugins with build hooks
 ```
 
-### `:Parcel load[!]` [plugin]
+### `:Leanpack load[!]` [plugin]
 
 Load an unloaded plugin.
 
 ```vim
-:Parcel load nvim-tree  " Load specific plugin
-:Parcel load!          " Load all unloaded plugins
+:Leanpack load nvim-tree  " Load specific plugin
+:Leanpack load!          " Load all unloaded plugins
 ```
 
-### `:Parcel delete[!]` [plugin]
+### `:Leanpack delete[!]` [plugin]
 
 Remove a plugin from the filesystem.
 
 ```vim
-:Parcel delete telescope  " Delete specific plugin
-:Parcel delete!           " Delete all managed plugins
+:Leanpack delete telescope  " Delete specific plugin
+:Leanpack delete!           " Delete all managed plugins
 ```
 
 ## UI Commands
 
-### `:Parcel`
+### `:Leanpack`
 
 Opens a floating window with:
 
@@ -104,38 +104,38 @@ Commands can also be called from Lua:
 ### Update Plugins
 
 ```lua
-require('parcel').update()              -- Update all
-require('parcel').update('plugin-name') -- Update specific
+require('leanpack').update()              -- Update all
+require('leanpack').update('plugin-name') -- Update specific
 ```
 
 ### Build Plugins
 
 ```lua
-require('parcel').build()                -- Build all
-require('parcel').build('plugin-name')  -- Build specific
+require('leanpack').build()                -- Build all
+require('leanpack').build('plugin-name')  -- Build specific
 ```
 
 ### Load Plugins
 
 ```lua
-require('parcel').load()                 -- Load all pending
-require('parcel').load('plugin-name')    -- Load specific
+require('leanpack').load()                 -- Load all pending
+require('leanpack').load('plugin-name')    -- Load specific
 ```
 
 ### Clean Plugins
 
 ```lua
-require('parcel').clean()
+require('leanpack').clean()
 ```
 
 ## Health Check
 
-### `:checkhealth parcel`
+### `:checkhealth leanpack`
 
 Run health checks to verify installation:
 
 ```vim
-:checkhealth parcel
+:checkhealth leanpack
 ```
 
 Checks:
@@ -149,12 +149,12 @@ Checks:
 
 ## Tab Completion
 
-All parcel commands support tab completion:
+All leanpack commands support tab completion:
 
 ```vim
-:Parcel update <Tab>    " Complete plugin names
-:Parcel build <Tab>     " Complete plugin names
-:Parcel delete <Tab>    " Complete plugin names
+:Leanpack update <Tab>    " Complete plugin names
+:Leanpack build <Tab>     " Complete plugin names
+:Leanpack delete <Tab>    " Complete plugin names
 ```
 
 ## Output
@@ -165,7 +165,7 @@ Commands output to:
 - Floating UI (for progress during long operations)
 - Log file (for debugging)
 
-Log location: `vim.fn.stdpath("log") .. "/parcel.log"`
+Log location: `vim.fn.stdpath("log") .. "/leanpack.log"`
 
 ## Next Steps
 

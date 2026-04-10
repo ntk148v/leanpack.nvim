@@ -1,13 +1,13 @@
----@module 'parcel.lazy_trigger.ft'
-local state = require("parcel.state")
-local loader = require("parcel.loader")
-local spec_mod = require("parcel.spec")
+---@module 'leanpack.lazy_trigger.ft'
+local state = require("leanpack.state")
+local loader = require("leanpack.loader")
+local spec_mod = require("leanpack.spec")
 
 local M = {}
 
 ---Setup filetype-based lazy loading
 ---@param pack_spec vim.pack.Spec
----@param ft parcel.FtValue
+---@param ft leanpack.FtValue
 function M.setup(pack_spec, ft)
   local filetypes = spec_mod.normalize_list(ft) or {}
 

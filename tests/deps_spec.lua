@@ -1,5 +1,5 @@
 ---@module 'tests.deps_spec'
--- Tests for parcel.deps module
+-- Tests for leanpack.deps module
 
 local MiniTest = require("mini.test")
 
@@ -12,10 +12,10 @@ local T = MiniTest.new_set({
 			child.lua([[
 				vim.opt.rtp:prepend("]] .. vim.fn.getcwd() .. [[")
 				_G.helpers = require("tests.helpers")
-				_G.helpers.reset_parcel_state()
-				_G.deps = require("parcel.deps")
-				_G.spec_mod = require("parcel.spec")
-				_G.state = require("parcel.state")
+				_G.helpers.reset_leanpack_state()
+				_G.deps = require("leanpack.deps")
+				_G.spec_mod = require("leanpack.spec")
+				_G.state = require("leanpack.state")
 			]])
 		end,
 		post_once = child.stop,
@@ -201,7 +201,7 @@ T["toposort_startup()"]["respects dependency order"] = function()
 	child.lua([[
 		-- Setup: parent depends on child
 		state.add_dependency("parent", "child")
-		
+
 		_G.result = deps.toposort_startup({
 			{ src = "parent", name = "parent", data = { priority = 50 } },
 			{ src = "child", name = "child", data = { priority = 50 } }
@@ -225,7 +225,7 @@ T["toposort_startup()"]["handles deep dependencies"] = function()
 		-- a -> b -> c (a depends on b, b depends on c)
 		state.add_dependency("a", "b")
 		state.add_dependency("b", "c")
-		
+
 		_G.result = deps.toposort_startup({
 			{ src = "a", name = "a", data = { priority = 50 } },
 			{ src = "b", name = "b", data = { priority = 50 } },
@@ -254,7 +254,7 @@ T["toposort_startup()"]["handles diamond dependencies"] = function()
 		state.add_dependency("a", "c")
 		state.add_dependency("b", "d")
 		state.add_dependency("c", "d")
-		
+
 		_G.result = deps.toposort_startup({
 			{ src = "a", name = "a", data = { priority = 50 } },
 			{ src = "b", name = "b", data = { priority = 50 } },
@@ -280,19 +280,19 @@ T["toposort_startup()"]["handles circular dependency gracefully"] = function()
 		-- a -> b -> a (circular)
 		state.add_dependency("a", "b")
 		state.add_dependency("b", "a")
-		
+
 		-- Capture warning
 		_G.warnings = {}
 		local orig_notify = vim.notify
 		vim.notify = function(msg, level)
 			table.insert(_G.warnings, msg)
 		end
-		
+
 		_G.result = deps.toposort_startup({
 			{ src = "a", name = "a", data = { priority = 50 } },
 			{ src = "b", name = "b", data = { priority = 50 } }
 		})
-		
+
 		vim.notify = orig_notify
 	]])
 
@@ -376,31 +376,31 @@ T["integration"]["complex dependency scenario"] = function()
 		-- plugin-b depends on plugin-d
 		-- plugin-c depends on plugin-d
 		-- plugin-e has no dependencies
-		
+
 		local ctx = { defaults = {} }
-		
+
 		-- Register dependencies
 		deps.resolve_dependencies({
 			src = "plugin-a",
 			dependencies = { "owner/plugin-b", "owner/plugin-c" }
 		}, ctx)
-		
+
 		deps.resolve_dependencies({
 			src = "https://github.com/owner/plugin-b",
 			dependencies = { "owner/plugin-d" }
 		}, ctx)
-		
+
 		deps.resolve_dependencies({
 			src = "https://github.com/owner/plugin-c",
 			dependencies = { "owner/plugin-d" }
 		}, ctx)
-		
+
 		-- Get all dependencies
 		_G.deps_a = state.get_dependencies("plugin-a")
 		_G.deps_b = state.get_dependencies("https://github.com/owner/plugin-b")
 		_G.deps_c = state.get_dependencies("https://github.com/owner/plugin-c")
 		_G.deps_d = state.get_dependencies("https://github.com/owner/plugin-d")
-		
+
 		-- Get reverse dependencies
 		_G.reverse_d = state.get_reverse_dependencies("https://github.com/owner/plugin-d")
 	]])

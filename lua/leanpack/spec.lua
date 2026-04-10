@@ -1,5 +1,5 @@
----@module 'parcel.spec'
-local state = require("parcel.state")
+---@module 'leanpack.spec'
+local state = require("leanpack.state")
 
 local M = {}
 
@@ -32,7 +32,7 @@ local function extract_name(src)
 end
 
 ---Resolve version from lazy.nvim compat fields
----@param spec parcel.Spec
+---@param spec leanpack.Spec
 ---@return string|vim.VersionRange?
 local function resolve_version(spec)
   if spec.version then
@@ -63,7 +63,7 @@ local function resolve_version(spec)
 end
 
 ---Resolve source URL from spec
----@param spec parcel.Spec
+---@param spec leanpack.Spec
 ---@return string
 local function resolve_src(spec)
   -- Dev mode: use local ~/projects/{plugin-name}
@@ -89,7 +89,7 @@ local function resolve_src(spec)
 end
 
 ---Check if spec is enabled
----@param spec parcel.Spec
+---@param spec leanpack.Spec
 ---@return boolean
 local function is_enabled(spec)
   if spec.enabled == nil then
@@ -102,9 +102,9 @@ local function is_enabled(spec)
 end
 
 ---Normalize a single spec
----@param spec parcel.Spec
----@param defaults? parcel.Config.Defaults
----@return parcel.Spec? normalized_spec, string src
+---@param spec leanpack.Spec
+---@param defaults? leanpack.Config.Defaults
+---@return leanpack.Spec? normalized_spec, string src
 function M.normalize_spec(spec, defaults)
   -- Check enabled
   if not is_enabled(spec) then
@@ -143,8 +143,8 @@ function M.normalize_spec(spec, defaults)
   return normalized, src
 end
 
----Convert parcel.Spec to vim.pack.Spec
----@param spec parcel.Spec
+---Convert leanpack.Spec to vim.pack.Spec
+---@param spec leanpack.Spec
 ---@return vim.pack.Spec
 function M.to_pack_spec(spec)
   local pack_spec = {
@@ -156,9 +156,9 @@ function M.to_pack_spec(spec)
     pack_spec.version = spec.version
   end
 
-  -- Store parcel-specific data in vim.pack.Spec.data
+  -- Store leanpack-specific data in vim.pack.Spec.data
   pack_spec.data = {
-    parcel = true,
+    leanpack = true,
     priority = spec.priority or 50,
   }
 
@@ -173,7 +173,7 @@ end
 
 ---Resolve a field that can be a function or value
 ---@param field any
----@param plugin parcel.Plugin?
+---@param plugin leanpack.Plugin?
 ---@return any
 function M.resolve_field(field, plugin)
   if field == nil then
@@ -200,7 +200,7 @@ end
 
 ---Detect main module name from plugin name
 ---Simplified: relies on explicit `main` field or plugin name
----@param plugin parcel.Plugin
+---@param plugin leanpack.Plugin
 ---@return string?
 function M.detect_main(plugin)
   local name = plugin.spec.name
@@ -234,8 +234,8 @@ function M.detect_main(plugin)
 end
 
 ---Merge multiple specs for the same plugin
----@param specs parcel.Spec[]
----@return parcel.Spec merged_spec
+---@param specs leanpack.Spec[]
+---@return leanpack.Spec merged_spec
 function M.merge_specs(specs)
   if #specs == 0 then
     return {}
@@ -289,8 +289,8 @@ function M.merge_specs(specs)
 end
 
 ---Sort specs by priority (higher priority first)
----@param specs parcel.Spec[]
----@return parcel.Spec[]
+---@param specs leanpack.Spec[]
+---@return leanpack.Spec[]
 function M.sort_by_priority(specs)
   table.sort(specs, function(a, b)
     local pa = a.priority or 50

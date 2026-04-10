@@ -1,9 +1,9 @@
----@module 'parcel.state'
+---@module 'leanpack.state'
 local M = {}
 
----@class parcel.State
+---@class leanpack.State
 ---@field is_setup boolean Whether setup() has been called
----@field spec_registry table<string, parcel.RegistryEntry> Registry keyed by src
+---@field spec_registry table<string, leanpack.RegistryEntry> Registry keyed by src
 ---@field dependency_graph table<string, table<string, boolean>> src -> {dep_src -> true}
 ---@field reverse_dependency_graph table<string, table<string, boolean>> dep_src -> {parent_src -> true}
 ---@field src_to_pack_spec table<string, vim.pack.Spec> src -> vim.pack.Spec mapping
@@ -29,9 +29,9 @@ local state = {
 -- Autocmd groups
 local augroup = vim.api.nvim_create_augroup
 
-M.startup_group = augroup("parcel_startup", { clear = true })
-M.lazy_group = augroup("parcel_lazy", { clear = true })
-M.lazy_build_group = augroup("parcel_lazy_build", { clear = true })
+M.startup_group = augroup("leanpack_startup", { clear = true })
+M.lazy_group = augroup("leanpack_lazy", { clear = true })
+M.lazy_build_group = augroup("leanpack_lazy_build", { clear = true })
 
 ---Reset state to initial values
 function M.reset()
@@ -60,20 +60,20 @@ end
 
 ---Get registry entry for a plugin
 ---@param src string
----@return parcel.RegistryEntry?
+---@return leanpack.RegistryEntry?
 function M.get_entry(src)
   return state.spec_registry[src]
 end
 
 ---Set registry entry for a plugin
 ---@param src string
----@param entry parcel.RegistryEntry
+---@param entry leanpack.RegistryEntry
 function M.set_entry(src, entry)
   state.spec_registry[src] = entry
 end
 
 ---Get all registry entries
----@return table<string, parcel.RegistryEntry>
+---@return table<string, leanpack.RegistryEntry>
 function M.get_all_entries()
   return state.spec_registry
 end

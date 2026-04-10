@@ -1,14 +1,14 @@
 # Migration Guides
 
-This section covers migrating from other plugin managers to parcel.nvim.
+This section covers migrating from other plugin managers to leanpack.nvim.
 
 ## From lazy.nvim
 
-Most lazy.nvim specs work directly with parcel.nvim.
+Most lazy.nvim specs work directly with leanpack.nvim.
 
 ### Key Differences
 
-| lazy.nvim          | parcel.nvim         | Notes                              |
+| lazy.nvim          | leanpack.nvim       | Notes                              |
 | ------------------ | ------------------- | ---------------------------------- |
 | `version` (semver) | `sem_version`       | `version` is for branch/tag/commit |
 | `module` trigger   | Not supported       | Uses explicit dependencies instead |
@@ -30,7 +30,7 @@ Most lazy.nvim specs work directly with parcel.nvim.
 }
 ```
 
-**parcel.nvim:**
+**leanpack.nvim:**
 
 ```lua
 {
@@ -46,7 +46,7 @@ Most lazy.nvim specs work directly with parcel.nvim.
 
 ### Migrating `module` Trigger
 
-lazy.nvim uses `package.loaders` interception for module-based loading. parcel.nvim doesn't support this for performance reasons.
+lazy.nvim uses `package.loaders` interception for module-based loading. leanpack.nvim doesn't support this for performance reasons.
 
 Instead, use explicit dependencies:
 
@@ -59,7 +59,7 @@ Instead, use explicit dependencies:
 }
 ```
 
-**parcel.nvim:**
+**leanpack.nvim:**
 
 ```lua
 {
@@ -87,11 +87,11 @@ vim.api.nvim_create_autocmd('FileType', {
 1. Copy your plugin specs to `lua/plugins/`
 2. Update `version` to `sem_version` for semver ranges
 3. Remove `module` triggers (use explicit deps instead)
-4. Test with `:Parcel update`
+4. Test with `:Leanpack update`
 
 ### Common Mappings
 
-| lazy.nvim             | parcel.nvim               |
+| lazy.nvim             | leanpack.nvim             |
 | --------------------- | ------------------------- |
 | `version = '^1.0'`    | `sem_version = '^1.0'`    |
 | `version = 'main'`    | `version = 'main'`        |
@@ -104,7 +104,7 @@ vim.api.nvim_create_autocmd('FileType', {
 
 ### Key Differences
 
-| packer.nvim      | parcel.nvim                  |
+| packer.nvim      | leanpack.nvim                |
 | ---------------- | ---------------------------- |
 | Async by default | Uses vim.pack (native async) |
 | Custom lockfile  | Uses nvim-pack-lock.json     |
@@ -125,7 +125,7 @@ return require('packer').startup(function(use)
 end)
 ```
 
-**parcel.nvim:**
+**leanpack.nvim:**
 
 Create `lua/plugins/init.lua`:
 
@@ -143,7 +143,7 @@ return {
 Then in `init.lua`:
 
 ```lua
-require('parcel').setup({ import = 'plugins' })
+require('leanpack').setup({ import = 'plugins' })
 ```
 
 ### Convert Automatically
@@ -158,11 +158,11 @@ You can use a conversion script to transform packer specs:
 
 ### Key Differences
 
-| vim-plug          | parcel.nvim                 |
-| ----------------- | --------------------------- |
-| `Plugin` function | Direct table specs          |
-| `Plug` command    | `require('parcel').setup()` |
-| Manual install    | Auto-install via vim.pack   |
+| vim-plug          | leanpack.nvim                 |
+| ----------------- | ----------------------------- |
+| `Plugin` function | Direct table specs            |
+| `Plug` command    | `require('leanpack').setup()` |
+| Manual install    | Auto-install via vim.pack     |
 
 ### Example Migration
 
@@ -175,7 +175,7 @@ Plug 'nvim-treesitter/nvim-treesitter', { 'for': ['lua', 'vim'] }
 call plug#end()
 ```
 
-**parcel.nvim:**
+**leanpack.nvim:**
 
 ```lua
 -- lua/plugins/init.lua
@@ -192,7 +192,7 @@ return {
 
 ### Key Differences
 
-| mini.deps           | parcel.nvim                |
+| mini.deps           | leanpack.nvim              |
 | ------------------- | -------------------------- |
 | `add()` function    | Declarative specs          |
 | `now()` / `later()` | Lazy triggers              |
@@ -207,7 +207,7 @@ require('mini.deps').add({ source = 'neovim/nvim-lspconfig' })
 require('mini.deps').add({ source = 'nvim-treesitter/nvim-treesitter' })
 ```
 
-**parcel.nvim:**
+**leanpack.nvim:**
 
 ```lua
 -- lua/plugins/lsp.lua
@@ -247,8 +247,8 @@ Always declare dependencies explicitly:
 
 1. Start with essential plugins
 2. Add lazy loading triggers
-3. Test with `:Parcel update`
-4. Verify with `:checkhealth parcel`
+3. Test with `:Leanpack update`
+4. Verify with `:checkhealth leanpack`
 
 ## Next Steps
 

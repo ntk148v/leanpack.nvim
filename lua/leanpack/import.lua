@@ -1,10 +1,10 @@
----@module 'parcel.import'
+---@module 'leanpack.import'
 local M = {}
 
 ---Import specs from a module path
 ---@param import_path string Module path (e.g., "plugins" for lua/plugins/)
 ---@param ctx table Context with import order tracking
----@return parcel.Spec[]
+---@return leanpack.Spec[]
 function M.import_specs(import_path, ctx)
   ctx = ctx or { import_order = 0, seen = {} }
 
@@ -64,7 +64,7 @@ end
 ---Process import result (can be single spec, list of specs, or nested import)
 ---@param result any
 ---@param ctx table Context
----@return parcel.Spec[]
+---@return leanpack.Spec[]
 function M.process_import_result(result, ctx)
   if result == nil then
     return {}

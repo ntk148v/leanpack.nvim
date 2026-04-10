@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test runner script for parcel.nvim
+# Test runner script for leanpack.nvim
 # Usage: ./scripts/test [test_file_pattern]
 # Example: ./scripts/test spec_spec
 # Example: ./scripts/test (runs all tests)

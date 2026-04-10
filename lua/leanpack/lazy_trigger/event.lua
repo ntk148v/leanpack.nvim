@@ -1,7 +1,7 @@
----@module 'parcel.lazy_trigger.event'
-local state = require("parcel.state")
-local loader = require("parcel.loader")
-local spec_mod = require("parcel.spec")
+---@module 'leanpack.lazy_trigger.event'
+local state = require("leanpack.state")
+local loader = require("leanpack.loader")
+local spec_mod = require("leanpack.spec")
 
 local M = {}
 
@@ -13,9 +13,9 @@ local function is_event_spec(value)
 end
 
 ---Normalize event value and apply fallback pattern
----@param spec parcel.Spec
----@param event parcel.EventValue
----@return parcel.NormalizedEvent[]
+---@param spec leanpack.Spec
+---@param event leanpack.EventValue
+---@return leanpack.NormalizedEvent[]
 local function normalize_events(spec, event)
   local result = {}
   local fallback_pattern = spec.pattern or "*"
@@ -69,8 +69,8 @@ end
 
 ---Setup event-based lazy loading
 ---@param pack_spec vim.pack.Spec
----@param spec parcel.Spec
----@param event parcel.EventValue
+---@param spec leanpack.Spec
+---@param event leanpack.EventValue
 function M.setup(pack_spec, spec, event)
   local normalized_events = normalize_events(spec, event)
 

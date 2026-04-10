@@ -1,25 +1,25 @@
 # Troubleshooting
 
-Common issues and their solutions when using parcel.nvim.
+Common issues and their solutions when using leanpack.nvim.
 
 ## General Issues
 
-### "Module 'parcel' not found"
+### "Module .leanpack. not found"
 
-**Cause:** parcel.nvim not in runtime path.
+**Cause:** leanpack.nvim not in runtime path.
 
 **Solution:**
 
-1. Check if parcel.nvim is installed:
+1. Check if leanpack.nvim is installed:
 
    ```bash
-   ls ~/.local/share/nvim/site/pack/parcel/opt/parcel.nvim
+   ls ~/.local/share/nvim/site/pack/leanpack/opt/leanpack.nvim
    ```
 
 2. Add to runtime path in `init.lua`:
 
    ```lua
-   vim.opt.rtp:prepend(vim.fn.stdpath("data") .. "/site/pack/parcel/opt/parcel.nvim")
+   vim.opt.rtp:prepend(vim.fn.stdpath("data") .. "/site/pack/leanpack/opt/leanpack.nvim")
    ```
 
 3. Or re-run bootstrap snippet at top of `init.lua`
@@ -36,11 +36,11 @@ Common issues and their solutions when using parcel.nvim.
    print(vim.fn.executable("git"))  -- Should be 1
    ```
 
-2. Check `:checkhealth parcel`
+2. Check `:checkhealth leanpack`
 
 3. Manually trigger install:
    ```vim
-   :Parcel update
+   :Leanpack update
    ```
 
 ### "Lazy loading not working"
@@ -62,12 +62,12 @@ Common issues and their solutions when using parcel.nvim.
 2. Check autocmd was created:
 
    ```vim
-   :au ParcelLazy
+   :au leanpackLazy
    ```
 
 3. Try loading manually:
    ```vim
-   :Parcel load plugin-name
+   :Leanpack load plugin-name
    ```
 
 ## Dependency Issues
@@ -138,12 +138,12 @@ Common issues and their solutions when using parcel.nvim.
 2. Run build manually:
 
    ```vim
-   :Parcel build plugin-name
+   :Leanpack build plugin-name
    ```
 
 3. Check logs:
    ```bash
-   cat ~/.local/share/nvim/lazy/parcel.log
+   cat ~/.local/share/nvim/lazy/leanpack.log
    ```
 
 ### "Build fails"
@@ -182,7 +182,7 @@ Common issues and their solutions when using parcel.nvim.
 
 2. Try opening manually:
    ```lua
-   require('parcel.ui').open()
+   require('leanpack.ui').open()
    ```
 
 ### "UI keymaps not working"
@@ -204,7 +204,7 @@ Common issues and their solutions when using parcel.nvim.
 1. Enable vim.loader:
 
    ```lua
-   require('parcel').setup({
+   require('leanpack').setup({
      performance = { vim_loader = true },
    })
    ```
@@ -217,7 +217,7 @@ Common issues and their solutions when using parcel.nvim.
 
 3. Use lazy loading for more plugins
 
-4. Check `:Parcel` to see loaded plugins
+4. Check `:Leanpack` to see loaded plugins
 
 ### "High memory usage"
 
@@ -226,12 +226,12 @@ Common issues and their solutions when using parcel.nvim.
 1. Clean unused plugins:
 
    ```vim
-   :Parcel clean
+   :Leanpack clean
    ```
 
 2. Check loaded plugins:
    ```vim
-   :Parcel
+   :Leanpack
    ```
 
 ## Logging
@@ -241,13 +241,13 @@ Common issues and their solutions when using parcel.nvim.
 1. Check log file location:
 
    ```lua
-   print(vim.fn.stdpath("log") .. "/parcel.log")
+   print(vim.fn.stdpath("log") .. "/leanpack.log")
    ```
 
 2. View recent logs:
 
    ```bash
-   tail -f ~/.local/share/nvim/lazy/parcel.log
+   tail -f ~/.local/share/nvim/lazy/leanpack.log
    ```
 
 3. Check for errors in logs
@@ -257,7 +257,7 @@ Common issues and their solutions when using parcel.nvim.
 Always start troubleshooting with:
 
 ```vim
-:checkhealth parcel
+:checkhealth leanpack
 ```
 
 This checks:
@@ -271,23 +271,23 @@ This checks:
 
 ## Common Error Messages
 
-| Error                          | Solution                                 |
-| ------------------------------ | ---------------------------------------- |
-| "Plugin not found in registry" | Add plugin to spec, run `:Parcel update` |
-| "Circular dependency detected" | Fix circular deps in dependency list     |
-| "Build hook failed"            | Check build command, check logs          |
-| "Config failed"                | Check plugin's setup function            |
+| Error                          | Solution                                   |
+| ------------------------------ | ------------------------------------------ |
+| "Plugin not found in registry" | Add plugin to spec, run `:Leanpack update` |
+| "Circular dependency detected" | Fix circular deps in dependency list       |
+| "Build hook failed"            | Check build command, check logs            |
+| "Config failed"                | Check plugin's setup function              |
 
 ## Getting Help
 
-1. Check `:checkhealth parcel`
+1. Check `:checkhealth leanpack`
 2. Check log file
 3. Search GitHub issues
 4. Create minimal reproduction
 
 ## Reset
 
-To reset parcel.nvim completely:
+To reset leanpack.nvim completely:
 
 ```bash
 # Remove all plugins
@@ -299,4 +299,4 @@ rm ~/.local/share/nvim/nvim-pack-lock.json
 # Restart Neovim
 ```
 
-Then run `:Parcel update` to reinstall.
+Then run `:Leanpack update` to reinstall.

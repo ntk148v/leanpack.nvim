@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # parcel requires Neovim 0.12.0+
+        # leanpack requires Neovim 0.12.0+
         # Once 0.12.0 is released, add 'v0.12.0' to test against stable
         neovim_version: ["nightly"]
 

@@ -1,12 +1,12 @@
-# parcel.nvim
+# leanpack.nvim
 
-A thin layer on top of Neovim's native `vim.pack`, adding support for lazy-loading and the widely adopted lazy.nvim-like declarative spec.
+A layer on top of Neovim's native `vim.pack`, adding support for lazy-loading and the widely adopted lazy.nvim-like declarative spec.
 
 **Requirements:** Neovim 0.12+
 
-## Why parcel?
+## Why leanpack?
 
-Neovim 0.12+ includes a built-in plugin manager (`vim.pack`) that handles plugin installation, updates, and version management. parcel.nvim is a thin layer that adds:
+Neovim 0.12+ includes a built-in plugin manager (`vim.pack`) that handles plugin installation, updates, and version management. leanpack.nvim is a thin layer that adds:
 
 - **Lazy-loading capabilities** - Load plugins on demand via events, commands, keymaps, or filetypes
 - **lazy.nvim-compatible spec** - Use the same declarative spec you know and love
@@ -20,45 +20,45 @@ All while completely leveraging the native `vim.pack` infrastructure.
 
 ### Bootstrap (Recommended)
 
-Add this to the top of your `init.lua` to automatically install parcel.nvim:
+Add this to the top of your `init.lua` to automatically install leanpack.nvim:
 
 ```lua
--- Bootstrap parcel.nvim
-local lazypath = vim.fn.stdpath("data") .. "/site/pack/parcel/opt/parcel.nvim"
+-- Bootstrap leanpack.nvim
+local lazypath = vim.fn.stdpath("data") .. "/site/pack/leanpack/opt/leanpack.nvim"
 if not vim.uv.fs_stat(lazypath) then
   vim.fn.system({
     "git",
     "clone",
     "--filter=blob:none",
-    "https://github.com/ntk148v/parcel.nvim",
+    "https://github.com/ntk148v/leanpack.nvim",
     lazypath,
   })
 end
 vim.opt.rtp:prepend(lazypath)
 
--- Setup parcel.nvim
-require("parcel").setup()
+-- Setup leanpack.nvim
+require("leanpack").setup()
 ```
 
 ### Manual Installation
 
 ```lua
 -- Install with vim.pack directly
-vim.pack.add({ 'https://github.com/ntk148v/parcel.nvim' })
+vim.pack.add({ 'https://github.com/ntk148v/leanpack.nvim' })
 ```
 
 ## Quick Start
 
 ```lua
--- Set leader before loading parcel
+-- Set leader before loading leanpack
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
 -- Setup with auto-import from lua/plugins/
-require('parcel').setup()
+require('leanpack').setup()
 
 -- Or with inline specs
-require('parcel').setup({
+require('leanpack').setup({
   { 'neovim/nvim-lspconfig', config = function() ... end },
   { import = 'plugins' }, -- also import from lua/plugins/
 })
@@ -102,7 +102,7 @@ return {
   url = "https://...",                  -- Custom git URL (lazy.nvim compat)
 
   -- Dependencies
-  dependencies = string|string[]|parcel.Spec|parcel.Spec[]|table, -- Supports multi-string table { "a", "b" }
+  dependencies = string|string[]|leanpack.Spec|leanpack.Spec[]|table, -- Supports multi-string table { "a", "b" }
 
   -- Loading control
   enabled = true|false|function,        -- Enable/disable plugin
@@ -210,7 +210,7 @@ return {
 
 ### Dependencies
 
-parcel.nvim automatically resolves and loads dependencies before the parent plugin. It also supports lazy.nvim's multi-plugin dependency format:
+leanpack.nvim automatically resolves and loads dependencies before the parent plugin. It also supports lazy.nvim's multi-plugin dependency format:
 
 ```lua
 return {
@@ -227,7 +227,7 @@ return {
 ```
 
 > [!TIP]
-> **Module Availability**: parcel.nvim adds all plugin `lua/` directories to the runtimepath during startup. This means you can `require()` modules from any plugin (including lazy ones) inside your `config` functions without manually adding them to dependencies, as long as the module path is unique.
+> **Module Availability**: leanpack.nvim adds all plugin `lua/` directories to the runtimepath during startup. This means you can `require()` modules from any plugin (including lazy ones) inside your `config` functions without manually adding them to dependencies, as long as the module path is unique.
 
 ### Version Pinning
 
@@ -255,18 +255,18 @@ return {
 
 ## Commands
 
-parcel provides the following commands (default: `:Parcel`, customizable via `cmd_prefix`):
+leanpack provides the following commands (default: `:Leanpack`, customizable via `cmd_prefix`):
 
-- `:Parcel` - Open the plugin manager UI
-- `:Parcel update [plugin]` - Update all plugins, or a specific plugin
-- `:Parcel clean` - Remove plugins that are no longer in your spec
-- `:Parcel build[!] [plugin]` - Run build hook for a specific plugin, or all plugins with `!`
-- `:Parcel load[!] [plugin]` - Load a specific unloaded plugin, or all unloaded plugins with `!`
-- `:Parcel delete[!] [plugin]` - Remove a specific plugin, or all plugins with `!`
+- `:Leanpack` - Open the plugin manager UI
+- `:Leanpack update [plugin]` - Update all plugins, or a specific plugin
+- `:Leanpack clean` - Remove plugins that are no longer in your spec
+- `:Leanpack build[!] [plugin]` - Run build hook for a specific plugin, or all plugins with `!`
+- `:Leanpack load[!] [plugin]` - Load a specific unloaded plugin, or all unloaded plugins with `!`
+- `:Leanpack delete[!] [plugin]` - Remove a specific plugin, or all plugins with `!`
 
 ## UI
 
-Open the plugin manager UI with `:Parcel`.
+Open the plugin manager UI with `:Leanpack`.
 
 Keymaps in the UI:
 
@@ -286,7 +286,7 @@ Status indicators:
 ## Configuration
 
 ```lua
-require('parcel').setup({
+require('leanpack').setup({
   -- { import = 'plugins' }  -- default import spec if not explicitly passed
   defaults = {
     confirm = true,          -- set to false to skip vim.pack install prompts
@@ -295,7 +295,7 @@ require('parcel').setup({
   performance = {
     vim_loader = true,       -- enables vim.loader for faster startup
   },
-  cmd_prefix = 'Parcel',     -- command: :Parcel update, :Parcel clean, etc.
+  cmd_prefix = 'leanpack',     -- command: :Leanpack update, :Leanpack clean, etc.
 
   -- Git throttling (prevents hitting rate limits)
   git = {
@@ -309,9 +309,9 @@ require('parcel').setup({
 
 ## Migrating from lazy.nvim
 
-Most of your lazy.nvim plugin specs will work as-is with parcel. Key differences:
+Most of your lazy.nvim plugin specs will work as-is with leanpack. Key differences:
 
-- **version pinning**: lazy.nvim's `version` field maps to parcel's `sem_version`
+- **version pinning**: lazy.nvim's `version` field maps to leanpack's `sem_version`
 - **dev mode**: Use `dev = true` with `dir = '~/projects/plugin-name'` for local development
 - **optional dependencies**: Use `optional = true` for dependencies that won't block plugin loading
 - **module trigger**: Use `module = "pattern"` for require()-based lazy loading

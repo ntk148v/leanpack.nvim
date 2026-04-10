@@ -1,13 +1,13 @@
----@module 'parcel.lazy'
-local state = require("parcel.state")
-local spec_mod = require("parcel.spec")
-local deps = require("parcel.deps")
+---@module 'leanpack.lazy'
+local state = require("leanpack.state")
+local spec_mod = require("leanpack.spec")
+local deps = require("leanpack.deps")
 
 local M = {}
 
 ---Check if a plugin should be lazy loaded
----@param spec parcel.Spec
----@param plugin parcel.Plugin?
+---@param spec leanpack.Spec
+---@param plugin leanpack.Plugin?
 ---@param src? string
 ---@return boolean
 function M.is_lazy(spec, plugin, src)
@@ -42,10 +42,10 @@ function M.process_lazy(ctx)
     return
   end
 
-  local event_handler = require("parcel.lazy_trigger.event")
-  local cmd_handler = require("parcel.lazy_trigger.cmd")
-  local keys_handler = require("parcel.lazy_trigger.keys")
-  local ft_handler = require("parcel.lazy_trigger.ft")
+  local event_handler = require("leanpack.lazy_trigger.event")
+  local cmd_handler = require("leanpack.lazy_trigger.cmd")
+  local keys_handler = require("leanpack.lazy_trigger.keys")
+  local ft_handler = require("leanpack.lazy_trigger.ft")
 
   for _, pack_spec in ipairs(ctx.lazy_packs) do
     local entry = state.get_entry(pack_spec.src)

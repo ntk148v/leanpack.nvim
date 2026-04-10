@@ -1,13 +1,13 @@
----@module 'parcel.deps'
-local state = require("parcel.state")
-local spec_mod = require("parcel.spec")
+---@module 'leanpack.deps'
+local state = require("leanpack.state")
+local spec_mod = require("leanpack.spec")
 
 local M = {}
 
 ---Resolve dependencies for a spec
----@param spec parcel.Spec
+---@param spec leanpack.Spec
 ---@param ctx table Processing context
----@return parcel.Spec[] dep_specs List of dependency specs
+---@return leanpack.Spec[] dep_specs List of dependency specs
 function M.resolve_dependencies(spec, ctx)
   if not spec.dependencies then
     return {}
@@ -21,7 +21,7 @@ function M.resolve_dependencies(spec, ctx)
   local dep_specs = {}
 
   ---Register a single dependency spec
-  ---@param normalized parcel.Spec
+  ---@param normalized leanpack.Spec
   ---@param src string
   local function add_dep(normalized, src)
     normalized._is_dependency = true

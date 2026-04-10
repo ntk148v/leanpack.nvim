@@ -1,15 +1,15 @@
----@module 'parcel.health'
+---@module 'leanpack.health'
 local M = {}
 
----Health check for parcel.nvim
+---Health check for leanpack.nvim
 function M.check()
-  vim.health.start("parcel.nvim")
+  vim.health.start("leanpack.nvim")
 
   -- Check Neovim version
   if vim.fn.has("nvim-0.12") == 1 then
     vim.health.ok("Neovim 0.12+ detected")
   else
-    vim.health.error("parcel.nvim requires Neovim 0.12+", {
+    vim.health.error("leanpack.nvim requires Neovim 0.12+", {
       "Upgrade to Neovim 0.12 or later",
     })
   end
@@ -33,10 +33,10 @@ function M.check()
   end
 
   -- Check for common issues
-  local parcel_state = require("parcel.state")
+  local leanpack_state = require("leanpack.state")
 
   -- Check for unloaded plugins
-  local unloaded = parcel_state.get_unloaded_names()
+  local unloaded = leanpack_state.get_unloaded_names()
   if #unloaded > 0 then
     vim.health.info(("There are %d unloaded plugins"):format(#unloaded))
     for _, name in ipairs(unloaded) do
@@ -47,10 +47,10 @@ function M.check()
   end
 
   -- Check for pending builds
-  if parcel_state.has_pending_builds() then
-    local pending = parcel_state.get_pending_builds()
+  if leanpack_state.has_pending_builds() then
+    local pending = leanpack_state.get_pending_builds()
     vim.health.warn(("There are %d plugins with pending build hooks"):format(vim.tbl_count(pending)), {
-      "Run :Parcel build! to execute all pending build hooks",
+      "Run :Leanpack build! to execute all pending build hooks",
     })
   else
     vim.health.ok("No pending build hooks")

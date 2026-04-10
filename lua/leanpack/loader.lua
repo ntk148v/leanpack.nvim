@@ -1,9 +1,9 @@
----@module 'parcel.loader'
-local state = require("parcel.state")
-local hooks = require("parcel.hooks")
-local spec_mod = require("parcel.spec")
-local keymap = require("parcel.keymap")
-local log = require("parcel.log")
+---@module 'leanpack.loader'
+local state = require("leanpack.state")
+local hooks = require("leanpack.hooks")
+local spec_mod = require("leanpack.spec")
+local keymap = require("leanpack.keymap")
+local log = require("leanpack.log")
 
 local M = {}
 
@@ -116,7 +116,7 @@ function M.process_startup(ctx)
   end
 
   -- Topological sort for dependencies
-  local sorted_packs = require("parcel.deps").toposort_startup(ctx.startup_packs)
+  local sorted_packs = require("leanpack.deps").toposort_startup(ctx.startup_packs)
 
   -- Load plugins and their configs in dependency order
   -- This ensures dependencies are loaded before dependents' configs run

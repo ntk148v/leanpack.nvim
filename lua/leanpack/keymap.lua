@@ -1,8 +1,8 @@
----@module 'parcel.keymap'
+---@module 'leanpack.keymap'
 local M = {}
 
 ---Apply keymaps from keys spec
----@param keys parcel.KeysValue
+---@param keys leanpack.KeysValue
 function M.apply_keys(keys)
   local normalized = M.normalize_keys(keys)
   for _, key in ipairs(normalized) do
@@ -27,8 +27,8 @@ function M.apply_keys(keys)
 end
 
 ---Normalize keys value to array of KeySpec
----@param value parcel.KeysValue
----@return parcel.KeySpec[]
+---@param value leanpack.KeysValue
+---@return leanpack.KeySpec[]
 function M.normalize_keys(value)
   if value == nil then
     return {}

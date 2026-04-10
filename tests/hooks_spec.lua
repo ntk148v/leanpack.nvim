@@ -1,5 +1,5 @@
 ---@module 'tests.hooks_spec'
--- Tests for parcel.hooks module
+-- Tests for leanpack.hooks module
 
 local MiniTest = require("mini.test")
 
@@ -12,9 +12,9 @@ local T = MiniTest.new_set({
 			child.lua([[
 				vim.opt.rtp:prepend("]] .. vim.fn.getcwd() .. [[")
 				_G.helpers = require("tests.helpers")
-				_G.helpers.reset_parcel_state()
-				_G.hooks = require("parcel.hooks")
-				_G.state = require("parcel.state")
+				_G.helpers.reset_leanpack_state()
+				_G.hooks = require("leanpack.hooks")
+				_G.state = require("leanpack.state")
 			]])
 		end,
 		post_once = child.stop,
@@ -53,8 +53,8 @@ T["run_init()"]["executes init hook"] = function()
 		_G.init_called = false
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
-			merged_spec = { 
-				src = "test-src", 
+			merged_spec = {
+				src = "test-src",
 				name = "test",
 				init = function() _G.init_called = true end
 			},
@@ -71,14 +71,14 @@ T["run_init()"]["handles init hook errors"] = function()
 	child.lua([[
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
-			merged_spec = { 
-				src = "test-src", 
+			merged_spec = {
+				src = "test-src",
 				name = "test",
 				init = function() error("init failed") end
 			},
 			plugin = { spec = { src = "test-src", name = "test" }, path = "/tmp/test" }
 		})
-		
+
 		_G.errors = {}
 		local orig_notify = vim.notify
 		vim.notify = function(msg, level)
@@ -86,9 +86,9 @@ T["run_init()"]["handles init hook errors"] = function()
 				table.insert(_G.errors, msg)
 			end
 		end
-		
+
 		_G.result = hooks.run_init("test-src")
-		
+
 		vim.notify = orig_notify
 		_G.has_error = false
 		for _, e in ipairs(_G.errors) do
@@ -135,8 +135,8 @@ T["run_config()"]["executes config function"] = function()
 		_G.config_called = false
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
-			merged_spec = { 
-				src = "test-src", 
+			merged_spec = {
+				src = "test-src",
 				name = "test",
 				config = function() _G.config_called = true end
 			},
@@ -154,8 +154,8 @@ T["run_config()"]["resolves opts function"] = function()
 		_G.opts_resolved = false
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
-			merged_spec = { 
-				src = "test-src", 
+			merged_spec = {
+				src = "test-src",
 				name = "test",
 				opts = function(plugin, opts)
 					_G.opts_resolved = true
@@ -175,8 +175,8 @@ T["run_config()"]["passes opts to config function"] = function()
 		_G.received_opts = nil
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
-			merged_spec = { 
-				src = "test-src", 
+			merged_spec = {
+				src = "test-src",
 				name = "test",
 				opts = { key = "value" },
 				config = function(plugin, opts)
@@ -196,14 +196,14 @@ T["run_config()"]["handles config hook errors"] = function()
 	child.lua([[
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
-			merged_spec = { 
-				src = "test-src", 
+			merged_spec = {
+				src = "test-src",
 				name = "test",
 				config = function() error("config failed") end
 			},
 			plugin = { spec = { src = "test-src", name = "test" }, path = "/tmp/test" }
 		})
-		
+
 		_G.errors = {}
 		local orig_notify = vim.notify
 		vim.notify = function(msg, level)
@@ -211,9 +211,9 @@ T["run_config()"]["handles config hook errors"] = function()
 				table.insert(_G.errors, msg)
 			end
 		end
-		
+
 		_G.result = hooks.run_config("test-src")
-		
+
 		vim.notify = orig_notify
 		_G.has_error = false
 		for _, e in ipairs(_G.errors) do
@@ -245,10 +245,10 @@ T["execute_build()"]["executes string build command"] = function()
 				orig_cmd(cmd)
 			end
 		end
-		
+
 		local plugin = { spec = { name = "test" }, path = "/tmp/test" }
 		hooks.execute_build("echo test", plugin)
-		
+
 		vim.cmd = orig_cmd
 	]])
 
@@ -299,8 +299,8 @@ T["run_build()"]["executes build hook"] = function()
 		_G.build_called = false
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
-			merged_spec = { 
-				src = "test-src", 
+			merged_spec = {
+				src = "test-src",
 				name = "test",
 				build = function() _G.build_called = true end
 			},
@@ -322,7 +322,7 @@ T["setup_build_tracking()"] = MiniTest.new_set()
 T["setup_build_tracking()"]["marks pending build on install"] = function()
 	child.lua([[
 		hooks.setup_build_tracking()
-		
+
 		-- Simulate PackChanged event
 		vim.api.nvim_exec_autocmds("PackChanged", {
 			data = {
@@ -330,7 +330,7 @@ T["setup_build_tracking()"]["marks pending build on install"] = function()
 				spec = { src = "test-src", name = "test" }
 			}
 		})
-		
+
 		_G.has_pending = state.has_pending_builds()
 		_G.pending_src = state.get_pending_builds()["test-src"] ~= nil
 	]])
@@ -342,7 +342,7 @@ end
 T["setup_build_tracking()"]["marks pending build on update"] = function()
 	child.lua([[
 		hooks.setup_build_tracking()
-		
+
 		-- Simulate PackChanged event
 		vim.api.nvim_exec_autocmds("PackChanged", {
 			data = {
@@ -350,7 +350,7 @@ T["setup_build_tracking()"]["marks pending build on update"] = function()
 				spec = { src = "test-src", name = "test" }
 			}
 		})
-		
+
 		_G.has_pending = state.has_pending_builds()
 	]])
 
@@ -376,9 +376,9 @@ T["run_pending_builds()"]["returns early if no pending builds"] = function()
 		hooks.execute_build = function()
 			_G.builds_run = true
 		end
-		
+
 		hooks.run_pending_builds({})
-		
+
 		hooks.execute_build = orig_execute
 	]])
 
@@ -392,7 +392,7 @@ T["run_pending_builds()"]["executes pending builds"] = function()
 		hooks.execute_build = function()
 			_G.builds_run = _G.builds_run + 1
 		end
-		
+
 		state.set_entry("src1", {
 			specs = { { src = "src1", name = "test1" } },
 			merged_spec = { src = "src1", name = "test1", build = "make" },
@@ -407,9 +407,9 @@ T["run_pending_builds()"]["executes pending builds"] = function()
 		state.register_pack_spec({ src = "src2", name = "test2" })
 		state.mark_pending_build("src1")
 		state.mark_pending_build("src2")
-		
+
 		hooks.run_pending_builds({})
-		
+
 		hooks.execute_build = orig_execute
 	]])
 
@@ -425,14 +425,14 @@ T["run_pending_builds()"]["clears pending builds after execution"] = function()
 		})
 		state.register_pack_spec({ src = "test-src", name = "test" })
 		state.mark_pending_build("test-src")
-		
+
 		_G.has_pending_before = state.has_pending_builds()
-		
+
 		local orig_execute = hooks.execute_build
 		hooks.execute_build = function() end
 		hooks.run_pending_builds({})
 		hooks.execute_build = orig_execute
-		
+
 		_G.has_pending_after = state.has_pending_builds()
 	]])
 
@@ -453,7 +453,7 @@ T["run_all_builds()"]["executes builds for all plugins with build field"] = func
 		hooks.execute_build = function()
 			_G.builds_run = _G.builds_run + 1
 		end
-		
+
 		state.set_entry("src1", {
 			specs = { { src = "src1", name = "test1" } },
 			merged_spec = { src = "src1", name = "test1", build = "make" },
@@ -472,9 +472,9 @@ T["run_all_builds()"]["executes builds for all plugins with build field"] = func
 		state.register_pack_spec({ src = "src1", name = "test1" })
 		state.register_pack_spec({ src = "src2", name = "test2" })
 		state.register_pack_spec({ src = "src3", name = "test3" })
-		
+
 		hooks.run_all_builds()
-		
+
 		hooks.execute_build = orig_execute
 	]])
 
@@ -488,19 +488,19 @@ T["run_all_builds()"]["sends notification with count"] = function()
 		vim.notify = function(msg, level)
 			table.insert(_G.notifications, msg)
 		end
-		
+
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
 			merged_spec = { src = "test-src", name = "test", build = "make" },
 			plugin = { spec = { src = "test-src", name = "test" }, path = "/tmp/test" }
 		})
 		state.register_pack_spec({ src = "test-src", name = "test" })
-		
+
 		local orig_execute = hooks.execute_build
 		hooks.execute_build = function() end
 		hooks.run_all_builds()
 		hooks.execute_build = orig_execute
-		
+
 		vim.notify = orig_notify
 		_G.has_count_notification = false
 		for _, n in ipairs(_G.notifications) do
@@ -525,11 +525,11 @@ T["integration"]["complete hook workflow"] = function()
 		_G.init_called = false
 		_G.config_called = false
 		_G.build_called = false
-		
+
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
-			merged_spec = { 
-				src = "test-src", 
+			merged_spec = {
+				src = "test-src",
 				name = "test",
 				init = function() _G.init_called = true end,
 				config = function() _G.config_called = true end,
@@ -537,7 +537,7 @@ T["integration"]["complete hook workflow"] = function()
 			},
 			plugin = { spec = { src = "test-src", name = "test" }, path = "/tmp/test" }
 		})
-		
+
 		hooks.run_init("test-src")
 		hooks.run_config("test-src")
 		hooks.run_build("test-src")
@@ -551,11 +551,11 @@ end
 T["integration"]["hooks with opts"] = function()
 	child.lua([[
 		_G.received_opts = nil
-		
+
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
-			merged_spec = { 
-				src = "test-src", 
+			merged_spec = {
+				src = "test-src",
 				name = "test",
 				opts = { key = "value" },
 				config = function(plugin, opts)
@@ -564,7 +564,7 @@ T["integration"]["hooks with opts"] = function()
 			},
 			plugin = { spec = { src = "test-src", name = "test" }, path = "/tmp/test" }
 		})
-		
+
 		hooks.run_config("test-src")
 	]])
 

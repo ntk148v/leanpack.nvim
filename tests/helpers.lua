@@ -1,22 +1,22 @@
 ---@module 'tests.helpers'
--- Test helpers for parcel.nvim
+-- Test helpers for leanpack.nvim
 
 local M = {}
 
 -- Store original functions for restoration
 local originals = {}
 
----Reset parcel.nvim state completely
-function M.reset_parcel_state()
-	-- Clear all loaded parcel modules
+---Reset leanpack.nvim state completely
+function M.reset_leanpack_state()
+	-- Clear all loaded leanpack modules
 	for name, _ in pairs(package.loaded) do
-		if name:match("^parcel") then
+		if name:match("^leanpack") then
 			package.loaded[name] = nil
 		end
 	end
 
 	-- Re-require and reset state
-	local ok, state = pcall(require, "parcel.state")
+	local ok, state = pcall(require, "leanpack.state")
 	if ok and state.reset then
 		state.reset()
 	end
@@ -206,7 +206,7 @@ end
 
 ---Create a test spec
 ---@param overrides? table Fields to override
----@return parcel.Spec
+---@return leanpack.Spec
 function M.make_spec(overrides)
 	local spec = {
 		[1] = "user/test-plugin",
@@ -226,7 +226,7 @@ end
 
 ---Create a test plugin entry
 ---@param overrides? table Fields to override
----@return parcel.RegistryEntry
+---@return leanpack.RegistryEntry
 function M.make_entry(overrides)
 	local entry = {
 		specs = { M.make_spec() },

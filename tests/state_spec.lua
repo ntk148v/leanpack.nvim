@@ -1,5 +1,5 @@
 ---@module 'tests.state_spec'
--- Tests for parcel.state module
+-- Tests for leanpack.state module
 
 local MiniTest = require("mini.test")
 
@@ -11,7 +11,7 @@ local T = MiniTest.new_set({
 			child.restart({ "-u", "NONE" })
 			child.lua([[
 				vim.opt.rtp:prepend("]] .. vim.fn.getcwd() .. [[")
-				_G.state = require("parcel.state")
+				_G.state = require("leanpack.state")
 				state.reset()
 			]])
 		end,
@@ -35,7 +35,7 @@ T["reset()"]["clears all state"] = function()
 		state.mark_plugin_with_build("test")
 		state.mark_unloaded("test")
 		state.mark_pending_build("test")
-		
+
 		-- Reset
 		state.reset()
 	]])
@@ -200,7 +200,7 @@ T["build tracking"]["pending builds can be marked and cleared"] = function()
 		_G.has_pending = state.has_pending_builds()
 		_G.pending = state.get_pending_builds()
 		_G.has_testsrc = _G.pending["testsrc"] ~= nil
-		
+
 		state.clear_pending_build("testsrc")
 		_G.has_pending_after = state.has_pending_builds()
 	]])
@@ -262,10 +262,10 @@ T["remove plugin"]["remove_plugin clears all references"] = function()
 		state.mark_plugin_with_build("test-name")
 		state.mark_unloaded("test-name")
 		state.mark_pending_build("test-src")
-		
+
 		-- Remove
 		state.remove_plugin("test-name", "test-src")
-		
+
 		-- Verify
 		_G.entry = state.get_entry("test-src")
 		_G.pack_spec = state.get_pack_spec("test-src")
@@ -284,9 +284,9 @@ T["autocmd groups"] = MiniTest.new_set()
 
 T["autocmd groups"]["groups are created"] = function()
 	child.lua([[
-		_G.startup_exists = vim.api.nvim_create_augroup("parcel_startup", { clear = false }) ~= 0
-		_G.lazy_exists = vim.api.nvim_create_augroup("parcel_lazy", { clear = false }) ~= 0
-		_G.lazy_build_exists = vim.api.nvim_create_augroup("parcel_lazy_build", { clear = false }) ~= 0
+		_G.startup_exists = vim.api.nvim_create_augroup("leanpack_startup", { clear = false }) ~= 0
+		_G.lazy_exists = vim.api.nvim_create_augroup("leanpack_lazy", { clear = false }) ~= 0
+		_G.lazy_build_exists = vim.api.nvim_create_augroup("leanpack_lazy_build", { clear = false }) ~= 0
 	]])
 
 	MiniTest.expect.equality(child.lua_get("_G.startup_exists"), true)

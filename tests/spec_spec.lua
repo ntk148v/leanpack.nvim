@@ -1,5 +1,5 @@
 ---@module 'tests.spec_spec'
--- Tests for parcel.spec module
+-- Tests for leanpack.spec module
 
 local helpers = require("tests.helpers")
 local MiniTest = require("mini.test")
@@ -13,8 +13,8 @@ local T = MiniTest.new_set({
 			child.lua([[
 				vim.opt.rtp:prepend("]] .. vim.fn.getcwd() .. [[")
 				_G.helpers = require("tests.helpers")
-				_G.helpers.reset_parcel_state()
-				_G.spec = require("parcel.spec")
+				_G.helpers.reset_leanpack_state()
+				_G.spec = require("leanpack.spec")
 			]])
 		end,
 		post_once = child.stop,
@@ -336,7 +336,7 @@ T["to_pack_spec()"]["converts to vim.pack.Spec format"] = function()
 	MiniTest.expect.equality(result.src, "https://github.com/user/repo")
 	MiniTest.expect.equality(result.name, "repo")
 	MiniTest.expect.equality(result.version, "v1.0.0")
-	MiniTest.expect.equality(result.data.parcel, true)
+	MiniTest.expect.equality(result.data.leanpack, true)
 	MiniTest.expect.equality(result.data.priority, 100)
 end
 

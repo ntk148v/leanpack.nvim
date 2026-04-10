@@ -1,8 +1,8 @@
----@module 'parcel.commands'
-local state = require("parcel.state")
-local hooks = require("parcel.hooks")
-local loader = require("parcel.loader")
-local log = require("parcel.log")
+---@module 'leanpack.commands'
+local state = require("leanpack.state")
+local hooks = require("leanpack.hooks")
+local loader = require("leanpack.loader")
+local log = require("leanpack.log")
 
 local M = {}
 
@@ -64,8 +64,8 @@ function M.clean_unused()
 
   for _, pack in ipairs(installed) do
     local src = pack.spec.src
-    -- Don't clean parcel itself
-    if not state.get_entry(src) and not src:find("parcel") then
+    -- Don't clean leanpack itself
+    if not state.get_entry(src) and not src:find("leanpack") then
       table.insert(to_delete, pack.spec.name)
     end
   end
@@ -96,7 +96,7 @@ function M.setup(prefix)
     return
   end
 
-  -- :Parcel {subcommand} [args]
+  -- :Leanpack {subcommand} [args]
   local ok = create_command(prefix, function(opts)
     local args = vim.split(opts.args, "%s+", { trimempty = true })
     local subcommand = args[1]
@@ -104,7 +104,7 @@ function M.setup(prefix)
 
     if not subcommand then
       -- Open UI when no subcommand provided
-      require("parcel.ui").open()
+      require("leanpack.ui").open()
       return
     end
 
@@ -215,7 +215,7 @@ function M.setup(prefix)
         for _, pack_spec in ipairs(state.get_all_pack_specs()) do
           table.insert(names, pack_spec.name)
         end
-        table.insert(names, "parcel.nvim")
+        table.insert(names, "leanpack.nvim")
 
         vim.notify(("Deleting all %d installed plugin(s)..."):format(#names), vim.log.levels.INFO)
         vim.pack.del(names, { force = true })
@@ -245,7 +245,7 @@ function M.setup(prefix)
   end, {
     nargs = "*",
     bang = true,
-    desc = "Parcel plugin manager commands",
+    desc = "Leanpack plugin manager commands",
     complete = function(arg_lead, cmd_line, cursor_pos)
       local parts = vim.split(cmd_line, "%s+", { trimempty = true })
       if #parts <= 2 then

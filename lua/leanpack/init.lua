@@ -1,26 +1,26 @@
----@module 'parcel'
-local state = require("parcel.state")
-local spec_mod = require("parcel.spec")
-local import_mod = require("parcel.import")
-local deps_mod = require("parcel.deps")
-local hooks = require("parcel.hooks")
-local lazy_mod = require("parcel.lazy")
-local loader = require("parcel.loader")
-local commands = require("parcel.commands")
-local log = require("parcel.log")
+---@module 'leanpack'
+local state = require("leanpack.state")
+local spec_mod = require("leanpack.spec")
+local import_mod = require("leanpack.import")
+local deps_mod = require("leanpack.deps")
+local hooks = require("leanpack.hooks")
+local lazy_mod = require("leanpack.lazy")
+local loader = require("leanpack.loader")
+local commands = require("leanpack.commands")
+local log = require("leanpack.log")
 
 local M = {}
 
----@class parcel.ProcessContext
+---@class leanpack.ProcessContext
 ---@field vim_packs vim.pack.Spec[]
 ---@field srcs_with_init string[]
 ---@field startup_packs vim.pack.Spec[]
 ---@field lazy_packs vim.pack.Spec[]
 ---@field load boolean?
 ---@field confirm boolean?
----@field defaults parcel.Config.Defaults
+---@field defaults leanpack.Config.Defaults
 
----@return parcel.ProcessContext
+---@return leanpack.ProcessContext
 local function create_context(opts)
   opts = opts or {}
   return {
@@ -38,7 +38,7 @@ end
 ---@return boolean
 local function check_version()
   if vim.fn.has("nvim-0.12") ~= 1 then
-    vim.notify("parcel.nvim requires Neovim 0.12+", vim.log.levels.ERROR)
+    vim.notify("leanpack.nvim requires Neovim 0.12+", vim.log.levels.ERROR)
     return false
   end
   return true
@@ -46,27 +46,27 @@ end
 
 
 
----@class parcel.Config
----@field spec? parcel.Spec[] Plugin specifications
----@field cmd_prefix? string Command prefix, default "Parcel"
----@field defaults? parcel.Config.Defaults
----@field performance? parcel.Config.Performance
+---@class leanpack.Config
+---@field spec? leanpack.Spec[] Plugin specifications
+---@field cmd_prefix? string Command prefix, default "Leanpack"
+---@field defaults? leanpack.Config.Defaults
+---@field performance? leanpack.Config.Performance
 
----@class parcel.Config.Defaults
----@field cond? boolean|(fun(plugin: parcel.Plugin):boolean) Global condition for all plugins
+---@class leanpack.Config.Defaults
+---@field cond? boolean|(fun(plugin: leanpack.Plugin):boolean) Global condition for all plugins
 ---@field confirm? boolean Ask for confirmation on install, default true
 
----@class parcel.Config.Performance
+---@class leanpack.Config.Performance
 ---@field vim_loader? boolean Enable vim.loader for faster startup, default true
 
 local config = {
-  cmd_prefix = "Parcel",
+  cmd_prefix = "Leanpack",
   defaults = { confirm = true },
   performance = { vim_loader = true },
 }
 
 ---Process all specs and register plugins
----@param ctx parcel.ProcessContext
+---@param ctx leanpack.ProcessContext
 local function process_all(ctx)
   -- Setup build tracking before vim.pack.add
   hooks.setup_build_tracking()
@@ -112,8 +112,8 @@ local function process_all(ctx)
 end
 
 ---Register a spec and its dependencies
----@param spec parcel.Spec
----@param ctx parcel.ProcessContext
+---@param spec leanpack.Spec
+---@param ctx leanpack.ProcessContext
 ---@param is_dependency? boolean
 local function register_spec(spec, ctx, is_dependency)
   -- Normalize spec
@@ -191,7 +191,7 @@ local function finalize_specs()
 end
 
 ---Categorize plugins into startup and lazy
----@param ctx parcel.ProcessContext
+---@param ctx leanpack.ProcessContext
 local function categorize_plugins(ctx)
   for _, pack_spec in ipairs(state.get_all_pack_specs()) do
     local entry = state.get_entry(pack_spec.src)
@@ -205,22 +205,22 @@ local function categorize_plugins(ctx)
   end
 end
 
----Setup parcel.nvim
----@param opts? parcel.Config
+---Setup leanpack.nvim
+---@param opts? leanpack.Config
 function M.setup(opts)
   if not check_version() then
     return
   end
 
   if state.is_configured() then
-    vim.notify("parcel.setup() has already been called", vim.log.levels.WARN)
+    vim.notify("leanpack.setup() has already been called", vim.log.levels.WARN)
     return
   end
   state.mark_setup()
 
   -- Initialize logging
   log.init()
-  log.info("parcel.nvim setup started")
+  log.info("leanpack.nvim setup started")
 
   opts = opts or {}
 
@@ -272,7 +272,7 @@ function M.setup(opts)
   -- Process all plugins
   process_all(ctx)
 
-  log.info("parcel.nvim setup completed")
+  log.info("leanpack.nvim setup completed")
 
   -- Setup commands
   commands.setup(config.cmd_prefix)

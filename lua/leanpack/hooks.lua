@@ -1,12 +1,12 @@
----@module 'parcel.hooks'
-local state = require("parcel.state")
-local spec_mod = require("parcel.spec")
+---@module 'leanpack.hooks'
+local state = require("leanpack.state")
+local spec_mod = require("leanpack.spec")
 
 -- Lazy require to avoid circular dependency
 local loader = nil
 local function get_loader()
   if not loader then
-    loader = require("parcel.loader")
+    loader = require("leanpack.loader")
   end
   return loader
 end
@@ -15,7 +15,7 @@ local M = {}
 
 ---Execute a hook function safely
 ---@param hook_name string
----@param plugin parcel.Plugin
+---@param plugin leanpack.Plugin
 ---@param hook function
 ---@return boolean success
 local function execute_hook(hook_name, plugin, hook)
@@ -101,8 +101,8 @@ function M.run_config(src)
 end
 
 ---Execute build hook
----@param build string|fun(plugin: parcel.Plugin)
----@param plugin parcel.Plugin
+---@param build string|fun(plugin: leanpack.Plugin)
+---@param plugin leanpack.Plugin
 function M.execute_build(build, plugin)
   if type(build) == "string" then
     vim.cmd(build)

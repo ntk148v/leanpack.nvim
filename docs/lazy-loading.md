@@ -1,12 +1,12 @@
 # Lazy Loading
 
-parcel.nvim provides multiple lazy loading mechanisms to optimize Neovim startup time.
+leanpack.nvim provides multiple lazy loading mechanisms to optimize Neovim startup time.
 
 ## Overview
 
 Lazy loading defers plugin activation until needed. This reduces startup time by only loading plugins when you use their features.
 
-parcel.nvim implements four lazy loading trigger types:
+leanpack.nvim implements four lazy loading trigger types:
 
 1. **Event** - Load when a Neovim event fires
 2. **Command** - Load when a user command is called
@@ -99,7 +99,7 @@ return {
 
 ### How It Works
 
-1. parcel.nvim creates a temporary stub command
+1. leanpack.nvim creates a temporary stub command
 2. When the user runs the command, the stub loads the plugin
 3. The stub deletes itself and runs the actual command
 
@@ -154,7 +154,7 @@ return {
 
 ### How It Works
 
-1. parcel.nvim creates a temporary keymap
+1. leanpack.nvim creates a temporary keymap
 2. When the key is pressed, the plugin loads
 3. The keymap deletes itself and re-feeds the keystrokes
 
@@ -189,10 +189,10 @@ return {
 
 ### Critical: Event Re-triggering
 
-When using filetype triggers, parcel.nvim automatically re-triggers buffer events to ensure LSP/Treesitter attaches:
+When using filetype triggers, leanpack.nvim automatically re-triggers buffer events to ensure LSP/Treesitter attaches:
 
 ```lua
--- After loading, parcel.nvim does:
+-- After loading, leanpack.nvim does:
 vim.api.nvim_exec_autocmds("BufReadPre", { buffer = bufnr })
 vim.api.nvim_exec_autocmds("BufReadPost", { buffer = bufnr })
 vim.api.nvim_exec_autocmds("FileType", { buffer = bufnr })
@@ -247,9 +247,9 @@ return {
 
 ## Performance
 
-parcel.nvim's lazy loading is optimized:
+leanpack.nvim's lazy loading is optimized:
 
-- **No package.loaders interception** - Unlike lazy.nvim, parcel doesn't intercept require()
+- **No package.loaders interception** - Unlike lazy.nvim, leanpack doesn't intercept require()
 - **Self-destructing triggers** - Autocmds delete themselves after first trigger
 - **O(V + E) dependency resolution** - Efficient topological sorting
 

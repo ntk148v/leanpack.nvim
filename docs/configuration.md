@@ -1,11 +1,11 @@
 # Configuration
 
-parcel.nvim is highly configurable. This guide covers all available options.
+leanpack.nvim is highly configurable. This guide covers all available options.
 
 ## Basic Configuration
 
 ```lua
-require('parcel').setup({
+require('leanpack').setup({
   -- Your plugin specs
   -- Can also be specified via { import = 'plugins' }
 })
@@ -16,11 +16,11 @@ require('parcel').setup({
 ### `cmd_prefix`
 
 - **Type**: `string`
-- **Default**: `"Parcel"`
-- **Description**: Prefix for all parcel commands
+- **Default**: `"Leanpack"`
+- **Description**: Prefix for all leanpack commands
 
 ```lua
-cmd_prefix = 'Parcel',  -- Commands: :Parcel update, :Parcel clean, etc.
+cmd_prefix = 'Leanpack',  -- Commands: :Leanpack update, :Leanpack clean, etc.
 ```
 
 ### `defaults`
@@ -66,9 +66,9 @@ git = {
 ## Full Configuration Example
 
 ```lua
-require('parcel').setup({
+require('leanpack').setup({
   -- Command prefix
-  cmd_prefix = 'Parcel',
+  cmd_prefix = 'leanpack',
 
   -- Default options for all plugins
   defaults = {
@@ -93,12 +93,12 @@ require('parcel').setup({
 
 ## Configuration Loading
 
-parcel.nvim looks for specs in multiple places:
+leanpack.nvim looks for specs in multiple places:
 
 1. **Passed directly** to `setup()`:
 
    ```lua
-   require('parcel').setup({
+   require('leanpack').setup({
      { 'plugin1' },
      { 'plugin2' },
    })
@@ -107,22 +107,22 @@ parcel.nvim looks for specs in multiple places:
 2. **Import spec** - use `{ import = 'plugins' }`:
 
    ```lua
-   require('parcel').setup({
+   require('leanpack').setup({
      { import = 'plugins' },  -- Loads from lua/plugins/
    })
    ```
 
 3. **Default auto-import** - If no specs are passed, looks for `lua/plugins/`:
    ```lua
-   require('parcel').setup()  -- Auto-imports from lua/plugins/
+   require('leanpack').setup()  -- Auto-imports from lua/plugins/
    ```
 
 ## Environment Variables
 
-parcel.nvim respects standard Neovim paths:
+leanpack.nvim respects standard Neovim paths:
 
 - `stdpath("data")` - Plugin storage location
-- `stdpath("log")` - Log file location (`parcel.log`)
+- `stdpath("log")` - Log file location (`leanpack.log`)
 
 ## Debug Mode
 
@@ -132,13 +132,13 @@ To enable debug logging:
 
    ```lua
    -- View log location
-   print(vim.fn.stdpath("log") .. "/parcel.log")
+   print(vim.fn.stdpath("log") .. "/leanpack.log")
    ```
 
 2. Enable verbose logging (add to setup):
    ```lua
    -- Currently debug level is set via log.lua
-   -- Check lua/parcel/log.lua for options
+   -- Check lua/leanpack/log.lua for options
    ```
 
 ## Next Steps

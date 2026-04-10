@@ -1,4 +1,4 @@
----@module 'parcel.log'
+---@module 'leanpack.log'
 local M = {}
 
 local log_file = nil
@@ -7,7 +7,7 @@ local log_enabled = false
 ---Initialize logging
 function M.init()
   local log_path = vim.fn.stdpath("log")
-  log_file = log_path .. "/parcel.log"
+  log_file = log_path .. "/leanpack.log"
   log_enabled = true
 end
 
