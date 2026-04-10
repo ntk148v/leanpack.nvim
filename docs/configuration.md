@@ -45,21 +45,7 @@ defaults = {
 ```lua
 performance = {
   vim_loader = true,  -- Enable vim.loader for faster startup
-}
-```
-
-### `git`
-
-- **Type**: `table`
-- **Default**: `{}`
-- **Description**: Git operation settings
-
-```lua
-git = {
-  throttle = {
-    requests = 10,    -- Max concurrent git operations
-    interval = 1000,  -- Interval in ms between requests
-  },
+  rtp_prune = true,   -- Disable built-in plugins for faster startup
 }
 ```
 
@@ -79,15 +65,9 @@ require('leanpack').setup({
   -- Performance tuning
   performance = {
     vim_loader = true,  -- Enable vim.loader
+    rtp_prune = true,   -- Disable built-in plugins
   },
 
-  -- Git throttling to prevent rate limits
-  git = {
-    throttle = {
-      requests = 10,
-      interval = 1000,
-    },
-  },
 })
 ```
 

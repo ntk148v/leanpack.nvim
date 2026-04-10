@@ -143,6 +143,18 @@ end }
 { 'user/repo', event = 'VeryLazy' }  -- After UIEnter
 ```
 
+### Pattern Option
+
+For `event`, you can specify a fallback pattern:
+
+| Field     | Type     | Description                             |
+| --------- | -------- | --------------------------------------- |
+| `pattern` | `string` | Fallback autocmd pattern (default: `*`) |
+
+```lua
+{ 'user/repo', event = 'BufReadPre', pattern = '*.lua' }
+```
+
 ### Command Trigger
 
 | Field | Type               | Description   |

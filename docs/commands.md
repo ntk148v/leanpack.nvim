@@ -68,6 +68,14 @@ Remove a plugin from the filesystem.
 :Leanpack delete!           " Delete all managed plugins
 ```
 
+### `:Leanpack sync`
+
+Synchronize all plugins. This is a shortcut for `update` followed by `clean`.
+
+```vim
+:Leanpack sync
+```
+
 ## UI Commands
 
 ### `:Leanpack`
