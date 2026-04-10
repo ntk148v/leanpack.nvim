@@ -2,6 +2,7 @@
 local state = require("leanpack.state")
 local loader = require("leanpack.loader")
 local spec_mod = require("leanpack.spec")
+local keymap = require("leanpack.keymap")
 
 local M = {}
 
@@ -26,7 +27,7 @@ function M.setup(registered_pack_specs)
 
       local keys_value = spec_mod.resolve_field(spec.keys, plugin)
       if keys_value then
-        local keys = M.normalize_keys(keys_value)
+        local keys = keymap.normalize_keys(keys_value)
         for _, key in ipairs(keys) do
           local lhs = key[1]
           local mode = key.mode or "n"
@@ -89,32 +90,6 @@ function M.setup(registered_pack_specs)
 
     ::skip_keymap::
   end
-end
-
----Normalize keys value to array of KeySpec
----@param value leanpack.KeysValue
----@return leanpack.KeySpec[]
-function M.normalize_keys(value)
-  if value == nil then
-    return {}
-  end
-
-  -- Single string
-  if type(value) == "string" then
-    return { { value } }
-  end
-
-  -- Array
-  local result = {}
-  for _, item in ipairs(value) do
-    if type(item) == "string" then
-      table.insert(result, { item })
-    elseif type(item) == "table" then
-      table.insert(result, item)
-    end
-  end
-
-  return result
 end
 
 return M

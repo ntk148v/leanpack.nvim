@@ -239,6 +239,15 @@ function M.setup(prefix)
         )
       vim.notify(msg, vim.log.levels.WARN)
       log.warn(("Deleted plugin: %s"):format(plugin_name))
+    elseif subcommand == "sync" then
+      log.info("Syncing all plugins")
+      vim.pack.update(nil, { force = true })
+      M.clean_unused()
+      vim.schedule(function()
+        vim.cmd("redraw")
+        vim.notify("Plugins synced successfully", vim.log.levels.INFO)
+        log.info("Plugins synced successfully")
+      end)
     else
       vim.notify(("Unknown subcommand: %s"):format(subcommand), vim.log.levels.ERROR)
     end
@@ -249,7 +258,7 @@ function M.setup(prefix)
     complete = function(arg_lead, cmd_line, cursor_pos)
       local parts = vim.split(cmd_line, "%s+", { trimempty = true })
       if #parts <= 2 then
-        local subcommands = { "build", "clean", "delete", "load", "update" }
+        local subcommands = { "build", "clean", "delete", "load", "sync", "update" }
         return filter_completions(subcommands, arg_lead)
       elseif #parts == 3 then
         local subcommand = parts[2]

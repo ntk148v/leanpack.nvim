@@ -63,6 +63,20 @@ function M.check()
   else
     vim.health.info("No lockfile found. It will be created by vim.pack on first plugin install.")
   end
+
+  -- Bootstrap snippet
+  vim.health.start("Bootstrapping")
+  vim.health.info("Copy this snippet to the top of your init.lua to automate leanpack.nvim installation:")
+  local bootstrap_snippet = [[
+local path = vim.fn.stdpath("data") .. "/site/pack/leanpack/opt/leanpack.nvim"
+if not (vim.uv or vim.loop).fs_stat(path) then
+  vim.fn.system({ "git", "clone", "--filter=blob:none", "https://github.com/ntk148v/leanpack.nvim", path })
+end
+vim.cmd.packadd("leanpack.nvim")
+require("leanpack").setup({
+  -- your configuration
+})]]
+  vim.health.info("\n" .. bootstrap_snippet)
 end
 
 return M

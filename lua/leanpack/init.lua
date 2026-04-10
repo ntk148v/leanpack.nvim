@@ -44,26 +44,37 @@ local function check_version()
   return true
 end
 
-
-
----@class leanpack.Config
----@field spec? leanpack.Spec[] Plugin specifications
----@field cmd_prefix? string Command prefix, default "Leanpack"
----@field defaults? leanpack.Config.Defaults
----@field performance? leanpack.Config.Performance
-
----@class leanpack.Config.Defaults
----@field cond? boolean|(fun(plugin: leanpack.Plugin):boolean) Global condition for all plugins
----@field confirm? boolean Ask for confirmation on install, default true
-
----@class leanpack.Config.Performance
----@field vim_loader? boolean Enable vim.loader for faster startup, default true
-
 local config = {
   cmd_prefix = "Leanpack",
   defaults = { confirm = true },
-  performance = { vim_loader = true },
+  performance = {
+    vim_loader = true,
+    rtp_prune = true,
+  },
 }
+
+local default_prune_list = {
+  "gzip",
+  "matchit",
+  "matchparen",
+  "netrwPlugin",
+  "tarPlugin",
+  "tohtml",
+  "tutor",
+  "zipPlugin",
+}
+
+---Prune runtime path by disabling built-in plugins
+---@param list boolean|string[]
+local function prune_rtp(list)
+  if list == false then
+    return
+  end
+  local plugins = list == true and default_prune_list or list
+  for _, plugin in ipairs(plugins) do
+    vim.g["loaded_" .. plugin] = 1
+  end
+end
 
 ---Process all specs and register plugins
 ---@param ctx leanpack.ProcessContext
@@ -163,9 +174,6 @@ local function register_spec(spec, ctx, is_dependency)
     local pack_spec = spec_mod.to_pack_spec(normalized)
     state.register_pack_spec(pack_spec)
     table.insert(ctx.vim_packs, pack_spec)
-
-    -- Mark as unloaded
-    state.mark_unloaded(normalized.name)
   end
 end
 
@@ -240,6 +248,12 @@ function M.setup(opts)
     vim.loader.enable()
   end
 
+  -- Prune RTP
+  prune_rtp(config.performance.rtp_prune)
+
+  -- Setup commands
+  commands.setup(config.cmd_prefix)
+
   -- Create processing context
   local ctx = create_context({
     confirm = config.defaults.confirm,
@@ -273,9 +287,6 @@ function M.setup(opts)
   process_all(ctx)
 
   log.info("leanpack.nvim setup completed")
-
-  -- Setup commands
-  commands.setup(config.cmd_prefix)
 end
 
 return M

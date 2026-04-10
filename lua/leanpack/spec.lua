@@ -102,25 +102,16 @@ local function is_enabled(spec)
 end
 
 ---Normalize a single spec
----@param spec leanpack.Spec
----@param defaults? leanpack.Config.Defaults
----@return leanpack.Spec? normalized_spec, string src
 function M.normalize_spec(spec, defaults)
-  -- Check enabled
   if not is_enabled(spec) then
     return nil, ""
   end
 
-  -- Resolve source
   local src = resolve_src(spec)
-  local name = spec.name or extract_name(src)
-  local version = resolve_version(spec)
-
-  -- Build normalized spec
   local normalized = {
     src = src,
-    name = name,
-    version = version,
+    name = spec.name or extract_name(src),
+    version = resolve_version(spec),
     dependencies = spec.dependencies,
     cond = spec.cond or (defaults and defaults.cond),
     lazy = spec.lazy,
@@ -130,11 +121,11 @@ function M.normalize_spec(spec, defaults)
     build = spec.build,
     opts = spec.opts,
     main = spec.main,
-    event = spec.event,
+    event = M.normalize_list(spec.event),
+    cmd = M.normalize_list(spec.cmd),
+    keys = M.normalize_list(spec.keys),
+    ft = M.normalize_list(spec.ft),
     pattern = spec.pattern,
-    cmd = spec.cmd,
-    keys = spec.keys,
-    ft = spec.ft,
     dev = spec.dev,
     optional = spec.optional,
   }

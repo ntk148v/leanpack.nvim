@@ -96,8 +96,9 @@ function M.setup(pack_spec, spec, event)
         group = state.lazy_group,
         once = true,
         pattern = normalized.pattern,
-        callback = function()
+        callback = function(ev)
           loader.load_plugin(pack_spec)
+          require("leanpack.lazy_trigger.util").retrigger_events(ev.buf)
         end,
       })
     end

@@ -17,16 +17,7 @@ function M.setup(pack_spec, ft)
     once = true,
     callback = function(ev)
       loader.load_plugin(pack_spec)
-
-      -- Re-trigger events for the buffer to ensure LSP/Treesitter attach
-      vim.schedule(function()
-        local bufnr = ev.buf
-        if vim.api.nvim_buf_is_valid(bufnr) then
-          vim.api.nvim_exec_autocmds("BufReadPre", { buffer = bufnr, modeline = false })
-          vim.api.nvim_exec_autocmds("BufReadPost", { buffer = bufnr, modeline = false })
-          vim.api.nvim_exec_autocmds("FileType", { buffer = bufnr, modeline = false })
-        end
-      end)
+      require("leanpack.lazy_trigger.util").retrigger_events(ev.buf)
     end,
   })
 end
