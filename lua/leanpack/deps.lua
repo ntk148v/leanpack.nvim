@@ -147,35 +147,4 @@ function M.is_dependency_only(src)
   return true
 end
 
----Validate all dependencies before loading
----Returns list of missing dependencies
----@return table<string, string[]> missing_deps Map of plugin src to missing dependencies
-function M.validate_dependencies()
-  local missing_deps = {}
-  local all_entries = state.get_all_entries()
-  
-  for src, entry in pairs(all_entries) do
-    if entry.merged_spec and entry.merged_spec.dependencies then
-      local deps = entry.merged_spec.dependencies
-      if type(deps) == "string" then
-        deps = { deps }
-      end
-      
-      for _, dep in ipairs(deps) do
-        local dep_name = type(dep) == "string" and dep or dep[1]
-        local normalized = spec_mod.normalize_spec({ dep_name }, {})
-        
-        -- Check if dependency exists
-        if normalized and normalized.src and not state.get_entry(normalized.src) then
-          missing_deps[src] = missing_deps[src] or {}
-          table.insert(missing_deps[src], normalized.src)
-        end
-      end
-    end
-  end
-  
-  return missing_deps
-end
-
-
 return M

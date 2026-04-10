@@ -75,7 +75,7 @@ function M.load_plugin(pack_spec, opts)
   end
 
   -- Run packadd
-  vim.cmd.packadd({ pack_spec.name, bang = opts.bang })
+  vim.cmd.packadd(pack_spec.name)
 
   -- Run config hook
   if spec.config or spec.opts ~= nil then

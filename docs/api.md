@@ -156,20 +156,6 @@ local normalized = require('leanpack.spec').normalize_spec({
 })
 ```
 
-### `leanpack.spec.detect_main(plugin)`
-
-Detect main module for a plugin.
-
-**Parameters:**
-
-- `plugin` (`vim.pack.Plugin`): Plugin object
-
-**Returns:** `string` or `nil`
-
-```lua
-local main = require('leanpack.spec').detect_main(plugin)
-```
-
 ## Events
 
 leanpack.nvim uses Neovim autocommands. You can hook into these:

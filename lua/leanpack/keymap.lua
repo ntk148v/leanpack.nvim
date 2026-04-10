@@ -52,22 +52,4 @@ function M.normalize_keys(value)
   return result
 end
 
----Create lazy keymap that loads plugin on first press
----@param lhs string
----@param rhs string|fun()
----@param opts? { desc?: string, mode?: string|string[], remap?: boolean, nowait?: boolean }
-function M.lazy_keymap(lhs, rhs, opts)
-  opts = opts or {}
-  local mode = opts.mode or "n"
-  local modes = type(mode) == "table" and mode or { mode }
-
-  for _, m in ipairs(modes) do
-    vim.keymap.set(m, lhs, rhs, {
-      desc = opts.desc,
-      remap = opts.remap or false,
-      nowait = opts.nowait or false,
-    })
-  end
-end
-
 return M

@@ -135,7 +135,6 @@ function M.normalize_spec(spec, defaults)
     cmd = spec.cmd,
     keys = spec.keys,
     ft = spec.ft,
-    module = spec.module,
     dev = spec.dev,
     optional = spec.optional,
   }
@@ -198,41 +197,6 @@ function M.normalize_list(value)
   return value
 end
 
----Detect main module name from plugin name
----Simplified: relies on explicit `main` field or plugin name
----@param plugin leanpack.Plugin
----@return string?
-function M.detect_main(plugin)
-  local name = plugin.spec.name
-  if not name then
-    return nil
-  end
-
-  -- Try plugin name directly first
-  local ok = pcall(require, name)
-  if ok then
-    return name
-  end
-
-  -- Try common variations
-  local variations = {
-    name:gsub("%.nvim$", ""),
-    name:gsub("^nvim%-", ""),
-    name:gsub("%-nvim$", ""),
-  }
-
-  for _, variant in ipairs(variations) do
-    if variant ~= name then
-      ok = pcall(require, variant)
-      if ok then
-        return variant
-      end
-    end
-  end
-
-  return nil
-end
-
 ---Merge multiple specs for the same plugin
 ---@param specs leanpack.Spec[]
 ---@return leanpack.Spec merged_spec
@@ -277,7 +241,7 @@ function M.merge_specs(specs)
     -- Take first non-nil value for scalar fields
     for _, key in ipairs({
       "src", "name", "version", "cond", "lazy", "priority",
-      "init", "config", "build", "main", "pattern", "module", "dev", "optional"
+      "init", "config", "build", "main", "pattern", "dev", "optional"
     }) do
       if spec[key] ~= nil and merged[key] == nil then
         merged[key] = spec[key]

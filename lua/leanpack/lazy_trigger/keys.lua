@@ -56,6 +56,12 @@ function M.setup(registered_pack_specs)
     local remap = info.key_spec.remap or false
     local nowait = info.key_spec.nowait or false
 
+    -- Skip if keymap already exists (plugin may define it itself)
+    local existing = vim.api.nvim_get_keymap(info.mode, lhs)
+    if next(existing) ~= nil then
+      goto skip_keymap
+    end
+
     vim.keymap.set(info.mode, lhs, function()
       -- Delete the keymap
       pcall(vim.keymap.del, info.mode, lhs)
@@ -80,6 +86,8 @@ function M.setup(registered_pack_specs)
       remap = remap,
       nowait = nowait,
     })
+
+    ::skip_keymap::
   end
 end
 

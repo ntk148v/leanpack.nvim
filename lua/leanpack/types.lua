@@ -46,7 +46,6 @@
 ---@field cmd? leanpack.CmdValue|fun(plugin: leanpack.Plugin):leanpack.CmdValue Lazy load on command
 ---@field keys? leanpack.KeysValue|fun(plugin: leanpack.Plugin):leanpack.KeysValue Lazy load on keymap
   ---@field ft? leanpack.FtValue|fun(plugin: leanpack.Plugin):leanpack.FtValue Lazy load on filetype
-  ---@field module? string|string[] Auto-load when require()'d with matching module pattern
   ---@field import? string Module path to import specs from
   ---@field dev? boolean Development mode, use ~/projects/{plugin-name} as source
   ---@field optional? boolean Optional dependency, warn instead of error if not found
@@ -66,25 +65,10 @@
 ---@class leanpack.Config.Performance
 ---@field vim_loader? boolean Enable vim.loader for faster startup, default true
 
----@class leanpack.Config.Lockfile
----@field path? string Path to lockfile, default "{config}/leanpack-lock.json"
-
----@class leanpack.Config.Checker
----@field enabled? boolean Default false
----@field frequency? number Seconds between checks, default 3600
----@field notify? boolean Show notification on updates, default true
-
----@class leanpack.Config.Git
----@field throttle? { enabled?: boolean, rate?: number, duration?: number }
----@field timeout? number Git timeout in seconds, default 120
-
 ---@class leanpack.Config
 ---@field spec? leanpack.Spec[] Plugin specifications
 ---@field cmd_prefix? string Command prefix, default "Leanpack"
 ---@field defaults? leanpack.Config.Defaults
 ---@field performance? leanpack.Config.Performance
----@field lockfile? leanpack.Config.Lockfile
----@field checker? leanpack.Config.Checker
----@field git? leanpack.Config.Git
 
 return {}

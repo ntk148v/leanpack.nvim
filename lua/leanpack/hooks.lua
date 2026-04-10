@@ -75,11 +75,11 @@ function M.run_config(src)
 
   -- Auto-setup with opts: require(main) and call setup()
   if spec.config == true or spec.opts ~= nil then
-    local main = spec.main or spec_mod.detect_main(plugin)
-    if not main then
+    if not spec.main then
       vim.notify(("No main module for %s. Set `main` field or use `config = function() ... end`"):format(src), vim.log.levels.WARN)
       return false
     end
+    local main = spec.main
 
     local ok, mod = pcall(require, main)
     if not ok then

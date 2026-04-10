@@ -31,6 +31,11 @@ function M.setup(registered_pack_specs)
 
   -- Create user commands
   for cmd, pack_specs in pairs(cmd_to_packs) do
+    -- Skip if command already exists (plugin may define it itself)
+    if vim.fn.exists(":" .. cmd) == 2 then
+      goto continue
+    end
+
     vim.api.nvim_create_user_command(cmd, function(cmd_args)
       -- Delete the command first
       pcall(vim.api.nvim_del_user_command, cmd)
@@ -46,6 +51,7 @@ function M.setup(registered_pack_specs)
         args = cmd_args.fargs,
       }, {})
     end, { nargs = "*" })
+    ::continue::
   end
 end
 
