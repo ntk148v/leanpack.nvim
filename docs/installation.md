@@ -14,23 +14,9 @@ leanpack.nvim offers multiple installation methods. Choose the one that best fit
 This is the recommended method for most users. Add this to the top of your `init.lua`:
 
 ```lua
--- Bootstrap leanpack.nvim
-local lazypath = vim.fn.stdpath("data") .. "/site/pack/leanpack/opt/leanpack.nvim"
-if not vim.uv.fs_stat(lazypath) then
-  vim.fn.system({
-    "git",
-    "clone",
-    "--filter=blob:none",
-    "https://github.com/ntk148v/leanpack.nvim",
-    lazypath,
-  })
-end
-vim.opt.rtp:prepend(lazypath)
-
--- Now you can require leanpack
-require("leanpack").setup({
-  -- your config here
-})
+-- Setup leanpack.nvim plugin manager
+vim.pack.add({ { src = "https://github.com/ntk148v/leanpack.nvim" } })
+require("leanpack").setup()
 ```
 
 This method:
