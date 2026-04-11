@@ -45,3 +45,9 @@ AGENTS.md
 .plans/
 
 .opencode/
+.qwen/
+
+.graphify/
+graphify-out/
+.graphify_*.json
+.graphify_python
