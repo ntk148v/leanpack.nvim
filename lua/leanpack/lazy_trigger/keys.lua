@@ -58,8 +58,15 @@ function M.setup(registered_pack_specs)
     local nowait = info.key_spec.nowait or false
 
     -- Skip if keymap already exists (plugin may define it itself)
-    local existing = vim.api.nvim_get_keymap(info.mode, lhs)
-    if next(existing) ~= nil then
+    local existing = vim.api.nvim_get_keymap(info.mode)
+    local key_exists = false
+    for _, km in ipairs(existing) do
+      if km.lhs == lhs then
+        key_exists = true
+        break
+      end
+    end
+    if key_exists then
       goto skip_keymap
     end
 
