@@ -40,12 +40,14 @@ luac.out
 *.hex
 
 AGENTS.md
+GEMINI.md
 
 .tests/
 .plans/
 
 .opencode/
 .qwen/
+.gemini/
 
 .graphify/
 graphify-out/
