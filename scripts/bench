@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Benchmark runner for leanpack.nvim
+# Usage: ./scripts/bench [plugin_count]
+# Example: ./scripts/bench 500
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+COUNT=${1:-100}
+
+echo "============================================================"
+echo "Running leanpack.nvim startup benchmark with $COUNT plugins"
+echo "============================================================"
+
+# Run with --startuptime to capture results
+nvim --clean --headless -u "$SCRIPT_DIR/bench.lua" --startuptime bench.txt -- "$COUNT"
+
+# Parse results (adjusting for potential system noise)
+tail -n 10 bench.txt
+
+echo "============================================================"
+echo "Benchmark completed. Full results in bench.txt"
+echo "============================================================"
