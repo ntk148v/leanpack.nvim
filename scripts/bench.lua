@@ -2,6 +2,13 @@
 -- Benchmark initialization for leanpack.nvim
 local leanpack = require("leanpack")
 
+-- Mock vim.pack.add to avoid real installation
+vim.pack = vim.pack or {}
+vim.pack.add = function() end
+vim.pack.get = function()
+    return {}
+end
+
 -- Get number of plugins from command line or default to 100
 local count = tonumber(arg[1]) or 100
 

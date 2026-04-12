@@ -1,0 +1,214 @@
+--- Startup times for process: Primary (or UI client) ---
+
+times in msec
+ clock   self+sourced   self:  sourced script
+ clock   elapsed:              other lines
+
+000.002  000.002: --- NVIM STARTING ---
+000.546  000.543: event init
+000.768  000.222: early init
+000.919  000.151: locale set
+001.006  000.087: init first window
+001.559  000.554: inits 1
+001.573  000.014: window checked
+001.628  000.055: parsing arguments
+003.576  000.186  000.186: require('vim.shared')
+003.715  000.058  000.058: require('vim.inspect')
+003.796  000.068  000.068: require('vim._options')
+003.808  000.224  000.097: require('vim._editor')
+003.859  000.049  000.049: require('vim._system')
+003.862  000.709  000.250: require('vim._init_packages')
+003.865  001.528: init lua interpreter
+003.995  000.130: expanding arguments
+004.034  000.038: inits 2
+004.562  000.529: init highlight
+004.651  000.088: clear screen
+005.219  000.072  000.072: require('vim.keymap')
+008.562  000.436  000.436: sourcing nvim_exec2()
+009.019  004.352  003.844: require('vim._defaults')
+009.029  000.026: init default mappings & autocommands
+010.324  000.184  000.184: sourcing /usr/share/nvim/runtime/ftplugin.vim
+010.502  000.086  000.086: sourcing /usr/share/nvim/runtime/indent.vim
+014.092  003.495  003.495: sourcing /home/kiennt/.local/share/nvim/site/pack/leanpack/opt/leanpack.nvim/scripts/bench.lua
+014.101  001.307: sourcing vimrc file(s)
+014.340  000.035  000.035: sourcing nvim_exec2() called at /usr/share/nvim/runtime/filetype.lua:0
+014.345  000.204  000.169: sourcing /usr/share/nvim/runtime/filetype.lua
+014.519  000.085  000.085: sourcing /usr/share/nvim/runtime/syntax/synload.vim
+014.665  000.283  000.198: sourcing /usr/share/nvim/runtime/syntax/syntax.vim
+016.293  000.391  000.391: sourcing /usr/share/nvim/runtime/plugin/gzip.vim
+017.095  000.379  000.379: sourcing /usr/share/nvim/runtime/pack/dist/opt/matchit/plugin/matchit.vim
+017.242  000.890  000.511: sourcing /usr/share/nvim/runtime/plugin/matchit.vim
+017.582  000.299  000.299: sourcing /usr/share/nvim/runtime/plugin/matchparen.vim
+020.611  002.269  002.269: sourcing /usr/share/nvim/runtime/pack/dist/opt/netrw/plugin/netrwPlugin.vim
+021.271  003.641  001.373: sourcing /usr/share/nvim/runtime/plugin/netrwPlugin.vim
+022.293  000.552  000.552: sourcing /usr/share/nvim/runtime/plugin/rplugin.vim
+023.628  000.543  000.543: sourcing /usr/share/nvim/runtime/plugin/tarPlugin.vim
+024.057  000.167  000.167: sourcing /usr/share/nvim/runtime/plugin/tutor.vim
+025.090  000.842  000.842: sourcing /usr/share/nvim/runtime/plugin/zipPlugin.vim
+025.816  000.516  000.516: sourcing /usr/share/nvim/runtime/plugin/editorconfig.lua
+026.723  000.750  000.750: sourcing /usr/share/nvim/runtime/plugin/man.lua
+027.623  000.571  000.571: sourcing /usr/share/nvim/runtime/plugin/nvim/net.lua
+027.979  000.161  000.161: sourcing /usr/share/nvim/runtime/plugin/nvim/spellfile.lua
+028.136  000.107  000.107: sourcing /usr/share/nvim/runtime/plugin/osc52.lua
+028.308  000.138  000.138: sourcing /usr/share/nvim/runtime/plugin/shada.lua
+028.386  000.043  000.043: sourcing /usr/share/nvim/runtime/plugin/tohtml.lua
+028.418  004.218: loading rtp plugins
+028.630  000.212: loading packages
+029.064  000.434: loading after plugins
+029.087  000.023: inits 3
+029.089  000.002: reading ShaDa
+036.515  002.646  002.646: require('vim.filetype')
+042.506  004.848  004.848: require('vim.filetype.detect')
+043.309  000.070  000.070: require('vim.F')
+044.363  001.014  001.014: require('editorconfig')
+044.495  000.093  000.093: require('vim.fs')
+044.944  007.183: opening buffers
+044.999  000.054: BufEnter autocommands
+045.003  000.004: editing files in windows
+045.152  000.149: VimEnter autocommands
+045.156  000.004: before starting main loop
+1052.606  1007.450: first screen update
+1052.613  000.007: --- NVIM STARTED ---
+
+--- Startup times for process: Primary (or UI client) ---
+
+times in msec
+ clock   self+sourced   self:  sourced script
+ clock   elapsed:              other lines
+
+000.001  000.001: --- NVIM STARTING ---
+000.298  000.297: event init
+000.521  000.223: early init
+000.716  000.195: locale set
+000.825  000.109: init first window
+001.841  001.015: inits 1
+001.882  000.041: window checked
+002.036  000.155: parsing arguments
+003.077  000.073  000.073: require('vim.shared')
+003.239  000.074  000.074: require('vim.inspect')
+003.347  000.091  000.091: require('vim._options')
+003.363  000.276  000.111: require('vim._editor')
+003.422  000.056  000.056: require('vim._system')
+003.425  000.493  000.088: require('vim._init_packages')
+003.429  000.900: init lua interpreter
+003.625  000.196: expanding arguments
+003.684  000.059: inits 2
+004.269  000.585: init highlight
+004.299  000.030: clear screen
+004.589  000.037  000.037: require('vim.keymap')
+006.253  000.336  000.336: sourcing nvim_exec2()
+006.508  002.201  001.828: require('vim._defaults')
+006.514  000.014: init default mappings & autocommands
+007.037  000.523: --cmd commands
+007.954  000.114  000.114: sourcing /usr/share/nvim/runtime/ftplugin.vim
+008.126  000.081  000.081: sourcing /usr/share/nvim/runtime/indent.vim
+009.872  000.281  000.281: require('leanpack.state')
+010.502  000.369  000.369: require('leanpack.spec')
+010.514  000.631  000.262: require('leanpack.hooks')
+010.781  000.088  000.088: require('leanpack.keymap')
+010.885  000.098  000.098: require('leanpack.log')
+010.892  000.375  000.189: require('leanpack.loader')
+010.897  001.939  000.652: require('leanpack.commands')
+011.081  000.181  000.181: require('leanpack.deps')
+011.235  000.146  000.146: require('leanpack.import')
+011.344  000.103  000.103: require('leanpack.lazy')
+011.355  003.052  000.682: require('leanpack')
+011.834  000.095  000.095: require('vim.fs')
+012.045  000.199  000.199: require('vim.uri')
+012.085  000.398  000.105: require('vim.loader')
+017.993  000.486  000.486: require('vim._async')
+021.690  003.679  003.679: require('vim.version')
+022.210  008.020  003.855: require('vim.pack')
+022.468  000.018  000.018: require('vim.F')
+12082.427  12074.223  12062.735: sourcing /home/kiennt/.local/share/nvim/site/pack/leanpack/opt/leanpack.nvim/scripts/bench.lua
+12082.454  000.998: sourcing vimrc file(s)
+12082.967  000.060  000.060: sourcing nvim_exec2() called at /usr/share/nvim/runtime/filetype.lua:0
+12082.976  000.462  000.402: sourcing /usr/share/nvim/runtime/filetype.lua
+12083.223  000.126  000.126: sourcing /usr/share/nvim/runtime/syntax/synload.vim
+12083.359  000.328  000.202: sourcing /usr/share/nvim/runtime/syntax/syntax.vim
+12083.963  000.023  000.023: sourcing /usr/share/nvim/runtime/plugin/gzip.vim
+12083.998  000.012  000.012: sourcing /usr/share/nvim/runtime/plugin/matchit.vim
+12084.059  000.022  000.022: sourcing /usr/share/nvim/runtime/plugin/matchparen.vim
+12084.097  000.013  000.013: sourcing /usr/share/nvim/runtime/plugin/netrwPlugin.vim
+12084.182  000.064  000.064: sourcing /usr/share/nvim/runtime/plugin/rplugin.vim
+12084.218  000.013  000.013: sourcing /usr/share/nvim/runtime/plugin/tarPlugin.vim
+12084.257  000.021  000.021: sourcing /usr/share/nvim/runtime/plugin/tutor.vim
+12084.295  000.015  000.015: sourcing /usr/share/nvim/runtime/plugin/zipPlugin.vim
+12084.439  000.123  000.123: sourcing /usr/share/nvim/runtime/plugin/editorconfig.lua
+12084.849  000.386  000.386: sourcing /usr/share/nvim/runtime/plugin/man.lua
+12085.144  000.253  000.253: sourcing /usr/share/nvim/runtime/plugin/nvim/net.lua
+12085.379  000.207  000.207: sourcing /usr/share/nvim/runtime/plugin/nvim/spellfile.lua
+12085.829  000.420  000.420: sourcing /usr/share/nvim/runtime/plugin/osc52.lua
+12086.353  000.492  000.492: sourcing /usr/share/nvim/runtime/plugin/shada.lua
+12086.566  000.168  000.168: sourcing /usr/share/nvim/runtime/plugin/tohtml.lua
+12086.611  001.137: loading rtp plugins
+12086.792  000.180: loading packages
+12086.795  000.003: loading after plugins
+12086.817  000.023: inits 3
+12086.819  000.002: reading ShaDa
+12090.671  001.936  001.936: require('vim.filetype')
+12091.589  000.492  000.492: require('vim.filetype.detect')
+12091.803  000.128  000.128: require('editorconfig')
+12091.939  002.564: opening buffers
+12091.943  000.004: BufEnter autocommands
+12091.948  000.004: editing files in windows
+12091.967  000.020: VimEnter autocommands
+12091.971  000.004: before starting main loop
+13099.229  1007.257: first screen update
+13099.238  000.009: --- NVIM STARTED ---
+
+--- Startup times for process: Primary (or UI client) ---
+
+times in msec
+ clock   self+sourced   self:  sourced script
+ clock   elapsed:              other lines
+
+000.002  000.002: --- NVIM STARTING ---
+000.677  000.675: event init
+000.950  000.272: early init
+001.051  000.101: locale set
+001.110  000.060: init first window
+001.554  000.444: inits 1
+001.569  000.015: window checked
+001.627  000.058: parsing arguments
+002.232  000.041  000.041: require('vim.shared')
+002.322  000.040  000.040: require('vim.inspect')
+002.378  000.047  000.047: require('vim._options')
+002.386  000.149  000.062: require('vim._editor')
+002.417  000.031  000.031: require('vim._system')
+002.419  000.272  000.052: require('vim._init_packages')
+002.421  000.521: init lua interpreter
+002.478  000.057: expanding arguments
+002.511  000.033: inits 2
+002.827  000.315: init highlight
+002.851  000.024: clear screen
+003.022  000.015  000.015: require('vim.keymap')
+003.925  000.164  000.164: sourcing nvim_exec2()
+004.061  001.206  001.027: require('vim._defaults')
+004.064  000.007: init default mappings & autocommands
+004.159  000.095: --cmd commands
+004.660  000.054  000.054: sourcing /usr/share/nvim/runtime/ftplugin.vim
+004.724  000.032  000.032: sourcing /usr/share/nvim/runtime/indent.vim
+005.707  000.193  000.193: require('leanpack.state')
+006.135  000.235  000.235: require('leanpack.spec')
+006.141  000.428  000.193: require('leanpack.hooks')
+006.304  000.057  000.057: require('leanpack.keymap')
+006.363  000.056  000.056: require('leanpack.log')
+006.366  000.224  000.111: require('leanpack.loader')
+006.369  001.085  000.240: require('leanpack.commands')
+006.471  000.101  000.101: require('leanpack.deps')
+006.555  000.082  000.082: require('leanpack.import')
+006.623  000.065  000.065: require('leanpack.lazy')
+006.627  001.792  000.459: require('leanpack')
+007.695  000.103  000.103: require('vim._async')
+007.975  000.274  000.274: require('vim.version')
+008.229  001.599  001.222: require('vim.pack')
+008.562  000.063  000.063: require('vim.fs')
+008.699  000.130  000.130: require('vim.uri')
+008.725  000.257  000.064: require('vim.loader')
+012.085  000.779  000.779: require('leanpack.lazy_trigger.event')
+012.204  000.113  000.113: require('leanpack.lazy_trigger.cmd')
+012.290  000.082  000.082: require('leanpack.lazy_trigger.keys')
+012.455  000.161  000.161: require('leanpack.lazy_trigger.ft')
+012.762  000.011: --- NVIM STARTED ---
+

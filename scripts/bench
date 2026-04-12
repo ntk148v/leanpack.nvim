@@ -15,7 +15,8 @@ echo "Running leanpack.nvim startup benchmark with $COUNT plugins"
 echo "============================================================"
 
 # Run with --startuptime to capture results
-nvim --clean --headless -u "$SCRIPT_DIR/bench.lua" --startuptime bench.txt -- "$COUNT"
+# We use --cmd to add the current directory to rtp before loading the script
+nvim --clean --headless --cmd "set rtp+=$PROJECT_ROOT" -u "$SCRIPT_DIR/bench.lua" --startuptime bench.txt -- "$COUNT"
 
 # Parse results (adjusting for potential system noise)
 tail -n 10 bench.txt
