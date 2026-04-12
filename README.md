@@ -1,8 +1,24 @@
-<p align="center">
-  <img src="assets/logo.png" width="400" alt="leanpack.nvim logo">
-</p>
-
-# leanpack.nvim
+<div align="center">
+  <p><img src="./assets/logo.png" width="20%" height="20%" alt="leanpack.nvim logo"></p>
+  <h1>Leanpack.nvim</h1>
+</div>
+<div align="center">
+  <a href="https://github.com/ntk148v/leanpack.nvim/releases/latest">
+    <img alt="Latest release" src="https://img.shields.io/github/v/release/ntk148v/leanpack.nvim?style=for-the-badge&logo=starship&color=C9CBFF&logoColor=D9E0EE&labelColor=302D41&include_prerelease&sort=semver" />
+  </a>
+  <a href="https://github.com/ntk148v/leanpack.nvim/pulse">
+    <img alt="Last commit" src="https://img.shields.io/github/last-commit/ntk148v/leanpack.nvim?style=for-the-badge&logo=starship&color=8bd5ca&logoColor=D9E0EE&labelColor=302D41"/>
+  </a>
+  <a href="https://github.com/ntk148v/leanpack.nvim/blob/main/LICENSE">
+    <img alt="License" src="https://img.shields.io/github/license/ntk148v/leanpack.nvim?style=for-the-badge&logo=starship&color=ee999f&logoColor=D9E0EE&labelColor=302D41" />
+  </a>
+  <a href="https://github.com/ntk148v/leanpack.nvim/stargazers">
+    <img alt="Stars" src="https://img.shields.io/github/stars/ntk148v/leanpack.nvim?style=for-the-badge&logo=starship&color=c69ff5&logoColor=D9E0EE&labelColor=302D41" />
+  </a>
+  <a href="https://github.com/ntk148v/leanpack.nvim/issues">
+    <img alt="Issues" src="https://img.shields.io/github/issues/ntk148v/leanpack.nvim?style=for-the-badge&logo=bilibili&color=F5E0DC&logoColor=D9E0EE&labelColor=302D41" />
+  </a>
+</div>
 
 A layer on top of Neovim's native `vim.pack`, adding support for lazy-loading and the widely adopted lazy.nvim-like declarative spec.
 
@@ -28,13 +44,20 @@ A layer on top of Neovim's native `vim.pack`, adding support for lazy-loading an
 Add this to the top of your `init.lua`:
 
 ```lua
-local lazypath = vim.fn.stdpath("data") .. "/site/pack/leanpack/opt/leanpack.nvim"
-if not vim.uv.fs_stat(lazypath) then
-  vim.fn.system({ "git", "clone", "--filter=blob:none", "https://github.com/ntk148v/leanpack.nvim", lazypath })
-end
-vim.opt.rtp:prepend(lazypath)
+-- Setup leanpack.nvim plugin manager
+vim.pack.add({ { src = "https://github.com/ntk148v/leanpack.nvim" } })
 
-require("leanpack").setup()
+-- Setup leanpack with import from lua/plugins/
+require("leanpack").setup({
+    { import = "plugins" },
+    defaults = {
+        lazy = true,
+    },
+    performance = {
+        vim_loader = true,
+        rtp_prune = true,
+    },
+})
 ```
 
 ### Create Specs
