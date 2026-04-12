@@ -145,6 +145,23 @@ function M.mark_loaded(name)
   end
 end
 
+---Mark plugin as unloaded
+---@param name string
+function M.mark_unloaded(name)
+  for _, entry in pairs(state.spec_registry) do
+    if entry.merged_spec and entry.merged_spec.name == name then
+      entry.load_status = "pending"
+      return
+    end
+  end
+  -- If plugin not in registry, create a minimal entry
+  state.spec_registry[name] = {
+    specs = {},
+    load_status = "pending",
+    merged_spec = { name = name, src = name },
+  }
+end
+
 ---Check if plugin is unloaded
 ---@param name string
 ---@return boolean

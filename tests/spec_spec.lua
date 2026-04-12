@@ -181,9 +181,9 @@ T["normalize_spec()"]["preserves lazy triggers"] = function()
 	]])
 
 	local result = child.lua_get("_G.result")
-	MiniTest.expect.equality(result.event, "BufRead")
-	MiniTest.expect.equality(result.cmd, "MyCommand")
-	MiniTest.expect.equality(result.ft, "lua")
+	MiniTest.expect.equality(result.event, { "BufRead" })
+	MiniTest.expect.equality(result.cmd, { "MyCommand" })
+	MiniTest.expect.equality(result.ft, { "lua" })
 	MiniTest.expect.equality(result.keys[1], "<leader>x")
 end
 

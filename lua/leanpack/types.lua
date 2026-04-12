@@ -13,7 +13,7 @@
 ---@class leanpack.Plugin
 ---@field spec vim.pack.Spec Resolved vim.pack spec
 ---@field path string Absolute path to plugin directory
----@field main? string Detected main module name
+---@field main? string Main module name (explicit or auto-detected)
 
 ---@alias leanpack.EventValue string|string[]|leanpack.EventSpec|(string|leanpack.EventSpec)[]
 ---@alias leanpack.CmdValue string|string[]
@@ -40,7 +40,7 @@
 ---@field config? fun(plugin: leanpack.Plugin, opts: table)|true Runs after plugin loads
 ---@field build? string|fun(plugin: leanpack.Plugin) Build command or function
 ---@field opts? table|fun(plugin: leanpack.Plugin, opts: table):table Options for setup()
----@field main? string Explicit main module name
+---@field main? string Explicit main module name (auto-detected if not provided)
 ---@field event? leanpack.EventValue|fun(plugin: leanpack.Plugin):leanpack.EventValue Lazy load on event
 ---@field pattern? string|string[] Global fallback pattern for events
 ---@field cmd? leanpack.CmdValue|fun(plugin: leanpack.Plugin):leanpack.CmdValue Lazy load on command

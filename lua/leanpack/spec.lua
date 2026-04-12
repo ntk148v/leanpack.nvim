@@ -101,6 +101,147 @@ local function is_enabled(spec)
   return spec.enabled
 end
 
+---Normalize a plugin name for module matching (like lazy.nvim's Util.normname)
+---@param name string
+---@return string
+local function normname(name)
+  local ret = name:lower()
+    :gsub("^n?vim%-", "")     -- strip leading "vim-" or "nvim-"
+    :gsub("%.n?vim$", "")     -- strip trailing ".vim" or ".nvim"
+    :gsub("[%.%-]lua", "")    -- strip ".lua" or "-lua"
+    :gsub("[^a-z]+", "")      -- strip all non-lowercase-alpha characters
+  return ret
+end
+
+---Detect the main module from plugin directory using normalized name
+---@param name string Plugin name (e.g., "none-ls.nvim")
+---@param dir string Plugin directory path
+---@return string? detected_main_module
+local function detect_main(name, dir)
+  local normalized = normname(name)
+  
+  -- Expand ~ in directory path
+  dir = vim.fn.expand(dir)
+  
+  -- Check if directory exists
+  if vim.fn.isdirectory(dir) ~= 1 then
+    return nil
+  end
+  
+  -- Search for Lua files in lua/ subdirectory
+  local lua_dir = dir .. "/lua"
+  if vim.fn.isdirectory(lua_dir) ~= 1 then
+    return nil
+  end
+  
+  -- Strategy 0: Check for direct .lua files in lua/ root (e.g., lualine.lua)
+  local root_lua_files = vim.fn.glob(lua_dir .. "/*.lua", true, true)
+  for _, file_path in ipairs(root_lua_files) do
+    local file_name = file_path:match("([^/]+)%.lua$")
+    if file_name then
+      local file_normalized = normname(file_name)
+      if file_normalized == normalized then
+        return file_name
+      end
+    end
+  end
+  
+  -- Get the immediate subdirectories under lua/ to find module directories
+  local module_dirs = vim.fn.glob(lua_dir .. "/*", true, true)
+  local module_names = {}
+  for _, module_path in ipairs(module_dirs) do
+    if vim.fn.isdirectory(module_path) == 1 then
+      local mod_name = module_path:match("([^/]+)$")
+      if mod_name then
+        table.insert(module_names, mod_name)
+      end
+    end
+  end
+  
+  -- Strategy 1: Try exact normalized name match
+  local matches = {}
+  for _, mod_name in ipairs(module_names) do
+    local mod_normalized = normname(mod_name)
+    if mod_normalized == normalized then
+      local init_path = lua_dir .. "/" .. mod_name .. "/init.lua"
+      if vim.fn.filereadable(init_path) == 1 then
+        table.insert(matches, mod_name)
+      end
+    end
+  end
+  
+  if #matches == 1 then
+    return matches[1]
+  end
+  
+  -- Strategy 2: Try lowercase substring matching
+  local simple_lower = name:lower()
+  for _, mod_name in ipairs(module_names) do
+    local mod_lower = mod_name:lower()
+    -- Remove .nvim/.vim suffixes for comparison
+    local name_base = simple_lower:gsub("%.nvim$", ""):gsub("%.vim$", "")
+    local mod_base = mod_lower:gsub("%.nvim$", ""):gsub("%.vim$", "")
+    
+    -- Check if one contains the other (after removing common suffixes)
+    if name_base:find(mod_base, 1, true) or mod_base:find(name_base, 1, true) then
+      local init_path = lua_dir .. "/" .. mod_name .. "/init.lua"
+      if vim.fn.filereadable(init_path) == 1 then
+        return mod_name
+      end
+    end
+  end
+  
+  -- Strategy 3: Check for semantic matches (e.g., none-ls -> null-ls)
+  -- Split name into parts and check if module shares significant parts
+  local name_parts = {}
+  for part in name:gmatch("[^%.%-]+") do
+    table.insert(name_parts, part:lower())
+  end
+  
+  -- Remove common filler words like "nvim", "lua", "neovim"
+  local significant_parts = {}
+  for _, part in ipairs(name_parts) do
+    if not vim.tbl_contains({ "nvim", "neovim", "lua" }, part) then
+      table.insert(significant_parts, part)
+    end
+  end
+  
+  -- If we have significant parts, try matching
+  if #significant_parts > 0 then
+    for _, mod_name in ipairs(module_names) do
+      local mod_lower = mod_name:lower()
+      local match_count = 0
+      for _, part in ipairs(significant_parts) do
+        if mod_lower:find(part, 1, true) then
+          match_count = match_count + 1
+        end
+      end
+      -- If at least one significant part matches and it's a reasonable match
+      if match_count >= 1 and #significant_parts <= 3 then
+        local init_path = lua_dir .. "/" .. mod_name .. "/init.lua"
+        if vim.fn.filereadable(init_path) == 1 then
+          return mod_name
+        end
+      end
+    end
+  end
+  
+  -- Strategy 4: If only one module directory exists with init.lua, use it
+  local single_matches = {}
+  for _, mod_name in ipairs(module_names) do
+    local init_path = lua_dir .. "/" .. mod_name .. "/init.lua"
+    if vim.fn.filereadable(init_path) == 1 then
+      table.insert(single_matches, mod_name)
+    end
+  end
+  
+  if #single_matches == 1 then
+    return single_matches[1]
+  end
+  
+  return nil
+end
+
 ---Normalize a single spec
 function M.normalize_spec(spec, defaults)
   if not is_enabled(spec) then
@@ -187,6 +328,10 @@ function M.normalize_list(value)
   end
   return value
 end
+
+---Export utility functions for use by other modules
+M.normname = normname
+M.detect_main = detect_main
 
 ---Merge multiple specs for the same plugin
 ---@param specs leanpack.Spec[]

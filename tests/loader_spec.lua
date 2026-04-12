@@ -348,6 +348,8 @@ T["error handling"]["handles missing plugin object"] = function()
 			load_status = "pending"
 		})
 		state.register_pack_spec({ src = "test-src", name = "test" })
+		-- Remove the plugin object to test the error case
+		state.get_entry("test-src").plugin = nil
 
 		_G.errors = {}
 		local orig_notify = vim.notify

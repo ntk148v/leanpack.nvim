@@ -156,6 +156,8 @@ T["pack spec"] = MiniTest.new_set()
 
 T["pack spec"]["register_pack_spec stores spec"] = function()
 	child.lua([[
+		-- Need to create an entry first
+		state.set_entry("test-src", { specs = {} })
 		state.register_pack_spec({ src = "test-src", name = "test-name" })
 		_G.result = state.get_pack_spec("test-src")
 	]])
@@ -167,6 +169,8 @@ end
 
 T["pack spec"]["get_all_pack_specs returns all specs"] = function()
 	child.lua([[
+		state.set_entry("src1", { specs = {} })
+		state.set_entry("src2", { specs = {} })
 		state.register_pack_spec({ src = "src1", name = "name1" })
 		state.register_pack_spec({ src = "src2", name = "name2" })
 		_G.result = state.get_all_pack_specs()

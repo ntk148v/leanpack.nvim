@@ -1,14 +1,14 @@
 ---@module 'leanpack.hooks'
-local state = require("leanpack.state")
 local spec_mod = require("leanpack.spec")
+local state = require("leanpack.state")
 
 -- Lazy require to avoid circular dependency
 local loader = nil
 local function get_loader()
-  if not loader then
-    loader = require("leanpack.loader")
-  end
-  return loader
+    if not loader then
+        loader = require("leanpack.loader")
+    end
+    return loader
 end
 
 local M = {}
@@ -19,187 +19,201 @@ local M = {}
 ---@param hook function
 ---@return boolean success
 local function execute_hook(hook_name, plugin, hook)
-  local ok, err = pcall(hook, plugin)
-  if not ok then
-    vim.notify(("%s hook failed for %s: %s"):format(hook_name, plugin.spec.name, err), vim.log.levels.ERROR)
-    return false
-  end
-  return true
+    local ok, err = pcall(hook, plugin)
+    if not ok then
+        vim.notify(("%s hook failed for %s: %s"):format(hook_name, plugin.spec.name, err), vim.log.levels.ERROR)
+        return false
+    end
+    return true
 end
 
 ---Run init hook for a plugin
 ---@param src string
 ---@return boolean
 function M.run_init(src)
-  local entry = state.get_entry(src)
-  if not entry or not entry.merged_spec then
-    return false
-  end
+    local entry = state.get_entry(src)
+    if not entry or not entry.merged_spec then
+        return false
+    end
 
-  local spec = entry.merged_spec
-  local plugin = entry.plugin
+    local spec = entry.merged_spec
+    local plugin = entry.plugin
 
-  if spec.init then
-    return execute_hook("init", plugin, spec.init)
-  end
+    if spec.init then
+        return execute_hook("init", plugin, spec.init)
+    end
 
-  return true
+    return true
 end
 
 ---Run config hook for a plugin
 ---@param src string
 ---@return boolean
 function M.run_config(src)
-  local entry = state.get_entry(src)
-  if not entry or not entry.merged_spec then
-    return false
-  end
-
-  local spec = entry.merged_spec
-  local plugin = entry.plugin
-
-  -- Resolve opts
-  local opts = spec.opts
-  if type(opts) == "function" then
-    opts = opts(plugin, {}) or {}
-  else
-    opts = opts or {}
-  end
-
-  -- Run explicit config function
-  if type(spec.config) == "function" then
-    return execute_hook("config", plugin, function()
-      spec.config(plugin, opts)
-    end)
-  end
-
-  -- Auto-setup with opts: require(main) and call setup()
-  if spec.config == true or spec.opts ~= nil then
-    if not spec.main then
-      vim.notify(("No main module for %s. Set `main` field or use `config = function() ... end`"):format(src), vim.log.levels.WARN)
-      return false
-    end
-    local main = spec.main
-
-    local ok, mod = pcall(require, main)
-    if not ok then
-      error(("Failed to require '%s' for %s: %s"):format(main, src, mod))
+    local entry = state.get_entry(src)
+    if not entry or not entry.merged_spec then
+        return false
     end
 
-    if type(mod) ~= "table" or type(mod.setup) ~= "function" then
-      vim.notify(("Module '%s' has no setup() function"):format(main), vim.log.levels.WARN)
-      return false
+    local spec = entry.merged_spec
+    local plugin = entry.plugin
+
+    -- Resolve opts
+    local opts = spec.opts
+    if type(opts) == "function" then
+        opts = opts(plugin, {}) or {}
+    else
+        opts = opts or {}
     end
 
-    local setup_ok, err = pcall(mod.setup, opts)
-    if not setup_ok then
-      error(("setup() failed for %s: %s"):format(src, err))
+    -- Run explicit config function
+    if type(spec.config) == "function" then
+        return execute_hook("config", plugin, function()
+            spec.config(plugin, opts)
+        end)
     end
-  end
 
-  return true
+    -- Auto-setup with opts: require(main) and call setup()
+    if spec.config == true or spec.opts ~= nil then
+        local main = spec.main
+
+        -- Auto-detect main module if not explicitly provided
+        if not main and plugin and plugin.path and plugin.path ~= "" then
+            main = spec_mod.detect_main(spec.name, plugin.path)
+        end
+
+        if not main then
+            vim.schedule(function()
+                vim.notify(
+                    ("No main module for %s. Set `main` field or use `config = function() ... end`"):format(src),
+                    vim.log.levels.WARN
+                )
+            end)
+            return false
+        end
+
+        local ok, mod = pcall(require, main)
+        if not ok then
+            error(("Failed to require '%s' for %s: %s"):format(main, src, mod))
+        end
+
+        if type(mod) ~= "table" or type(mod.setup) ~= "function" then
+            vim.schedule(function()
+                vim.notify(("Module '%s' has no setup() function"):format(main), vim.log.levels.WARN)
+            end)
+            return false
+        end
+
+        local setup_ok, err = pcall(mod.setup, opts)
+        if not setup_ok then
+            error(("setup() failed for %s: %s"):format(src, err))
+        end
+    end
+
+    return true
 end
 
 ---Execute build hook
 ---@param build string|fun(plugin: leanpack.Plugin)
 ---@param plugin leanpack.Plugin
 function M.execute_build(build, plugin)
-  if type(build) == "string" then
-    vim.cmd(build)
-  elseif type(build) == "function" then
-    build(plugin)
-  end
+    if type(build) == "string" then
+        vim.cmd(build)
+    elseif type(build) == "function" then
+        build(plugin)
+    end
 end
 
 ---Run build hook for a plugin
 ---@param src string
 ---@return boolean
 function M.run_build(src)
-  local entry = state.get_entry(src)
-  if not entry or not entry.merged_spec then
+    local entry = state.get_entry(src)
+    if not entry or not entry.merged_spec then
+        return false
+    end
+
+    local spec = entry.merged_spec
+    local plugin = entry.plugin
+
+    if spec.build then
+        M.execute_build(spec.build, plugin)
+        return true
+    end
+
     return false
-  end
-
-  local spec = entry.merged_spec
-  local plugin = entry.plugin
-
-  if spec.build then
-    M.execute_build(spec.build, plugin)
-    return true
-  end
-
-  return false
 end
 
 ---Setup build tracking for PackChanged events
 function M.setup_build_tracking()
-  vim.api.nvim_create_autocmd("PackChanged", {
-    group = state.startup_group,
-    callback = function(event)
-      if event.data.kind == "install" or event.data.kind == "update" then
-        state.mark_pending_build(event.data.spec.src)
-      end
-    end,
-  })
+    vim.api.nvim_create_autocmd("PackChanged", {
+        group = state.startup_group,
+        callback = function(event)
+            if event.data.kind == "install" or event.data.kind == "update" then
+                state.mark_pending_build(event.data.spec.src)
+            end
+        end,
+    })
 end
 
 ---Setup lazy build tracking for PackChanged events
 function M.setup_lazy_build_tracking()
-  vim.api.nvim_create_autocmd("PackChanged", {
-    group = state.lazy_build_group,
-    callback = function(event)
-      if event.data.kind == "install" or event.data.kind == "update" then
-        local src = event.data.spec.src
-        local entry = state.get_entry(src)
-        if entry and entry.merged_spec and entry.merged_spec.build then
-          local pack_spec = state.get_pack_spec(src)
-          if pack_spec then
-            get_loader().load_plugin(pack_spec, { bang = true })
-          end
-          M.execute_build(entry.merged_spec.build, entry.plugin)
-        end
-      end
-    end,
-  })
+    vim.api.nvim_create_autocmd("PackChanged", {
+        group = state.lazy_build_group,
+        callback = function(event)
+            if event.data.kind == "install" or event.data.kind == "update" then
+                local src = event.data.spec.src
+                local entry = state.get_entry(src)
+                if entry and entry.merged_spec and entry.merged_spec.build then
+                    local pack_spec = state.get_pack_spec(src)
+                    if pack_spec then
+                        get_loader().load_plugin(pack_spec, { bang = true })
+                    end
+                    M.execute_build(entry.merged_spec.build, entry.plugin)
+                end
+            end
+        end,
+    })
 end
 
 ---Run all pending builds on startup
 ---@param ctx table Processing context
 function M.run_pending_builds(ctx)
-  if not state.has_pending_builds() then
-    return
-  end
-
-  for src in pairs(state.get_pending_builds()) do
-    local entry = state.get_entry(src)
-    if entry and entry.merged_spec and entry.merged_spec.build then
-      local pack_spec = state.get_pack_spec(src)
-      if pack_spec then
-        get_loader().load_plugin(pack_spec, { bang = not ctx.load })
-      end
-      M.execute_build(entry.merged_spec.build, entry.plugin)
+    if not state.has_pending_builds() then
+        return
     end
-  end
 
-  state.clear_all_pending_builds()
+    for src in pairs(state.get_pending_builds()) do
+        local entry = state.get_entry(src)
+        if entry and entry.merged_spec and entry.merged_spec.build then
+            local pack_spec = state.get_pack_spec(src)
+            if pack_spec then
+                get_loader().load_plugin(pack_spec, { bang = not ctx.load })
+            end
+            M.execute_build(entry.merged_spec.build, entry.plugin)
+        end
+    end
+
+    state.clear_all_pending_builds()
 end
 
 ---Run build hooks for all plugins with build field
 function M.run_all_builds()
-  local count = 0
+    local count = 0
 
-  for src, entry in pairs(state.get_all_entries()) do
-    if entry.merged_spec and entry.merged_spec.build then
-      local pack_spec = state.get_pack_spec(src)
-      if pack_spec then
-        get_loader().load_plugin(pack_spec, { bang = true })
-      end
-      M.execute_build(entry.merged_spec.build, entry.plugin)
-      count = count + 1
+    for src, entry in pairs(state.get_all_entries()) do
+        if entry.merged_spec and entry.merged_spec.build then
+            local pack_spec = state.get_pack_spec(src)
+            if pack_spec then
+                get_loader().load_plugin(pack_spec, { bang = true })
+            end
+            M.execute_build(entry.merged_spec.build, entry.plugin)
+            count = count + 1
+        end
     end
-  end
 
-  vim.notify(("Ran build hooks for %d plugin(s)"):format(count), vim.log.levels.INFO)
+    vim.notify(("Ran build hooks for %d plugin(s)"):format(count), vim.log.levels.INFO)
 end
 
 return M
+

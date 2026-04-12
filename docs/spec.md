@@ -230,15 +230,34 @@ end }
 
 ## Plugin Metadata
 
-| Field  | Type     | Description          |
-| ------ | -------- | -------------------- |
-| `name` | `string` | Custom plugin name   |
-| `main` | `string` | Explicit main module |
+| Field  | Type     | Description                                     |
+| ------ | -------- | ----------------------------------------------- |
+| `name` | `string` | Custom plugin name                              |
+| `main` | `string` | Explicit main module (auto-detected if omitted) |
 
 ```lua
 { 'user/repo', name = 'my-plugin' }
-{ 'user/repo', main = 'plugin.main' }
+{ 'user/repo', main = 'plugin.main' }  -- Explicit main module
 ```
+
+### Automatic Main Module Detection
+
+When using `opts` or `config = true` without specifying a `main` field, leanpack will automatically detect the main module by:
+
+1. Scanning the plugin's `lua/` directory for module folders
+2. Matching the plugin name against folder names (using normalization like lazy.nvim)
+3. Looking for `init.lua` files in matched folders
+
+**Example:** For `nvimtools/none-ls.nvim`, leanpack auto-detects `null-ls` as the main module (since the internal folder is named `null-ls`), allowing you to use:
+
+```lua
+{
+  'nvimtools/none-ls.nvim',
+  opts = { sources = {} }  -- No main field needed!
+}
+```
+
+This matches lazy.nvim's behavior where plugins work out of the box without manual configuration.
 
 ## Complete Example
 
