@@ -76,6 +76,75 @@ local function prune_rtp(list)
     end
 end
 
+---Check if a plugin directory appears to be broken (empty or missing key files)
+---@param path string Plugin directory path
+---@return boolean
+local function is_plugin_broken(path)
+    if vim.fn.isdirectory(path) ~= 1 then
+        return true
+    end
+
+    -- Check for common plugin structures (lua/, plugin/, autoload/, ftplugin/)
+    local has_structure = vim.fn.isdirectory(path .. "/lua") == 1
+        or vim.fn.isdirectory(path .. "/plugin") == 1
+        or vim.fn.isdirectory(path .. "/autoload") == 1
+        or vim.fn.isdirectory(path .. "/ftplugin") == 1
+        or vim.fn.isdirectory(path .. "/after") == 1
+
+    -- If no standard structure, check if there are any .lua files
+    if not has_structure then
+        local lua_files = vim.fn.glob(path .. "/**/*.lua", true, true)
+        if #lua_files == 0 then
+            -- Also check for .vim files
+            local vim_files = vim.fn.glob(path .. "/**/*.vim", true, true)
+            if #vim_files == 0 then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+---Reinstall broken plugins by deleting and re-adding them
+local function fix_broken_plugins()
+    local broken = {}
+    local installed = vim.pack.get() or {}
+
+    for _, p in ipairs(installed) do
+        if p.path and is_plugin_broken(p.path) then
+            table.insert(broken, p.spec.name)
+            log.warn(("Detected broken plugin: %s"):format(p.spec.name))
+        end
+    end
+
+    if #broken > 0 then
+        vim.notify(
+            ("Detected %d broken plugin(s), reinstalling..."):format(#broken),
+            vim.log.levels.WARN
+        )
+
+        -- Collect specs for broken plugins
+        local broken_specs = {}
+        for _, name in ipairs(broken) do
+            for _, p in ipairs(installed) do
+                if p.spec.name == name then
+                    table.insert(broken_specs, p.spec)
+                    break
+                end
+            end
+        end
+
+        -- Delete broken plugins
+        vim.pack.del(broken, { force = true })
+
+        -- Re-add the broken plugins after a short delay
+        vim.defer_fn(function()
+            vim.pack.add(broken_specs, { confirm = true })
+        end, 100)
+    end
+end
+
 ---Process all specs and register plugins
 ---@param ctx leanpack.ProcessContext
 local function process_all(ctx)
@@ -87,6 +156,9 @@ local function process_all(ctx)
         load = ctx.load,
         confirm = ctx.confirm,
     })
+
+    -- Fix any broken plugins that failed to install properly
+    fix_broken_plugins()
 
     -- Update plugin paths from vim.pack.get() (actual installed paths)
     local installed = vim.pack.get() or {}

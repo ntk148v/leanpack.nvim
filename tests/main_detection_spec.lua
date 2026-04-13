@@ -75,7 +75,7 @@ T["detect_main()"] = MiniTest.new_set()
 
 T["detect_main()"]["detects null-ls for none-ls.nvim"] = function()
     child.lua([[
-    local path = vim.fn.expand("~/.local/share/nvim-lazy/lazy/none-ls.nvim")
+    local path = vim.fn.expand("~/.local/share/nvim/site/pack/core/opt/none-ls.nvim")
     if vim.fn.isdirectory(path) == 1 then
       _G.result = spec_mod.detect_main("none-ls.nvim", path)
     else
@@ -83,10 +83,11 @@ T["detect_main()"]["detects null-ls for none-ls.nvim"] = function()
     end
   ]])
     local result = child.lua_get("_G.result")
-    -- Only test if none-ls.nvim is installed
-    if result ~= nil then
-        MiniTest.expect.equality(result, "null-ls")
+    -- Skip test if none-ls.nvim is not installed
+    if result == vim.NIL then
+        return
     end
+    MiniTest.expect.equality(result, "null-ls")
 end
 
 T["detect_main()"]["returns nil for non-existent directory"] = function()
