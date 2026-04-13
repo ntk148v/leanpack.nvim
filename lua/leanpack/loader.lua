@@ -26,11 +26,7 @@ function M.load_plugin(pack_spec, opts)
         return
     end
 
-    -- Circular dependency detection
     if entry.load_status == "loading" then
-        local msg = ("Circular dependency detected: %s is already being loaded"):format(pack_spec.src)
-        vim.notify(msg, vim.log.levels.ERROR)
-        log.error(msg)
         return
     end
 
