@@ -1,0 +1,13 @@
+leanpack-commands	leanpack.nvim.txt	/*leanpack-commands*
+leanpack-configuration	leanpack.nvim.txt	/*leanpack-configuration*
+leanpack-contents	leanpack.nvim.txt	/*leanpack-contents*
+leanpack-health	leanpack.nvim.txt	/*leanpack-health*
+leanpack-installation	leanpack.nvim.txt	/*leanpack-installation*
+leanpack-introduction	leanpack.nvim.txt	/*leanpack-introduction*
+leanpack-lazy-loading	leanpack.nvim.txt	/*leanpack-lazy-loading*
+leanpack-migrating	leanpack.nvim.txt	/*leanpack-migrating*
+leanpack-quickstart	leanpack.nvim.txt	/*leanpack-quickstart*
+leanpack-requirements	leanpack.nvim.txt	/*leanpack-requirements*
+leanpack-spec	leanpack.nvim.txt	/*leanpack-spec*
+leanpack-ui	leanpack.nvim.txt	/*leanpack-ui*
+leanpack.nvim	leanpack.nvim.txt	/*leanpack.nvim*
