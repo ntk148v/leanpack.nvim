@@ -80,6 +80,13 @@ function M.load_plugin(pack_spec, opts)
         vim.cmd.packadd(pack_spec.name)
     end
 
+    -- Update plugin path from vim.pack.get() for lazy-loaded plugins
+    -- This ensures the path is available for main module detection
+    local ok, installed = pcall(vim.pack.get, { pack_spec.name })
+    if ok and installed and installed[1] and installed[1].path then
+        plugin.path = installed[1].path
+    end
+
     -- Run config hook
     if spec.config or spec.opts ~= nil then
         hooks.run_config(pack_spec.src)

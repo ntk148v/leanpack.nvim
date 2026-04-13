@@ -94,7 +94,15 @@ function M.run_config(src)
 
         local ok, mod = pcall(require, main)
         if not ok then
-            error(("Failed to require '%s' for %s: %s"):format(main, src, mod))
+            -- Plugin might not be installed yet or module path is incorrect
+            -- Log warning instead of erroring to allow graceful recovery
+            vim.schedule(function()
+                vim.notify(
+                    ("Failed to require '%s' for %s: %s. Plugin may not be installed yet."):format(main, src, mod),
+                    vim.log.levels.WARN
+                )
+            end)
+            return false
         end
 
         if type(mod) ~= "table" or type(mod.setup) ~= "function" then
