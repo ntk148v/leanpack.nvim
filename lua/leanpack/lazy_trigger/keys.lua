@@ -76,7 +76,10 @@ function M.setup(registered_pack_specs)
 
       -- Load all plugins that define this keymap
       for _, pack_spec in ipairs(info.pack_specs) do
-        loader.load_plugin(pack_spec)
+        local entry = state.get_entry(pack_spec.src)
+        if entry and entry.load_status == "pending" then
+          loader.load_plugin(pack_spec)
+        end
       end
 
       -- Re-execute the keypress

@@ -84,6 +84,10 @@ function M.setup(pack_spec, spec, event)
                 once = true,
                 callback = function()
                     vim.schedule(function()
+                        local entry = state.get_entry(pack_spec.src)
+                        if entry and entry.load_status ~= "pending" then
+                            return
+                        end
                         loader.load_plugin(pack_spec)
                     end)
                 end,

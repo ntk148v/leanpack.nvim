@@ -1,10 +1,19 @@
 ---@module 'leanpack.lazy_trigger.util'
+local state = require("leanpack.state")
+
 local M = {}
 
 ---Load a plugin and re-trigger events
 ---@param pack_spec vim.pack.Spec
 ---@param bufnr? number
 function M.load_and_retrigger(pack_spec, bufnr)
+    local entry = state.get_entry(pack_spec.src)
+    -- Skip loading if already loading or loaded (e.g., another event fired during packadd)
+    if entry and entry.load_status ~= "pending" then
+        M.retrigger_events(bufnr or vim.api.nvim_get_current_buf())
+        return
+    end
+
     require("leanpack.loader").load_plugin(pack_spec)
     M.retrigger_events(bufnr or vim.api.nvim_get_current_buf())
 end
