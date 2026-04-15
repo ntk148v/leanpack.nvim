@@ -19,8 +19,11 @@ function M.write(level, message)
     return
   end
 
+  -- Sanitize message to prevent log injection (remove newlines and control chars)
+  local sanitized = message:gsub("[%c\r\n]+", " ")
+
   local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-  local log_line = string.format("[%s] [%s] %s\n", timestamp, level, message)
+  local log_line = string.format("[%s] [%s] %s\n", timestamp, level, sanitized)
 
   local f = io.open(log_file, "a")
   if f then

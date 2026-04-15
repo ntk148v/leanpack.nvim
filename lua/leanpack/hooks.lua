@@ -1,4 +1,5 @@
 ---@module 'leanpack.hooks'
+local log = require("leanpack.log")
 local spec_mod = require("leanpack.spec")
 local state = require("leanpack.state")
 
@@ -126,8 +127,10 @@ end
 ---@param plugin leanpack.Plugin
 function M.execute_build(build, plugin)
     if type(build) == "string" then
+        log.info(("Executing build command for %s: %s"):format(plugin.spec.name, build))
         vim.cmd(build)
     elseif type(build) == "function" then
+        log.info(("Executing build function for %s"):format(plugin.spec.name))
         build(plugin)
     end
 end
