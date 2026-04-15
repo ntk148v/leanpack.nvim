@@ -3,7 +3,7 @@ local state = require("leanpack.state")
 local loader = require("leanpack.loader")
 
 local M = {}
-local ui_state = { buf = nil, win = nil, plugins = {} }
+local ui_state = { buf = nil, win = nil, plugins = {}, filter = "" }
 local NS = vim.api.nvim_create_namespace("leanpack-ui")
 
 local function define_highlights()
@@ -50,9 +50,21 @@ local function format_content()
   local max_type_width = 7 -- "startup" is 7 chars
   local max_src_width = 0
 
+  local filter_lower = ui_state.filter:lower()
+
   for src, entry in pairs(state.get_all_entries()) do
     if entry.merged_spec then
       local name = entry.merged_spec.name or src:match("([^/]+)$") or src
+
+      -- Apply filter
+      if filter_lower ~= "" then
+        local name_match = name:lower():find(filter_lower, 1, true)
+        local src_match = src:lower():find(filter_lower, 1, true)
+        if not name_match and not src_match then
+          goto continue
+        end
+      end
+
       table.insert(plugins, {
         name = name,
         status = get_status(entry),
@@ -62,13 +74,22 @@ local function format_content()
       })
       max_name_width = math.max(max_name_width, vim.fn.strdisplaywidth(name))
       max_src_width = math.max(max_src_width, vim.fn.strdisplaywidth(src))
+
+      ::continue::
     end
   end
   table.sort(plugins, function(a, b) return a.name:lower() < b.name:lower() end)
   ui_state.plugins = plugins
 
   local lines = {}
-  table.insert(lines, "")
+
+  -- Header with filter info
+  if ui_state.filter ~= "" then
+    table.insert(lines, "  Filter: " .. ui_state.filter .. "  (" .. #plugins .. " plugins)")
+  else
+    table.insert(lines, "")
+  end
+
   table.insert(lines, string.format("  %s  %s  %s  %s",
     " ",
     pad_to_width("Name", max_name_width),
@@ -155,11 +176,29 @@ local function update_plugin()
 end
 
 local function update_all_plugins()
-  vim.notify("Updating all plugins...")
+  local installed = vim.pack.get() or {}
+  local total = #installed
+  local current = 0
+
+  vim.notify(string.format("Updating all plugins (0/%d)...", total))
+
+  -- Create autocmd to track progress
+  local augroup = vim.api.nvim_create_augroup("leanpack_update_progress", { clear = true })
+  vim.api.nvim_create_autocmd("PackChanged", {
+    group = augroup,
+    callback = function(event)
+      if event.data.kind == "update" then
+        current = current + 1
+        vim.notify(string.format("Updating plugins (%d/%d)...", current, total), vim.log.levels.INFO)
+      end
+    end,
+  })
+
   vim.pack.update(nil, { force = true })
   vim.schedule(function()
+    vim.api.nvim_del_augroup_by_id(augroup)
     vim.cmd("redraw")
-    vim.notify("All plugins updated successfully", vim.log.levels.INFO)
+    vim.notify(string.format("All plugins updated successfully (%d/%d)", total, total), vim.log.levels.INFO)
   end)
 end
 
@@ -206,6 +245,19 @@ local function delete_plugin()
   end
 end
 
+local function prompt_filter()
+  local ok, result = pcall(vim.fn.input, "Filter: ", ui_state.filter)
+  if ok then
+    ui_state.filter = result or ""
+    M.refresh()
+  end
+end
+
+local function clear_filter()
+  ui_state.filter = ""
+  M.refresh()
+end
+
 local function create_buffer()
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
@@ -229,7 +281,7 @@ local function create_window(buf, width)
     border = "rounded",
     title = " 📦 leanpack.nvim ",
     title_pos = "center",
-    footer = " <Enter>:load  u:update  U:update-all  b:build  d:delete  q:quit ",
+    footer = " <Enter>:load  u:update  U:update-all  b:build  d:delete  /:filter  <C-c>:clear  q:quit ",
     footer_pos = "center",
   })
 
@@ -252,6 +304,8 @@ local function set_keymaps()
   vim.keymap.set("n", "r", M.refresh, opts)
   vim.keymap.set("n", "q", M.close, opts)
   vim.keymap.set("n", "<Esc>", M.close, opts)
+  vim.keymap.set("n", "/", prompt_filter, opts)
+  vim.keymap.set("n", "<C-c>", clear_filter, opts)
 end
 
 function M.refresh()
