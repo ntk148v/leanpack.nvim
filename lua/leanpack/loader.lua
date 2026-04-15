@@ -27,7 +27,23 @@ function M.load_plugin(pack_spec, opts)
     end
 
     if entry.load_status == "loading" then
+        local msg = ("Circular dependency detected involving plugin: %s"):format(pack_spec.src)
+        vim.notify(msg, vim.log.levels.ERROR)
+        log.error(msg)
         return
+    end
+
+    -- Check cond
+    if entry.merged_spec and entry.merged_spec.cond ~= nil then
+        local cond = entry.merged_spec.cond
+        if type(cond) == "function" then
+            cond = cond(entry.plugin)
+        end
+        if not cond then
+            log.info(("Skipped loading plugin due to cond=false: %s"):format(pack_spec.name))
+            entry.load_status = "loaded" -- Mark as loaded so dependents don't get stuck
+            return
+        end
     end
 
     entry.load_status = "loading"
