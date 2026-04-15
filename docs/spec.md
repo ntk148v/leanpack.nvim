@@ -242,7 +242,7 @@ end }
 
 ### Automatic Main Module Detection
 
-When using `opts` or `config = true` without specifying a `main` field, leanpack will automatically detect the main module by:
+When using `opts` or `config = true` without specifying a `main` field, leanpack will automatically detect the main module. The explicit or auto-detected `main` module is also used to trigger require()-based lazy loading automatically! The detection process determines the module by:
 
 1. Scanning the plugin's `lua/` directory for module folders
 2. Matching the plugin name against folder names (using normalization like lazy.nvim)

@@ -86,12 +86,13 @@ return {
 
 ## Commands
 
-- `:Leanpack` - Open the UI
+- `:Leanpack` - Open the UI (supports `/` filtering)
 - `:Leanpack sync` - Sync all plugins (update + clean)
 - `:Leanpack update` - Update all or specific plugin
 - `:Leanpack clean` - Remove unused plugins
 - `:Leanpack build!` - Run all build hooks
 - `:Leanpack load!` - Load all pending plugins
+- `:Leanpack profile` - View detailed startup timing profile
 
 See [Commands](docs/commands.md) for details.
 
@@ -118,12 +119,8 @@ Most of your lazy.nvim plugin specs will work as-is with leanpack. Key differenc
 - **version pinning**: lazy.nvim's `version` field maps to leanpack's `sem_version`
 - **dev mode**: Use `dev = true` with `dir = '~/projects/plugin-name'` for local development
 - **optional**: Use `optional = true` for dependencies that won't block plugin loading
-- **module trigger**: Use `module = "pattern"` for require()-based lazy loading
+- **module trigger**: leanpack automatically supports require()-based lazy loading matching the auto-detected or explicit `main` module names.
 
 ## Acknowledgements
 
 - Inspired by [lazy.nvim](https://github.com/folke/lazy.nvim) for the declarative spec design
-
-## License
-
-MIT

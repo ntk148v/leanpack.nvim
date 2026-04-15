@@ -76,13 +76,21 @@ Synchronize all plugins. This is a shortcut for `update` followed by `clean`.
 :Leanpack sync
 ```
 
+### `:Leanpack profile`
+
+Show detailed internal startup timing profile for `leanpack.nvim`.
+
+```vim
+:Leanpack profile
+```
+
 ## UI Commands
 
 ### `:Leanpack`
 
 Opens a floating window with:
 
-- List of all managed plugins
+- List of all managed plugins with search filtering
 - Status (loaded/pending/loading)
 - Dependencies
 - Build information
@@ -93,9 +101,13 @@ Opens a floating window with:
 | --------- | -------------------------- |
 | `<Enter>` | Load plugin under cursor   |
 | `u`       | Update plugin under cursor |
+| `U`       | Update all plugins         |
+| `<C-u>`   | Update all loaded plugins  |
 | `b`       | Build plugin under cursor  |
 | `d`       | Delete plugin under cursor |
 | `r`       | Refresh plugin list        |
+| `/`       | Search/filter plugins      |
+| `<C-c>`   | Clear search filter        |
 | `q`       | Close UI                   |
 | `<Esc>`   | Close UI                   |
 

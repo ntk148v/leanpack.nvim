@@ -209,11 +209,13 @@ Common issues and their solutions when using leanpack.nvim.
    })
    ```
 
-2. Profile startup:
+2. Profile startup natively:
 
-   ```bash
-   nvim --startuptime startuptime.log +quit
+   ```vim
+   :Leanpack profile
    ```
+
+   _(Alternatively: `nvim --startuptime startuptime.log +quit`)_
 
 3. Use lazy loading for more plugins
 

@@ -200,6 +200,38 @@ vim.api.nvim_exec_autocmds("FileType", { buffer = bufnr })
 
 This ensures that newly loaded plugins analyze the current buffer.
 
+## Require/Module Trigger
+
+Load a plugin automatically when its main Lua module is `require`d.
+
+### Syntax
+
+Leanpack natively intercepts `require` calls matching either:
+
+1. The explicit `main` field defined in the spec.
+2. The implicitly auto-detected main module name.
+
+```lua
+return {
+  'nvimtools/none-ls.nvim',
+  -- Because `opts` is here, if no `main` is present leanpack deduces it as `null-ls`.
+  -- Thus, `require('null-ls')` automatically triggers loading.
+  opts = {},
+}
+
+-- Or with explicit main
+return {
+  'user/repo',
+  main = 'custom_module', -- require('custom_module') will load this!
+}
+```
+
+### How It Works
+
+1. leanpack.nvim installs a non-intrusive lookup loader in `package.loaders` at startup.
+2. When code calls `require('module_name')`, it resolves against the plugin's `main` reference.
+3. If it matches an unloaded plugin, it loads it immediately and caches the module.
+
 ## Comparison
 
 | Trigger  | Best For             | Overhead |

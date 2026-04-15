@@ -282,11 +282,14 @@ dependencies = {
 <
 Module-based Loading ~
 
-Load when a Lua module is required: >
+Load when a main Lua module is required: >
 
 {
 'user/repo',
-module = 'plugin.*', -- pattern matches require('plugin.foo')
+-- Because `opts` is provided, leanpack identifies the `main` module automatically
+-- Alternatively, explicitly define `main = "plugin_name"`.
+-- A require('plugin_name') will then trigger the plugin load!
+opts = {},
 }
 
 <
@@ -344,6 +347,16 @@ ft = { 'lua', 'vim' },
 }
 
 <
+Require/Module ~
+
+Load on Lua module require (matches explicit or internal `main` module): >
+
+{
+'user/repo',
+main = 'plugin_module', -- require("plugin_module") triggers load!
+}
+
+<
 ==============================================================================
 8. COMMANDS *leanpack-commands*
 
@@ -366,6 +379,12 @@ Load a specific unloaded plugin, or all unloaded plugins with `!`.
 :Leanpack delete[!] [plugin]~
 Remove a specific plugin, or all plugins with `!`.
 
+:Leanpack profile~
+Show detailed internal startup timing profile for `leanpack.nvim`.
+
+:Leanpack sync~
+Synchronize all plugins. Shortcut for update followed by clean.
+
 ==============================================================================
 9. UI *leanpack-ui*
 
@@ -374,9 +393,13 @@ Open the plugin manager UI with `:Leanpack`.
 Keymaps in the UI:
 <Enter>/<CR> - Load plugin under cursor
 u - Update plugin under cursor
+U - Update all plugins
+<C-u> - Update all loaded plugins
 b - Build plugin under cursor
 d - Delete plugin under cursor
 r - Refresh plugin list
+/ - Search/filter plugins
+<C-c> - Clear search filter
 q/<Esc> - Close UI
 
 Status indicators:
@@ -401,7 +424,7 @@ Run `:checkhealth leanpack` to check:
 Most lazy.nvim specs work as-is. Key differences:
 
 - `version` maps to `sem_version`
-- No built-in profiling (use `nvim --startuptime`)
+- `module` triggers natively intercept require() based on the `main` field.
 
 Example migration: >
 
