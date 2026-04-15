@@ -1,7 +1,92 @@
 ---@module 'leanpack.spec'
+local log = require("leanpack.log")
 local state = require("leanpack.state")
 
 local M = {}
+
+-- Known fields in a plugin spec (leanpack + lazy.nvim compat)
+local KNOWN_FIELDS = {
+    -- Core fields
+    src = true, name = true, version = true, dependencies = true, cond = true,
+    lazy = true, priority = true, init = true, config = true, build = true,
+    opts = true, main = true, enabled = true, optional = true, dev = true,
+    -- Lazy triggers
+    event = true, cmd = true, keys = true, ft = true, pattern = true,
+    -- lazy.nvim compat
+    sem_version = true, branch = true, tag = true, commit = true, dir = true,
+    url = true,
+    -- Internal (set by leanpack)
+    _is_dependency = true, _import_order = true,
+}
+
+---Check if a path is a directory using vim.uv
+---@param path string
+---@return boolean
+local function is_dir(path)
+    local stat = vim.uv.fs_stat(path)
+    return stat and stat.type == "directory" or false
+end
+
+---List files in a directory matching a pattern (simple glob)
+---@param dir string
+---@param pattern string Simple pattern like "*.lua"
+---@return string[]
+local function list_files(dir, pattern)
+    local fd = vim.uv.fs_scandir(dir)
+    if not fd then
+        return {}
+    end
+
+    local files = {}
+    local entry_pattern = nil
+    if pattern then
+        -- Convert glob pattern to regex-like for matching
+        entry_pattern = pattern:gsub("%.", "%%."):gsub("*", ".*")
+    end
+
+    while true do
+        local name, type = vim.uv.fs_scandir_next(fd)
+        if not name then
+            break
+        end
+        if type == "file" or type == "link" then
+            if not entry_pattern or name:match(entry_pattern) then
+                table.insert(files, dir .. "/" .. name)
+            end
+        end
+    end
+    return files
+end
+
+---List subdirectories in a directory
+---@param dir string
+---@return string[]
+local function list_dirs(dir)
+    local fd = vim.uv.fs_scandir(dir)
+    if not fd then
+        return {}
+    end
+
+    local dirs = {}
+    while true do
+        local name, type = vim.uv.fs_scandir_next(fd)
+        if not name then
+            break
+        end
+        if type == "directory" then
+            table.insert(dirs, dir .. "/" .. name)
+        end
+    end
+    return dirs
+end
+
+---Check if a file exists and is readable
+---@param path string
+---@return boolean
+local function is_file(path)
+    local stat = vim.uv.fs_stat(path)
+    return stat and stat.type == "file" or false
+end
 
 ---Expand short name to full URL
 ---@param short_name string e.g., "user/repo"
@@ -106,6 +191,26 @@ local function is_enabled(spec)
     return spec.enabled
 end
 
+---Validate spec for unknown fields
+---@param spec leanpack.Spec
+local function validate_spec(spec)
+    for key in pairs(spec) do
+        if type(key) == "string" and not KNOWN_FIELDS[key] then
+            log.warn(("Unknown field '%s' in plugin spec for '%s'. Did you mean something else?"):format(
+                key, spec.name or spec[1] or spec.src or "unknown"
+            ))
+            vim.schedule(function()
+                vim.notify(
+                    ("leanpack.nvim: Unknown field '%s' in plugin spec for '%s'. Did you mean something else?"):format(
+                        key, spec.name or spec[1] or spec.src or "unknown"
+                    ),
+                    vim.log.levels.WARN
+                )
+            end)
+        end
+    end
+end
+
 ---Normalize a plugin name for module matching (like lazy.nvim's Util.normname)
 ---@param name string
 ---@return string
@@ -129,38 +234,43 @@ local function detect_main(name, dir)
     -- Expand ~ in directory path
     dir = vim.fn.expand(dir)
 
+    -- Check cache first
+    local cached = state.get_cached_main(name, dir)
+    if cached then
+        return cached
+    end
+
     -- Check if directory exists
-    if vim.fn.isdirectory(dir) ~= 1 then
+    if not is_dir(dir) then
         return nil
     end
 
     -- Search for Lua files in lua/ subdirectory
     local lua_dir = dir .. "/lua"
-    if vim.fn.isdirectory(lua_dir) ~= 1 then
+    if not is_dir(lua_dir) then
         return nil
     end
 
     -- Strategy 0: Check for direct .lua files in lua/ root (e.g., lualine.lua)
-    local root_lua_files = vim.fn.glob(lua_dir .. "/*.lua", true, true)
+    local root_lua_files = list_files(lua_dir, "*.lua")
     for _, file_path in ipairs(root_lua_files) do
         local file_name = file_path:match("([^/]+)%.lua$")
         if file_name then
             local file_normalized = normname(file_name)
             if file_normalized == normalized then
+                state.cache_main(name, dir, file_name)
                 return file_name
             end
         end
     end
 
     -- Get the immediate subdirectories under lua/ to find module directories
-    local module_dirs = vim.fn.glob(lua_dir .. "/*", true, true)
+    local module_paths = list_dirs(lua_dir)
     local module_names = {}
-    for _, module_path in ipairs(module_dirs) do
-        if vim.fn.isdirectory(module_path) == 1 then
-            local mod_name = module_path:match("([^/]+)$")
-            if mod_name then
-                table.insert(module_names, mod_name)
-            end
+    for _, module_path in ipairs(module_paths) do
+        local mod_name = module_path:match("([^/]+)$")
+        if mod_name then
+            table.insert(module_names, mod_name)
         end
     end
 
@@ -170,13 +280,14 @@ local function detect_main(name, dir)
         local mod_normalized = normname(mod_name)
         if mod_normalized == normalized then
             local init_path = lua_dir .. "/" .. mod_name .. "/init.lua"
-            if vim.fn.filereadable(init_path) == 1 then
+            if is_file(init_path) then
                 table.insert(matches, mod_name)
             end
         end
     end
 
     if #matches == 1 then
+        state.cache_main(name, dir, matches[1])
         return matches[1]
     end
 
@@ -191,7 +302,8 @@ local function detect_main(name, dir)
         -- Check if one contains the other (after removing common suffixes)
         if name_base:find(mod_base, 1, true) or mod_base:find(name_base, 1, true) then
             local init_path = lua_dir .. "/" .. mod_name .. "/init.lua"
-            if vim.fn.filereadable(init_path) == 1 then
+            if is_file(init_path) then
+                state.cache_main(name, dir, mod_name)
                 return mod_name
             end
         end
@@ -225,7 +337,8 @@ local function detect_main(name, dir)
             -- If at least one significant part matches and it's a reasonable match
             if match_count >= 1 and #significant_parts <= 3 then
                 local init_path = lua_dir .. "/" .. mod_name .. "/init.lua"
-                if vim.fn.filereadable(init_path) == 1 then
+                if is_file(init_path) then
+                    state.cache_main(name, dir, mod_name)
                     return mod_name
                 end
             end
@@ -236,12 +349,13 @@ local function detect_main(name, dir)
     local single_matches = {}
     for _, mod_name in ipairs(module_names) do
         local init_path = lua_dir .. "/" .. mod_name .. "/init.lua"
-        if vim.fn.filereadable(init_path) == 1 then
+        if is_file(init_path) then
             table.insert(single_matches, mod_name)
         end
     end
 
     if #single_matches == 1 then
+        state.cache_main(name, dir, single_matches[1])
         return single_matches[1]
     end
 
@@ -253,6 +367,9 @@ function M.normalize_spec(spec, defaults)
     if not is_enabled(spec) then
         return nil, ""
     end
+
+    -- Validate for unknown fields
+    validate_spec(spec)
 
     local src = resolve_src(spec)
     local normalized = {

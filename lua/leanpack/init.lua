@@ -1,5 +1,4 @@
 ---@module 'leanpack'
-local commands = require("leanpack.commands")
 local deps_mod = require("leanpack.deps")
 local hooks = require("leanpack.hooks")
 local import_mod = require("leanpack.import")
@@ -9,7 +8,84 @@ local log = require("leanpack.log")
 local spec_mod = require("leanpack.spec")
 local state = require("leanpack.state")
 
+-- Lazy-loaded modules (only required when actually used)
+local commands = nil
+local ui_mod = nil
+local health_mod = nil
+
+local function get_commands()
+    if not commands then
+        commands = require("leanpack.commands")
+    end
+    return commands
+end
+
+local function get_ui()
+    if not ui_mod then
+        ui_mod = require("leanpack.ui")
+    end
+    return ui_mod
+end
+
+local function get_health()
+    if not health_mod then
+        health_mod = require("leanpack.health")
+    end
+    return health_mod
+end
+
+-- Profiling data
+local profile_data = {
+    enabled = false,
+    phases = {},
+}
+
+---Start timing a phase
+---@param name string
+local function profile_start(name)
+    if profile_data.enabled then
+        profile_data.phases[name] = { start = vim.uv.hrtime() }
+    end
+end
+
+---End timing a phase
+---@param name string
+local function profile_end(name)
+    if profile_data.enabled and profile_data.phases[name] then
+        local elapsed = (vim.uv.hrtime() - profile_data.phases[name].start) / 1e6 -- ms
+        profile_data.phases[name].elapsed = elapsed
+    end
+end
+
+---Get profiling results
+---@return table
+local function get_profile_data()
+    local result = {}
+    local total = 0
+    for name, data in pairs(profile_data.phases) do
+        result[name] = data.elapsed or 0
+        total = total + (data.elapsed or 0)
+    end
+    result._total = total
+    return result
+end
+
 local M = {}
+
+---Enable profiling
+---@param enabled boolean
+function M.set_profiling(enabled)
+    profile_data.enabled = enabled
+    if enabled then
+        profile_data.phases = {}
+    end
+end
+
+---Get profiling results
+---@return table
+function M.get_profile_data()
+    return get_profile_data()
+end
 
 ---@class leanpack.ProcessContext
 ---@field vim_packs vim.pack.Spec[]
@@ -51,6 +127,9 @@ local config = {
         vim_loader = true,
         rtp_prune = true,
     },
+    checker = {
+        enabled = false,
+    },
 }
 
 local default_prune_list = {
@@ -80,24 +159,82 @@ end
 ---@param path string Plugin directory path
 ---@return boolean
 local function is_plugin_broken(path)
-    if vim.fn.isdirectory(path) ~= 1 then
+    local path_stat = vim.uv.fs_stat(path)
+    if not path_stat or path_stat.type ~= "directory" then
         return true
     end
 
     -- Check for common plugin structures (lua/, plugin/, autoload/, ftplugin/)
-    local has_structure = vim.fn.isdirectory(path .. "/lua") == 1
-        or vim.fn.isdirectory(path .. "/plugin") == 1
-        or vim.fn.isdirectory(path .. "/autoload") == 1
-        or vim.fn.isdirectory(path .. "/ftplugin") == 1
-        or vim.fn.isdirectory(path .. "/after") == 1
+    local has_structure = false
+    for _, subdir in ipairs({ "lua", "plugin", "autoload", "ftplugin", "after" }) do
+        local stat = vim.uv.fs_stat(path .. "/" .. subdir)
+        if stat and stat.type == "directory" then
+            has_structure = true
+            break
+        end
+    end
 
     -- If no standard structure, check if there are any .lua files
     if not has_structure then
-        local lua_files = vim.fn.glob(path .. "/**/*.lua", true, true)
-        if #lua_files == 0 then
+        local fd = vim.uv.fs_scandir(path)
+        if not fd then
+            return true
+        end
+
+        local has_lua_files = false
+        -- Recursively check for .lua files
+        local function scan_for_lua_files(dir)
+            local dir_fd = vim.uv.fs_scandir(dir)
+            if not dir_fd then
+                return
+            end
+            while true do
+                local name, type = vim.uv.fs_scandir_next(dir_fd)
+                if not name then
+                    break
+                end
+                local full_path = dir .. "/" .. name
+                if type == "file" and name:match("%.lua$") then
+                    has_lua_files = true
+                    return
+                elseif type == "directory" then
+                    scan_for_lua_files(full_path)
+                    if has_lua_files then
+                        return
+                    end
+                end
+            end
+        end
+        scan_for_lua_files(path)
+
+        if not has_lua_files then
             -- Also check for .vim files
-            local vim_files = vim.fn.glob(path .. "/**/*.vim", true, true)
-            if #vim_files == 0 then
+            local has_vim_files = false
+            local function scan_for_vim_files(dir)
+                local dir_fd = vim.uv.fs_scandir(dir)
+                if not dir_fd then
+                    return
+                end
+                while true do
+                    local name, type = vim.uv.fs_scandir_next(dir_fd)
+                    if not name then
+                        break
+                    end
+                    local full_path = dir .. "/" .. name
+                    if type == "file" and name:match("%.vim$") then
+                        has_vim_files = true
+                        return
+                    elseif type == "directory" then
+                        scan_for_vim_files(full_path)
+                        if has_vim_files then
+                            return
+                        end
+                    end
+                end
+            end
+            scan_for_vim_files(path)
+
+            if not has_vim_files then
                 return true
             end
         end
@@ -148,6 +285,8 @@ end
 ---Process all specs and register plugins
 ---@param ctx leanpack.ProcessContext
 local function process_all(ctx)
+    profile_start("vim.pack.add")
+
     -- Setup build tracking before vim.pack.add
     hooks.setup_build_tracking()
 
@@ -157,8 +296,16 @@ local function process_all(ctx)
         confirm = ctx.confirm,
     })
 
+    profile_end("vim.pack.add")
+    profile_start("fix_broken_plugins")
+
     -- Fix any broken plugins that failed to install properly
-    fix_broken_plugins()
+    if config.checker.enabled then
+        fix_broken_plugins()
+    end
+
+    profile_end("fix_broken_plugins")
+    profile_start("update_paths")
 
     -- Update plugin paths from vim.pack.get() (actual installed paths)
     local installed = vim.pack.get() or {}
@@ -169,17 +316,29 @@ local function process_all(ctx)
         end
     end
 
+    profile_end("update_paths")
+
     -- Setup lazy build tracking after vim.pack.add
     hooks.setup_lazy_build_tracking()
+
+    profile_start("process_startup")
 
     -- Process startup plugins
     loader.process_startup(ctx)
 
+    profile_end("process_startup")
+    profile_start("process_lazy")
+
     -- Process lazy plugins
     lazy_mod.process_lazy(ctx)
 
+    profile_end("process_lazy")
+    profile_start("run_pending_builds")
+
     -- Run pending builds
     hooks.run_pending_builds(ctx)
+
+    profile_end("run_pending_builds")
 
     -- Clear startup group
     vim.api.nvim_clear_autocmds({ group = state.startup_group })
@@ -194,6 +353,11 @@ local function register_spec(spec, ctx, is_dependency)
     local normalized, src = spec_mod.normalize_spec(spec, { defaults = ctx.defaults })
     if not normalized then
         return
+    end
+
+    -- Propagate defaults.lazy if not explicitly set
+    if normalized.lazy == nil and ctx.defaults.lazy ~= nil then
+        normalized.lazy = ctx.defaults.lazy
     end
 
     normalized._is_dependency = is_dependency or false
@@ -305,6 +469,9 @@ function M.setup(opts)
     if opts.performance ~= nil then
         config.performance = vim.tbl_extend("force", config.performance, opts.performance)
     end
+    if opts.checker ~= nil then
+        config.checker = vim.tbl_extend("force", config.checker, opts.checker)
+    end
 
     -- Enable vim.loader for performance
     if config.performance.vim_loader then
@@ -315,7 +482,7 @@ function M.setup(opts)
     prune_rtp(config.performance.rtp_prune)
 
     -- Setup commands
-    commands.setup(config.cmd_prefix)
+    get_commands().setup(config.cmd_prefix)
 
     -- Create processing context
     local ctx = create_context({
@@ -324,6 +491,7 @@ function M.setup(opts)
     })
 
     -- Import specs
+    profile_start("import_specs")
     local spec = opts.spec or (opts[1] and opts) or nil
     if spec then
         local specs = import_mod.process_import_result(spec, { import_order = 0, seen = {} })
@@ -339,15 +507,29 @@ function M.setup(opts)
             register_spec(s, ctx)
         end
     end
+    profile_end("import_specs")
 
     -- Finalize specs
+    profile_start("finalize_specs")
     finalize_specs()
+    profile_end("finalize_specs")
 
     -- Categorize into startup and lazy
+    profile_start("categorize_plugins")
     categorize_plugins(ctx)
+    profile_end("categorize_plugins")
 
     -- Process all plugins
+    profile_start("process_all")
     process_all(ctx)
+    profile_end("process_all")
+
+    -- Save main module cache on exit
+    vim.api.nvim_create_autocmd("VimLeavePre", {
+        callback = function()
+            state.save_main_cache()
+        end,
+    })
 
     log.info("leanpack.nvim setup completed")
 end

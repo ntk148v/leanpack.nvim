@@ -19,6 +19,8 @@ local state = {
     registered_plugins = {},
     plugin_names_with_build = {},
     src_with_pending_build = {},
+    main_cache = {},
+    main_cache_loaded = false,
 }
 
 -- Autocmd groups
@@ -38,6 +40,8 @@ function M.reset()
     state.registered_plugins = {}
     state.plugin_names_with_build = {}
     state.src_with_pending_build = {}
+    state.main_cache = {}
+    state.main_cache_loaded = false
 end
 
 ---Check if setup has been called
@@ -277,6 +281,64 @@ function M.get_all_plugin_names()
     return vim.tbl_map(function(spec)
         return spec.name
     end, state.registered_plugins)
+end
+
+---Load main module cache from disk
+function M.load_main_cache()
+    if state.main_cache_loaded then
+        return
+    end
+
+    local cache_path = vim.fn.stdpath("cache") .. "/leanpack/main_cache.json"
+    local f = io.open(cache_path, "r")
+    if f then
+        local content = f:read("*a")
+        f:close()
+        local ok, cache = pcall(vim.json.decode, content)
+        if ok and type(cache) == "table" then
+            state.main_cache = cache
+        end
+    end
+    state.main_cache_loaded = true
+end
+
+---Save main module cache to disk
+function M.save_main_cache()
+    local cache_path = vim.fn.stdpath("cache") .. "/leanpack/main_cache.json"
+    -- Ensure directory exists
+    local dir = vim.fn.stdpath("cache") .. "/leanpack"
+    if vim.fn.isdirectory(dir) ~= 1 then
+        vim.fn.mkdir(dir, "p")
+    end
+
+    local f = io.open(cache_path, "w")
+    if f then
+        local ok, encoded = pcall(vim.json.encode, state.main_cache)
+        if ok then
+            f:write(encoded)
+        end
+        f:close()
+    end
+end
+
+---Get cached main module for a plugin
+---@param name string Plugin name
+---@param dir string Plugin directory
+---@return string?
+function M.get_cached_main(name, dir)
+    M.load_main_cache()
+    local key = name .. ":" .. dir
+    return state.main_cache[key]
+end
+
+---Cache main module for a plugin
+---@param name string Plugin name
+---@param dir string Plugin directory
+---@param main string Main module name
+function M.cache_main(name, dir, main)
+    M.load_main_cache()
+    local key = name .. ":" .. dir
+    state.main_cache[key] = main
 end
 
 return M

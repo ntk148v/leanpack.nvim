@@ -248,6 +248,42 @@ function M.setup(prefix)
         vim.notify("Plugins synced successfully", vim.log.levels.INFO)
         log.info("Plugins synced successfully")
       end)
+    elseif subcommand == "profile" then
+      local profile = require("leanpack").get_profile_data()
+      if next(profile) == nil or profile._total == 0 then
+        vim.notify("No profiling data available. Enable profiling with: require('leanpack').set_profiling(true)", vim.log.levels.WARN)
+        return
+      end
+
+      local lines = { "Leanpack.nvim Profile:" }
+      local max_name = 0
+      for name in pairs(profile) do
+        if name ~= "_total" then
+          max_name = math.max(max_name, #name)
+        end
+      end
+
+      -- Sort by elapsed time descending
+      local sorted = {}
+      for name, elapsed in pairs(profile) do
+        if name ~= "_total" then
+          table.insert(sorted, { name = name, elapsed = elapsed })
+        end
+      end
+      table.sort(sorted, function(a, b) return a.elapsed > b.elapsed end)
+
+      for _, item in ipairs(sorted) do
+        table.insert(lines, string.format("  %s: %6.2fms",
+          item.name .. string.rep(" ", max_name - #item.name),
+          item.elapsed
+        ))
+      end
+      table.insert(lines, string.format("  %s: %6.2fms",
+        "TOTAL" .. string.rep(" ", max_name - 5),
+        profile._total
+      ))
+
+      vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)
     else
       vim.notify(("Unknown subcommand: %s"):format(subcommand), vim.log.levels.ERROR)
     end
@@ -258,7 +294,7 @@ function M.setup(prefix)
     complete = function(arg_lead, cmd_line, cursor_pos)
       local parts = vim.split(cmd_line, "%s+", { trimempty = true })
       if #parts <= 2 then
-        local subcommands = { "build", "clean", "delete", "load", "sync", "update" }
+        local subcommands = { "build", "clean", "delete", "load", "profile", "sync", "update" }
         return filter_completions(subcommands, arg_lead)
       elseif #parts == 3 then
         local subcommand = parts[2]
