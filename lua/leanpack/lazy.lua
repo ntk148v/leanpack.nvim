@@ -76,6 +76,10 @@ function M.process_lazy(ctx)
 
   -- Setup keymap triggers
   keys_handler.setup(ctx.lazy_packs)
+
+  -- Setup module trigger (for require-based lazy loading)
+  local module_handler = require("leanpack.lazy_trigger.module")
+  module_handler.setup(ctx.lazy_packs)
 end
 
 return M
