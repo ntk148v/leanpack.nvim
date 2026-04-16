@@ -156,31 +156,27 @@ function M.run_build(src)
 end
 
 ---Setup build tracking for PackChanged events
-function M.setup_build_tracking()
-    vim.api.nvim_create_autocmd("PackChanged", {
-        group = state.startup_group,
-        callback = function(event)
-            if event.data.kind == "install" or event.data.kind == "update" then
-                state.mark_pending_build(event.data.spec.src)
-            end
-        end,
-    })
-end
+---@param opts? { lazy?: boolean }
+function M.setup_build_tracking(opts)
+    opts = opts or {}
+    local group = opts.lazy and state.lazy_build_group or state.startup_group
 
----Setup lazy build tracking for PackChanged events
-function M.setup_lazy_build_tracking()
     vim.api.nvim_create_autocmd("PackChanged", {
-        group = state.lazy_build_group,
+        group = group,
         callback = function(event)
             if event.data.kind == "install" or event.data.kind == "update" then
                 local src = event.data.spec.src
-                local entry = state.get_entry(src)
-                if entry and entry.merged_spec and entry.merged_spec.build then
-                    local pack_spec = state.get_pack_spec(src)
-                    if pack_spec then
-                        get_loader().load_plugin(pack_spec, { bang = true })
+                if opts.lazy then
+                    local entry = state.get_entry(src)
+                    if entry and entry.merged_spec and entry.merged_spec.build then
+                        local pack_spec = state.get_pack_spec(src)
+                        if pack_spec then
+                            get_loader().load_plugin(pack_spec, { bang = true })
+                        end
+                        M.execute_build(entry.merged_spec.build, entry.plugin)
                     end
-                    M.execute_build(entry.merged_spec.build, entry.plugin)
+                else
+                    state.mark_pending_build(src)
                 end
             end
         end,
@@ -227,4 +223,3 @@ function M.run_all_builds()
 end
 
 return M
-

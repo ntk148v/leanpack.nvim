@@ -284,7 +284,7 @@ local function process_all(ctx)
     profile_end("update_paths")
 
     -- Setup lazy build tracking after vim.pack.add
-    hooks.setup_lazy_build_tracking()
+    hooks.setup_build_tracking({ lazy = true })
 
     profile_start("process_startup")
 
