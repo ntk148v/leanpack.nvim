@@ -6,10 +6,10 @@ local MiniTest = require("mini.test")
 local child = MiniTest.new_child_neovim()
 
 local T = MiniTest.new_set({
-	hooks = {
-		pre_case = function()
-			child.restart({ "-u", "NONE" })
-			child.lua([[
+    hooks = {
+        pre_case = function()
+            child.restart({ "-u", "NONE" })
+            child.lua([[
 				vim.opt.rtp:prepend("]] .. vim.fn.getcwd() .. [[")
 				_G.helpers = require("tests.helpers")
 				_G.helpers.reset_leanpack_state()
@@ -17,9 +17,9 @@ local T = MiniTest.new_set({
 				_G.state = require("leanpack.state")
 				_G.spec_mod = require("leanpack.spec")
 			]])
-		end,
-		post_once = child.stop,
-	},
+        end,
+        post_once = child.stop,
+    },
 })
 
 -- ============================================================================
@@ -29,7 +29,7 @@ local T = MiniTest.new_set({
 T["load_plugin()"] = MiniTest.new_set()
 
 T["load_plugin()"]["returns early if plugin not in registry"] = function()
-	child.lua([[
+    child.lua([[
 		_G.errors = {}
 		local orig_notify = vim.notify
 		vim.notify = function(msg, level)
@@ -44,11 +44,11 @@ T["load_plugin()"]["returns early if plugin not in registry"] = function()
 		_G.has_error = #_G.errors > 0
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.has_error"), true)
+    MiniTest.expect.equality(child.lua_get("_G.has_error"), true)
 end
 
 T["load_plugin()"]["returns early if already loaded"] = function()
-	child.lua([[
+    child.lua([[
 		-- Setup a plugin
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
@@ -61,12 +61,12 @@ T["load_plugin()"]["returns early if already loaded"] = function()
 		_G.loaded_after = state.get_entry("test-src").load_status
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.loaded_before"), "loaded")
-	MiniTest.expect.equality(child.lua_get("_G.loaded_after"), "loaded")
+    MiniTest.expect.equality(child.lua_get("_G.loaded_before"), "loaded")
+    MiniTest.expect.equality(child.lua_get("_G.loaded_after"), "loaded")
 end
 
 T["load_plugin()"]["detects circular dependencies"] = function()
-	child.lua([[
+    child.lua([[
 		-- Setup circular dependency
 		state.set_entry("a", {
 			specs = { { src = "a", name = "a" } },
@@ -94,11 +94,11 @@ T["load_plugin()"]["detects circular dependencies"] = function()
 		end
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.has_circular_error"), true)
+    MiniTest.expect.equality(child.lua_get("_G.has_circular_error"), true)
 end
 
 T["load_plugin()"]["loads dependencies first"] = function()
-	child.lua([[
+    child.lua([[
 		-- Setup parent with dependency
 		state.set_entry("parent", {
 			specs = { { src = "parent", name = "parent" } },
@@ -121,12 +121,12 @@ T["load_plugin()"]["loads dependencies first"] = function()
 		_G.child_loaded_after = state.get_entry("child").load_status
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.child_loaded_before"), "pending")
-	MiniTest.expect.equality(child.lua_get("_G.child_loaded_after"), "loaded")
+    MiniTest.expect.equality(child.lua_get("_G.child_loaded_before"), "pending")
+    MiniTest.expect.equality(child.lua_get("_G.child_loaded_after"), "loaded")
 end
 
 T["load_plugin()"]["warns about missing optional dependencies"] = function()
-	child.lua([[
+    child.lua([[
 		-- Setup parent with optional dependency
 		state.set_entry("parent", {
 			specs = { { src = "parent", name = "parent" } },
@@ -162,11 +162,11 @@ T["load_plugin()"]["warns about missing optional dependencies"] = function()
 		end
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.has_optional_warning"), true)
+    MiniTest.expect.equality(child.lua_get("_G.has_optional_warning"), true)
 end
 
 T["load_plugin()"]["errors on missing required dependencies"] = function()
-	child.lua([[
+    child.lua([[
 		-- Setup parent with required dependency
 		state.set_entry("parent", {
 			specs = { { src = "parent", name = "parent" } },
@@ -202,11 +202,11 @@ T["load_plugin()"]["errors on missing required dependencies"] = function()
 		end
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.has_error"), true)
+    MiniTest.expect.equality(child.lua_get("_G.has_error"), true)
 end
 
 T["load_plugin()"]["marks plugin as loaded"] = function()
-	child.lua([[
+    child.lua([[
 		-- Setup a plugin
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
@@ -222,9 +222,9 @@ T["load_plugin()"]["marks plugin as loaded"] = function()
 		_G.is_loaded = not state.is_unloaded("test")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.loaded_before"), "pending")
-	MiniTest.expect.equality(child.lua_get("_G.loaded_after"), "loaded")
-	MiniTest.expect.equality(child.lua_get("_G.is_loaded"), true)
+    MiniTest.expect.equality(child.lua_get("_G.loaded_before"), "pending")
+    MiniTest.expect.equality(child.lua_get("_G.loaded_after"), "loaded")
+    MiniTest.expect.equality(child.lua_get("_G.is_loaded"), true)
 end
 
 -- ============================================================================
@@ -234,7 +234,7 @@ end
 T["process_startup()"] = MiniTest.new_set()
 
 T["process_startup()"]["runs init hooks in priority order"] = function()
-	child.lua([[
+    child.lua([[
 		_G.init_order = {}
 
 		state.set_entry("low", {
@@ -259,13 +259,13 @@ T["process_startup()"]["runs init hooks in priority order"] = function()
 		loader.process_startup(ctx)
 	]])
 
-	local init_order = child.lua_get("_G.init_order")
-	MiniTest.expect.equality(init_order[1], "high")
-	MiniTest.expect.equality(init_order[2], "low")
+    local init_order = child.lua_get("_G.init_order")
+    MiniTest.expect.equality(init_order[1], "high")
+    MiniTest.expect.equality(init_order[2], "low")
 end
 
 T["process_startup()"]["loads plugins in dependency order"] = function()
-	child.lua([[
+    child.lua([[
 		-- Setup: parent depends on child
 		state.set_entry("parent", {
 			specs = { { src = "parent", name = "parent", priority = 50 } },
@@ -296,12 +296,12 @@ T["process_startup()"]["loads plugins in dependency order"] = function()
 		_G.child_loaded_after = state.get_entry("child").load_status
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.child_loaded_before"), "pending")
-	MiniTest.expect.equality(child.lua_get("_G.child_loaded_after"), "loaded")
+    MiniTest.expect.equality(child.lua_get("_G.child_loaded_before"), "pending")
+    MiniTest.expect.equality(child.lua_get("_G.child_loaded_after"), "loaded")
 end
 
 T["process_startup()"]["marks all startup plugins as loaded"] = function()
-	child.lua([[
+    child.lua([[
 		state.set_entry("plugin1", {
 			specs = { { src = "plugin1", name = "plugin1" } },
 			merged_spec = { src = "plugin1", name = "plugin1" },
@@ -330,8 +330,8 @@ T["process_startup()"]["marks all startup plugins as loaded"] = function()
 		_G.p2_loaded = state.get_entry("plugin2").load_status
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.p1_loaded"), "loaded")
-	MiniTest.expect.equality(child.lua_get("_G.p2_loaded"), "loaded")
+    MiniTest.expect.equality(child.lua_get("_G.p1_loaded"), "loaded")
+    MiniTest.expect.equality(child.lua_get("_G.p2_loaded"), "loaded")
 end
 
 -- ============================================================================
@@ -341,7 +341,7 @@ end
 T["error handling"] = MiniTest.new_set()
 
 T["error handling"]["handles missing plugin object"] = function()
-	child.lua([[
+    child.lua([[
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
 			merged_spec = { src = "test-src", name = "test" },
@@ -371,11 +371,11 @@ T["error handling"]["handles missing plugin object"] = function()
 		end
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.has_error"), true)
+    MiniTest.expect.equality(child.lua_get("_G.has_error"), true)
 end
 
 T["error handling"]["handles failed config hook"] = function()
-	child.lua([[
+    child.lua([[
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
 			merged_spec = {
@@ -408,7 +408,7 @@ T["error handling"]["handles failed config hook"] = function()
 		end
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.has_config_error"), true)
+    MiniTest.expect.equality(child.lua_get("_G.has_config_error"), true)
 end
 
 -- ============================================================================
@@ -418,7 +418,7 @@ end
 T["integration"] = MiniTest.new_set()
 
 T["integration"]["loads plugin with config and keymaps"] = function()
-	child.lua([[
+    child.lua([[
 		_G.config_called = false
 		_G.keys_applied = false
 
@@ -438,11 +438,11 @@ T["integration"]["loads plugin with config and keymaps"] = function()
 		loader.load_plugin({ src = "test-src", name = "test" })
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.config_called"), true)
+    MiniTest.expect.equality(child.lua_get("_G.config_called"), true)
 end
 
 T["integration"]["handles complex dependency graph"] = function()
-	child.lua([[
+    child.lua([[
 		-- Setup: a -> b -> c, a -> d
 		state.set_entry("a", {
 			specs = { { src = "a", name = "a" } },
@@ -486,11 +486,11 @@ T["integration"]["handles complex dependency graph"] = function()
 		)
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.all_loaded"), true)
+    MiniTest.expect.equality(child.lua_get("_G.all_loaded"), true)
 end
 
 T["integration"]["loads dependencies before config runs"] = function()
-	child.lua([[
+    child.lua([[
 		-- Simulate nvim-lspconfig depending on cmp-nvim-lsp
 		-- Plugin A (nvim-lspconfig) depends on Plugin B (cmp-nvim-lsp)
 		-- Plugin A's config requires Plugin B's module
@@ -531,9 +531,86 @@ T["integration"]["loads dependencies before config runs"] = function()
 		)
 	]])
 
-MiniTest.expect.equality(child.lua_get("_G.all_loaded"), true)
-	MiniTest.expect.equality(child.lua_get("_G.config_a_called"), true)
-	MiniTest.expect.equality(child.lua_get("_G.plugin_b_loaded_before_config_a"), true)
+    MiniTest.expect.equality(child.lua_get("_G.all_loaded"), true)
+    MiniTest.expect.equality(child.lua_get("_G.config_a_called"), true)
+    MiniTest.expect.equality(child.lua_get("_G.plugin_b_loaded_before_config_a"), true)
 end
 
-	return T
+-- ============================================================================
+-- Cycle guard tests (loading_set)
+-- ============================================================================
+
+T["load_plugin()"]["loading_set prevents stack overflow on deep recursion"] = function()
+    child.lua([[
+		-- Create two plugins that form a dependency cycle
+		-- Even though load_status should catch this, loading_set is belt-and-suspenders
+		state.set_entry("plugin-a", {
+			specs = { { src = "plugin-a", name = "plugin-a" } },
+			merged_spec = { src = "plugin-a", name = "plugin-a" },
+			load_status = "pending",
+			plugin = { spec = { src = "plugin-a", name = "plugin-a" }, path = "/tmp/a" },
+		})
+		state.set_entry("plugin-b", {
+			specs = { { src = "plugin-b", name = "plugin-b" } },
+			merged_spec = { src = "plugin-b", name = "plugin-b" },
+			load_status = "pending",
+			plugin = { spec = { src = "plugin-b", name = "plugin-b" }, path = "/tmp/b" },
+		})
+		state.add_dependency("plugin-a", "plugin-b")
+		state.add_dependency("plugin-b", "plugin-a")
+		state.register_pack_spec({ src = "plugin-a", name = "plugin-a" })
+		state.register_pack_spec({ src = "plugin-b", name = "plugin-b" })
+
+		-- Suppress notifications
+		local orig_notify = vim.notify
+		_G.notifications = {}
+		vim.notify = function(msg, level) table.insert(_G.notifications, { msg = msg, level = level }) end
+
+		-- This should NOT stack overflow
+		_G.load_ok = pcall(function()
+			loader.load_plugin({ src = "plugin-a", name = "plugin-a" })
+		end)
+
+		vim.notify = orig_notify
+	]])
+
+    -- Should complete without error (cycle detected and broken)
+    MiniTest.expect.equality(child.lua_get("_G.load_ok"), true)
+end
+
+-- ============================================================================
+-- Error recovery tests
+-- ============================================================================
+
+T["load_plugin()"]["continues loading when dependency has cond=false"] = function()
+    child.lua([[
+		state.set_entry("dep-plugin", {
+			specs = { { src = "dep-plugin", name = "dep-plugin" } },
+			merged_spec = { src = "dep-plugin", name = "dep-plugin", cond = false },
+			load_status = "pending",
+			plugin = { spec = { src = "dep-plugin", name = "dep-plugin" }, path = "/tmp/dep" },
+		})
+		state.set_entry("main-plugin", {
+			specs = { { src = "main-plugin", name = "main-plugin" } },
+			merged_spec = { src = "main-plugin", name = "main-plugin" },
+			load_status = "pending",
+			plugin = { spec = { src = "main-plugin", name = "main-plugin" }, path = "/tmp/main" },
+		})
+		state.add_dependency("main-plugin", "dep-plugin")
+		state.register_pack_spec({ src = "dep-plugin", name = "dep-plugin" })
+		state.register_pack_spec({ src = "main-plugin", name = "main-plugin" })
+
+		-- Mock packadd to avoid actual plugin loading
+		vim.cmd.packadd = function() end
+
+		_G.load_ok = pcall(function()
+			loader.load_plugin({ src = "main-plugin", name = "main-plugin" }, { bang = true })
+		end)
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.load_ok"), true)
+    -- Dep should be marked loaded (cond=false marks as loaded to unblock dependents)
+    MiniTest.expect.equality(child.lua_get("state.get_entry('dep-plugin').load_status"), "loaded")
+end
+
+return T
