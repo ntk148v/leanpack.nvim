@@ -145,47 +145,30 @@ function M.get_plugins_with_build()
     return state.plugin_names_with_build
 end
 
+---Get registry entry by plugin name (O(1) via name_to_src mapping)
+---@param name string
+---@return leanpack.RegistryEntry?
+local function get_entry_by_name(name)
+    local src = state.name_to_src[name]
+    return src and state.spec_registry[src] or nil
+end
+
 ---Mark plugin as loaded
 ---@param name string
 function M.mark_loaded(name)
-    local src = state.name_to_src[name]
-    if src then
-        local entry = state.spec_registry[src]
-        if entry then
-            entry.load_status = "loaded"
-            return
-        end
-    end
-
-    -- Fallback to search if name mapping missed
-    for _, entry in pairs(state.spec_registry) do
-        if entry.merged_spec and entry.merged_spec.name == name then
-            entry.load_status = "loaded"
-            state.name_to_src[name] = entry.merged_spec.src
-            break
-        end
+    local entry = get_entry_by_name(name)
+    if entry then
+        entry.load_status = "loaded"
     end
 end
 
 ---Mark plugin as unloaded
 ---@param name string
 function M.mark_unloaded(name)
-    local src = state.name_to_src[name]
-    if src then
-        local entry = state.spec_registry[src]
-        if entry then
-            entry.load_status = "pending"
-            return
-        end
-    end
-
-    -- Fallback to search if name mapping missed
-    for _, entry in pairs(state.spec_registry) do
-        if entry.merged_spec and entry.merged_spec.name == name then
-            entry.load_status = "pending"
-            state.name_to_src[name] = entry.merged_spec.src
-            return
-        end
+    local entry = get_entry_by_name(name)
+    if entry then
+        entry.load_status = "pending"
+        return
     end
 
     -- If plugin not in registry, create a minimal entry
@@ -201,21 +184,8 @@ end
 ---@param name string
 ---@return boolean
 function M.is_unloaded(name)
-    local src = state.name_to_src[name]
-    if src then
-        local entry = state.spec_registry[src]
-        if entry then
-            return entry.load_status ~= "loaded"
-        end
-    end
-
-    for _, entry in pairs(state.spec_registry) do
-        if entry.merged_spec and entry.merged_spec.name == name then
-            state.name_to_src[name] = entry.merged_spec.src
-            return entry.load_status ~= "loaded"
-        end
-    end
-    return false
+    local entry = get_entry_by_name(name)
+    return entry and entry.load_status ~= "loaded" or false
 end
 
 ---Get all unloaded plugin names
