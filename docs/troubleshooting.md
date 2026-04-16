@@ -143,7 +143,8 @@ Common issues and their solutions when using leanpack.nvim.
 
 3. Check logs:
    ```bash
-   cat ~/.local/share/nvim/lazy/leanpack.log
+   cat "$(nvim --headless -c 'echo stdpath("log") .. "/leanpack.log"' -c 'quit' 2>&1)"
+   # Typically: ~/.local/state/nvim/leanpack.log
    ```
 
 ### "Build fails"
@@ -249,7 +250,7 @@ Common issues and their solutions when using leanpack.nvim.
 2. View recent logs:
 
    ```bash
-   tail -f ~/.local/share/nvim/lazy/leanpack.log
+   tail -f ~/.local/state/nvim/leanpack.log
    ```
 
 3. Check for errors in logs

@@ -30,12 +30,13 @@ vim.opt.rtp:prepend(lazypath)
 
 ### Phase 2: Lightweight Lazy-Load Traps
 
-Implements four trigger types without package.loaders interception:
+Implements five trigger types:
 
 1. **Event triggers** - Uses `nvim_create_autocmd` with `once = true`
 2. **Command triggers** - Creates hollow user commands
 3. **Keymap triggers** - Uses `vim.keymap.set` with self-deletion
-4. **Filetype triggers** - Re-triggers BufReadPre/Post/FileType after load
+4. **Filetype triggers** - Autocmds on `FileType` events
+5. **Module triggers** - Installs lightweight loader in `package.loaders` at position 2, self-removes when all module-triggered plugins are loaded
 
 ### Phase 3: Recursive Dependency Traversal
 
@@ -80,17 +81,18 @@ lua/leanpack/
     ├── event.lua
     ├── cmd.lua
     ├── keys.lua
-    └── ft.lua
+    ├── ft.lua
+    └── module.lua
 ```
 
 ## Key Implementation Details
 
 ### Lazy Loading
 
-leanpack.nvim uses lightweight traps instead of package.loaders:
+leanpack.nvim uses lightweight traps for lazy loading:
 
-- **No require() interception** - This is computationally expensive
-- **Explicit dependencies** - Instead of magic module loading
+- **Module trigger** - Installs a custom loader in `package.loaders` at position 2; auto-removes when all module-triggered plugins have loaded
+- **Explicit dependencies** - Preferred over implicit module loading for clarity
 - **Self-destructing autocmds** - `once = true` prevents perpetual polling
 
 ### Dependency Resolution
@@ -132,7 +134,7 @@ All operations logged to `stdpath("log")/leanpack.log`:
 
 | Feature         | leanpack.nvim | lazy.nvim  |
 | --------------- | ------------- | ---------- |
-| package.loaders | ❌            | ✅         |
+| package.loaders | ✅ (self-cleaning) | ✅         |
 | vim.pack-based  | ✅            | ❌         |
 | Native lockfile | ✅            | Custom     |
 | Code size       | ~2,680 LOC    | ~3,100 LOC |

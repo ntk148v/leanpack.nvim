@@ -11,7 +11,7 @@ Most lazy.nvim specs work directly with leanpack.nvim.
 | lazy.nvim          | leanpack.nvim       | Notes                              |
 | ------------------ | ------------------- | ---------------------------------- |
 | `version` (semver) | `sem_version`       | `version` is for branch/tag/commit |
-| `module` trigger   | Not supported       | Uses explicit dependencies instead |
+| `module` trigger   | Supported (auto)    | Auto-detected via `main` field     |
 | Profiling UI       | Use `--startuptime` | Built-in Neovim flag               |
 
 ### Example Migration
@@ -46,9 +46,7 @@ Most lazy.nvim specs work directly with leanpack.nvim.
 
 ### Migrating `module` Trigger
 
-lazy.nvim uses `package.loaders` interception for module-based loading. leanpack.nvim doesn't support this for performance reasons.
-
-Instead, use explicit dependencies:
+leanpack.nvim supports module-based lazy loading. When a plugin has `lazy = true` and a detectable `main` module, require() calls for that module will automatically trigger loading.
 
 **lazy.nvim:**
 
@@ -64,22 +62,20 @@ Instead, use explicit dependencies:
 ```lua
 {
   'neovim/nvim-lspconfig',
-  -- No module trigger needed
-  -- Just ensure lspconfig is in your dependencies where needed
+  lazy = true,
+  -- main module auto-detected as "lspconfig"
+  -- require("lspconfig") will trigger loading
 }
 ```
 
-Or load on first require:
+For plugins where auto-detection fails, set `main` explicitly:
 
 ```lua
--- In your config
-vim.api.nvim_create_autocmd('FileType', {
-  pattern = '*',
-  once = true,
-  callback = function()
-    require('lspconfig')
-  end,
-})
+{
+  'someone/odd-naming.nvim',
+  lazy = true,
+  main = 'actual_module_name',
+}
 ```
 
 ### Migrating Plugin Specs
@@ -95,7 +91,7 @@ vim.api.nvim_create_autocmd('FileType', {
 | --------------------- | ------------------------- |
 | `version = '^1.0'`    | `sem_version = '^1.0'`    |
 | `version = 'main'`    | `version = 'main'`        |
-| `module = 'pattern'`  | Remove (use dependencies) |
+| `module = 'pattern'`  | `lazy = true` (auto-detected) |
 | `lazy = true`         | Keep as-is                |
 | `init = function()`   | Keep as-is                |
 | `config = function()` | Keep as-is                |
