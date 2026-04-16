@@ -190,17 +190,20 @@ local function update_all_plugins()
       if event.data.kind == "update" then
         current = current + 1
         vim.notify(string.format("Updating plugins (%d/%d)...", current, total), vim.log.levels.INFO)
+        if current >= total then
+          vim.schedule(function()
+            pcall(vim.api.nvim_del_augroup_by_id, augroup)
+            vim.cmd("redraw")
+            vim.notify(string.format("All plugins updated (%d/%d)", total, total), vim.log.levels.INFO)
+          end)
+        end
       end
     end,
   })
 
   vim.pack.update(nil, { force = true })
-  vim.schedule(function()
-    vim.api.nvim_del_augroup_by_id(augroup)
-    vim.cmd("redraw")
-    vim.notify(string.format("All plugins updated successfully (%d/%d)", total, total), vim.log.levels.INFO)
-  end)
 end
+
 
 local function update_loaded_plugins()
   local loaded_names = {}
