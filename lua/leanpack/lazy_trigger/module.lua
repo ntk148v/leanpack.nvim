@@ -1,6 +1,6 @@
 ---@module 'leanpack.lazy_trigger.module'
-local state = require("leanpack.state")
 local log = require("leanpack.log")
+local state = require("leanpack.state")
 
 local M = {}
 
@@ -16,7 +16,16 @@ local loading_modules = {}
 ---Custom loader that loads the plugin before requiring the module
 local function leanpack_module_loader(modname)
     if loading_modules[modname] then
-        return nil -- Avoid infinite recursion
+        -- On recursive calls, try the original loaders directly.
+        -- This handles cases like plugin/gitsigns.lua calling require('gitsigns')
+        -- synchronously while packadd is still sourcing it.
+        for _, loader in ipairs(original_loaders) do
+            local ok, result = pcall(loader, modname)
+            if ok and type(result) == "function" then
+                return result
+            end
+        end
+        return nil
     end
 
     local src = module_to_src[modname]
@@ -39,9 +48,24 @@ local function leanpack_module_loader(modname)
         require("leanpack.loader").load_plugin(pack_spec, { bang = true })
     end
 
-    loading_modules[modname] = false
+    loading_modules[modname] = nil -- remove key entirely, not false
 
-    -- Now try to load the module through the original loaders
+    -- Remove loaded module mappings
+    module_to_src[modname] = nil
+    module_to_src[modname .. ".init"] = nil
+
+    -- If all module-triggered plugins loaded, remove our loader
+    if next(module_to_src) == nil then
+        local loaders = package.loaders or package.searchers
+        for i, l in ipairs(loaders) do
+            if l == leanpack_module_loader then
+                table.remove(loaders, i)
+                break
+            end
+        end
+    end
+
+    -- Try original loaders now that plugin is loaded
     for _, loader in ipairs(original_loaders) do
         local result = loader(modname)
         if result then
