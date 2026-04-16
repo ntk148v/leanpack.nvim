@@ -10,12 +10,26 @@ local M = {}
 ---Load a plugin and its dependencies
 ---@param pack_spec vim.pack.Spec
 ---@param opts? { bang?: boolean }
+-- Explicit cycle guard: prevents stack overflow if load_status transitions have bugs
+local loading_set = {}
+
+---Load a plugin and its dependencies
+---@param pack_spec vim.pack.Spec
+---@param opts? { bang?: boolean }
 function M.load_plugin(pack_spec, opts)
     opts = opts or {}
-    local entry = state.get_entry(pack_spec.src)
+    local src = pack_spec.src
+
+    -- Explicit cycle guard (belt-and-suspenders with load_status check)
+    if loading_set[src] then
+        log.warn(("Circular load detected for: %s"):format(src))
+        return
+    end
+
+    local entry = state.get_entry(src)
 
     if not entry then
-        local msg = ("Plugin %s not found in registry"):format(pack_spec.src)
+        local msg = ("Plugin %s not found in registry"):format(src)
         vim.notify(msg, vim.log.levels.ERROR)
         log.error(msg)
         return
@@ -27,7 +41,7 @@ function M.load_plugin(pack_spec, opts)
     end
 
     if entry.load_status == "loading" then
-        local msg = ("Circular dependency detected involving plugin: %s"):format(pack_spec.src)
+        local msg = ("Circular dependency detected involving plugin: %s"):format(src)
         vim.notify(msg, vim.log.levels.ERROR)
         log.error(msg)
         return
@@ -46,11 +60,12 @@ function M.load_plugin(pack_spec, opts)
         end
     end
 
+    loading_set[src] = true
     entry.load_status = "loading"
     log.info(("Loading plugin: %s"):format(pack_spec.name))
 
     -- Load dependencies first
-    local deps = state.get_dependencies(pack_spec.src)
+    local deps = state.get_dependencies(src)
     if deps then
         for dep_src in pairs(deps) do
             local dep_entry = state.get_entry(dep_src)
@@ -63,14 +78,11 @@ function M.load_plugin(pack_spec, opts)
                     local is_optional = dep_entry.merged_spec and dep_entry.merged_spec.optional
                     if is_optional then
                         vim.notify(
-                            ("Optional dependency %s not found for %s"):format(dep_src, pack_spec.src),
+                            ("Optional dependency %s not found for %s"):format(dep_src, src),
                             vim.log.levels.WARN
                         )
                     else
-                        vim.notify(
-                            ("Dependency %s not found for %s"):format(dep_src, pack_spec.src),
-                            vim.log.levels.ERROR
-                        )
+                        vim.notify(("Dependency %s not found for %s"):format(dep_src, src), vim.log.levels.ERROR)
                     end
                 end
             end
@@ -82,7 +94,8 @@ function M.load_plugin(pack_spec, opts)
     local plugin = entry.plugin
 
     if not plugin then
-        vim.notify(("Cannot load %s: plugin not registered"):format(pack_spec.src), vim.log.levels.ERROR)
+        vim.notify(("Cannot load %s: plugin not registered"):format(src), vim.log.levels.ERROR)
+        loading_set[src] = nil
         return
     end
 
@@ -90,6 +103,14 @@ function M.load_plugin(pack_spec, opts)
     -- If ctx.load was true in setup, vim.pack.add already added it to RTP
     if opts.bang ~= false then
         vim.cmd.packadd(pack_spec.name)
+        -- Fallback: manually update package.path if Neovim didn't (common in some 0.12+ scenarios)
+        local plugin_lua = entry.plugin.path .. "/lua"
+        if vim.fn.isdirectory(plugin_lua) == 1 then
+            local p = plugin_lua .. "/?.lua;" .. plugin_lua .. "/?/init.lua"
+            if not package.path:find(p, 1, true) then
+                package.path = package.path .. ";" .. p
+            end
+        end
     end
 
     -- Update plugin path from vim.pack.get() for lazy-loaded plugins
@@ -101,7 +122,7 @@ function M.load_plugin(pack_spec, opts)
 
     -- Run config hook
     if spec.config or spec.opts ~= nil then
-        hooks.run_config(pack_spec.src)
+        hooks.run_config(src)
     end
 
     -- Apply keymaps
@@ -111,6 +132,7 @@ function M.load_plugin(pack_spec, opts)
     end
 
     -- Mark as loaded
+    loading_set[src] = nil
     entry.load_status = "loaded"
     state.mark_loaded(pack_spec.name)
     log.info(("Successfully loaded plugin: %s"):format(pack_spec.name))
