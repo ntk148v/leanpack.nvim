@@ -181,62 +181,30 @@ local function is_plugin_broken(path)
             return true
         end
 
-        local has_lua_files = false
-        -- Recursively check for .lua files
-        local function scan_for_lua_files(dir)
+        -- Check for files matching pattern recursively
+        local function scan_for_files(dir, pattern)
             local dir_fd = vim.uv.fs_scandir(dir)
             if not dir_fd then
-                return
+                return false
             end
             while true do
-                local name, type = vim.uv.fs_scandir_next(dir_fd)
-                if not name then
+                local entry_name, type = vim.uv.fs_scandir_next(dir_fd)
+                if not entry_name then
                     break
                 end
-                local full_path = dir .. "/" .. name
-                if type == "file" and name:match("%.lua$") then
-                    has_lua_files = true
-                    return
+                if type == "file" and entry_name:match(pattern) then
+                    return true
                 elseif type == "directory" then
-                    scan_for_lua_files(full_path)
-                    if has_lua_files then
-                        return
+                    if scan_for_files(dir .. "/" .. entry_name, pattern) then
+                        return true
                     end
                 end
             end
+            return false
         end
-        scan_for_lua_files(path)
 
-        if not has_lua_files then
-            -- Also check for .vim files
-            local has_vim_files = false
-            local function scan_for_vim_files(dir)
-                local dir_fd = vim.uv.fs_scandir(dir)
-                if not dir_fd then
-                    return
-                end
-                while true do
-                    local name, type = vim.uv.fs_scandir_next(dir_fd)
-                    if not name then
-                        break
-                    end
-                    local full_path = dir .. "/" .. name
-                    if type == "file" and name:match("%.vim$") then
-                        has_vim_files = true
-                        return
-                    elseif type == "directory" then
-                        scan_for_vim_files(full_path)
-                        if has_vim_files then
-                            return
-                        end
-                    end
-                end
-            end
-            scan_for_vim_files(path)
-
-            if not has_vim_files then
-                return true
-            end
+        if not scan_for_files(path, "%.lua$") and not scan_for_files(path, "%.vim$") then
+            return true
         end
     end
 
