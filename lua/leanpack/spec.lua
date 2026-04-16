@@ -7,16 +7,37 @@ local M = {}
 -- Known fields in a plugin spec (leanpack + lazy.nvim compat)
 local KNOWN_FIELDS = {
     -- Core fields
-    src = true, name = true, version = true, dependencies = true, cond = true,
-    lazy = true, priority = true, init = true, config = true, build = true,
-    opts = true, main = true, enabled = true, optional = true, dev = true,
+    src = true,
+    name = true,
+    version = true,
+    dependencies = true,
+    cond = true,
+    lazy = true,
+    priority = true,
+    init = true,
+    config = true,
+    build = true,
+    opts = true,
+    main = true,
+    enabled = true,
+    optional = true,
+    dev = true,
     -- Lazy triggers
-    event = true, cmd = true, keys = true, ft = true, pattern = true,
+    event = true,
+    cmd = true,
+    keys = true,
+    ft = true,
+    pattern = true,
     -- lazy.nvim compat
-    sem_version = true, branch = true, tag = true, commit = true, dir = true,
+    sem_version = true,
+    branch = true,
+    tag = true,
+    commit = true,
+    dir = true,
     url = true,
     -- Internal (set by leanpack)
-    _is_dependency = true, _import_order = true,
+    _is_dependency = true,
+    _import_order = true,
 }
 
 ---Check if a path is a directory using vim.uv
@@ -196,13 +217,17 @@ end
 local function validate_spec(spec)
     for key in pairs(spec) do
         if type(key) == "string" and not KNOWN_FIELDS[key] then
-            log.warn(("Unknown field '%s' in plugin spec for '%s'. Did you mean something else?"):format(
-                key, spec.name or spec[1] or spec.src or "unknown"
-            ))
+            log.warn(
+                ("Unknown field '%s' in plugin spec for '%s'. Did you mean something else?"):format(
+                    key,
+                    spec.name or spec[1] or spec.src or "unknown"
+                )
+            )
             vim.schedule(function()
                 vim.notify(
                     ("leanpack.nvim: Unknown field '%s' in plugin spec for '%s'. Did you mean something else?"):format(
-                        key, spec.name or spec[1] or spec.src or "unknown"
+                        key,
+                        spec.name or spec[1] or spec.src or "unknown"
                     ),
                     vim.log.levels.WARN
                 )
@@ -240,123 +265,92 @@ local function detect_main(name, dir)
         return cached
     end
 
-    -- Check if directory exists
-    if not is_dir(dir) then
-        return nil
-    end
-
-    -- Search for Lua files in lua/ subdirectory
+    -- Check if lua/ subdirectory exists
     local lua_dir = dir .. "/lua"
     if not is_dir(lua_dir) then
         return nil
     end
 
-    -- Strategy 0: Check for direct .lua files in lua/ root (e.g., lualine.lua)
-    local root_lua_files = list_files(lua_dir, "*.lua")
-    for _, file_path in ipairs(root_lua_files) do
-        local file_name = file_path:match("([^/]+)%.lua$")
-        if file_name then
-            local file_normalized = normname(file_name)
-            if file_normalized == normalized then
-                state.cache_main(name, dir, file_name)
-                return file_name
+    -- Single scan: collect root .lua files and subdirectories with init.lua
+    local root_files = {} -- normalized_name -> original_base_name
+    local modules = {} -- normalized_name -> original_dir_name
+    local module_list = {} -- ordered list of { normalized, original }
+    local module_count = 0
+
+    local fd = vim.uv.fs_scandir(lua_dir)
+    if not fd then
+        return nil
+    end
+
+    while true do
+        local entry_name, entry_type = vim.uv.fs_scandir_next(fd)
+        if not entry_name then
+            break
+        end
+        if entry_type == "file" and entry_name:match("%.lua$") then
+            local base = entry_name:match("^(.+)%.lua$")
+            if base then
+                root_files[normname(base)] = base
             end
-        end
-    end
-
-    -- Get the immediate subdirectories under lua/ to find module directories
-    local module_paths = list_dirs(lua_dir)
-    local module_names = {}
-    for _, module_path in ipairs(module_paths) do
-        local mod_name = module_path:match("([^/]+)$")
-        if mod_name then
-            table.insert(module_names, mod_name)
-        end
-    end
-
-    -- Strategy 1: Try exact normalized name match
-    local matches = {}
-    for _, mod_name in ipairs(module_names) do
-        local mod_normalized = normname(mod_name)
-        if mod_normalized == normalized then
-            local init_path = lua_dir .. "/" .. mod_name .. "/init.lua"
+        elseif entry_type == "directory" then
+            local init_path = lua_dir .. "/" .. entry_name .. "/init.lua"
             if is_file(init_path) then
-                table.insert(matches, mod_name)
+                local norm = normname(entry_name)
+                modules[norm] = entry_name
+                table.insert(module_list, { normalized = norm, original = entry_name })
+                module_count = module_count + 1
             end
         end
     end
 
-    if #matches == 1 then
-        state.cache_main(name, dir, matches[1])
-        return matches[1]
+    -- Strategy 0: Exact root file match (e.g., lualine.lua)
+    if root_files[normalized] then
+        state.cache_main(name, dir, root_files[normalized])
+        return root_files[normalized]
     end
 
-    -- Strategy 2: Try lowercase substring matching
-    local simple_lower = name:lower()
-    for _, mod_name in ipairs(module_names) do
-        local mod_lower = mod_name:lower()
-        -- Remove .nvim/.vim suffixes for comparison
-        local name_base = simple_lower:gsub("%.nvim$", ""):gsub("%.vim$", "")
-        local mod_base = mod_lower:gsub("%.nvim$", ""):gsub("%.vim$", "")
+    -- Strategy 1: Exact normalized module directory match
+    if modules[normalized] then
+        state.cache_main(name, dir, modules[normalized])
+        return modules[normalized]
+    end
 
-        -- Check if one contains the other (after removing common suffixes)
+    -- Strategy 2: Lowercase substring match
+    local name_base = name:lower():gsub("%.nvim$", ""):gsub("%.vim$", "")
+    for _, mod in ipairs(module_list) do
+        local mod_base = mod.original:lower():gsub("%.nvim$", ""):gsub("%.vim$", "")
         if name_base:find(mod_base, 1, true) or mod_base:find(name_base, 1, true) then
-            local init_path = lua_dir .. "/" .. mod_name .. "/init.lua"
-            if is_file(init_path) then
-                state.cache_main(name, dir, mod_name)
-                return mod_name
-            end
+            state.cache_main(name, dir, mod.original)
+            return mod.original
         end
     end
 
-    -- Strategy 3: Check for semantic matches (e.g., none-ls -> null-ls)
-    -- Split name into parts and check if module shares significant parts
-    local name_parts = {}
-    for part in name:gmatch("[^%.%-]+") do
-        table.insert(name_parts, part:lower())
-    end
-
-    -- Remove common filler words like "nvim", "lua", "neovim"
+    -- Strategy 3: Semantic match (split name parts, check against modules)
     local significant_parts = {}
-    for _, part in ipairs(name_parts) do
-        if not vim.tbl_contains({ "nvim", "neovim", "lua" }, part) then
-            table.insert(significant_parts, part)
+    for part in name:gmatch("[^%.%-]+") do
+        local lower = part:lower()
+        if lower ~= "nvim" and lower ~= "neovim" and lower ~= "lua" then
+            table.insert(significant_parts, lower)
         end
     end
 
-    -- If we have significant parts, try matching
-    if #significant_parts > 0 then
-        for _, mod_name in ipairs(module_names) do
-            local mod_lower = mod_name:lower()
-            local match_count = 0
+    if #significant_parts > 0 and #significant_parts <= 3 then
+        for _, mod in ipairs(module_list) do
+            local mod_lower = mod.original:lower()
             for _, part in ipairs(significant_parts) do
                 if mod_lower:find(part, 1, true) then
-                    match_count = match_count + 1
-                end
-            end
-            -- If at least one significant part matches and it's a reasonable match
-            if match_count >= 1 and #significant_parts <= 3 then
-                local init_path = lua_dir .. "/" .. mod_name .. "/init.lua"
-                if is_file(init_path) then
-                    state.cache_main(name, dir, mod_name)
-                    return mod_name
+                    state.cache_main(name, dir, mod.original)
+                    return mod.original
                 end
             end
         end
     end
 
-    -- Strategy 4: If only one module directory exists with init.lua, use it
-    local single_matches = {}
-    for _, mod_name in ipairs(module_names) do
-        local init_path = lua_dir .. "/" .. mod_name .. "/init.lua"
-        if is_file(init_path) then
-            table.insert(single_matches, mod_name)
-        end
-    end
-
-    if #single_matches == 1 then
-        state.cache_main(name, dir, single_matches[1])
-        return single_matches[1]
+    -- Strategy 4: Single module directory fallback
+    if module_count == 1 then
+        local only = module_list[1].original
+        state.cache_main(name, dir, only)
+        return only
     end
 
     return nil
