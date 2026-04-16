@@ -256,10 +256,7 @@ local function fix_broken_plugins()
     end
 
     if #broken > 0 then
-        vim.notify(
-            ("Detected %d broken plugin(s), reinstalling..."):format(#broken),
-            vim.log.levels.WARN
-        )
+        vim.notify(("Detected %d broken plugin(s), reinstalling..."):format(#broken), vim.log.levels.WARN)
 
         -- Collect specs for broken plugins
         local broken_specs = {}
@@ -448,10 +445,10 @@ function M.setup(opts)
     end
 
     if state.is_configured() then
-        vim.notify("leanpack.setup() has already been called", vim.log.levels.WARN)
-        return
+        vim.notify("leanpack.setup() has already been called - appending new plugins", vim.log.levels.INFO)
+    else
+        state.mark_setup()
     end
-    state.mark_setup()
 
     -- Initialize logging
     log.init()
@@ -473,6 +470,9 @@ function M.setup(opts)
         config.checker = vim.tbl_extend("force", config.checker, opts.checker)
     end
 
+    -- Store plugins for direct specification
+    local direct_plugins = opts.plugins
+
     -- Enable vim.loader for performance
     if config.performance.vim_loader then
         vim.loader.enable()
@@ -492,7 +492,7 @@ function M.setup(opts)
 
     -- Import specs
     profile_start("import_specs")
-    local spec = opts.spec or (opts[1] and opts) or nil
+    local spec = direct_plugins or opts.spec or (opts[1] and opts) or nil
     if spec then
         local specs = import_mod.process_import_result(spec, { import_order = 0, seen = {} })
         for _, s in ipairs(specs) do
