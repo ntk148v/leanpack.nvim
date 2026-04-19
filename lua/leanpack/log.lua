@@ -26,8 +26,14 @@ function M.init()
     log_enabled = true
 
     -- Flush on exit to ensure no messages lost
-    vim.api.nvim_create_autocmd("VimLeavePre", {
-        callback = flush,
+    -- Defer to VimEnter so we don't block the very first setup steps
+    vim.api.nvim_create_autocmd("VimEnter", {
+        callback = function()
+            vim.api.nvim_create_autocmd("VimLeavePre", {
+                callback = flush,
+                once = true,
+            })
+        end,
         once = true,
     })
 end

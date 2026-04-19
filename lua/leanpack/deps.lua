@@ -1,6 +1,11 @@
----@module 'leanpack.deps'
 local state = require("leanpack.state")
-local spec_mod = require("leanpack.spec")
+
+-- Lazy-loaded core modules
+local spec_mod = nil
+local function get_spec_mod()
+    if not spec_mod then spec_mod = require("leanpack.spec") end
+    return spec_mod
+end
 
 local M = {}
 
@@ -37,7 +42,7 @@ function M.resolve_dependencies(spec, ctx)
   for _, dep in ipairs(deps) do
     if type(dep) == "string" then
       -- Convert short name to spec
-      local normalized, src = spec_mod.normalize_spec({ dep }, ctx.defaults)
+      local normalized, src = get_spec_mod().normalize_spec({ dep }, ctx.defaults)
       if normalized then
         add_dep(normalized, src)
       end
@@ -60,14 +65,14 @@ function M.resolve_dependencies(spec, ctx)
       if is_multi_string then
         -- Each string is a separate dependency
         for _, name in ipairs(dep) do
-          local normalized, src = spec_mod.normalize_spec({ name }, ctx.defaults)
+          local normalized, src = get_spec_mod().normalize_spec({ name }, ctx.defaults)
           if normalized then
             add_dep(normalized, src)
           end
         end
       else
         -- Single spec table (e.g., { "owner/plugin", opts = {} })
-        local normalized, src = spec_mod.normalize_spec(dep, ctx.defaults)
+        local normalized, src = get_spec_mod().normalize_spec(dep, ctx.defaults)
         if normalized then
           add_dep(normalized, src)
         end

@@ -1,12 +1,48 @@
----@module 'leanpack'
-local deps_mod = require("leanpack.deps")
-local hooks = require("leanpack.hooks")
-local import_mod = require("leanpack.import")
-local lazy_mod = require("leanpack.lazy")
-local loader = require("leanpack.loader")
-local log = require("leanpack.log")
-local spec_mod = require("leanpack.spec")
 local state = require("leanpack.state")
+
+-- Lazy-loaded core modules
+local deps_mod = nil
+local hooks = nil
+local import_mod = nil
+local lazy_mod = nil
+local loader = nil
+local log = nil
+local spec_mod = nil
+
+local function get_deps()
+    if not deps_mod then deps_mod = require("leanpack.deps") end
+    return deps_mod
+end
+
+local function get_hooks()
+    if not hooks then hooks = require("leanpack.hooks") end
+    return hooks
+end
+
+local function get_import()
+    if not import_mod then import_mod = require("leanpack.import") end
+    return import_mod
+end
+
+local function get_lazy_mod()
+    if not lazy_mod then lazy_mod = require("leanpack.lazy") end
+    return lazy_mod
+end
+
+local function get_loader()
+    if not loader then loader = require("leanpack.loader") end
+    return loader
+end
+
+local function get_log()
+    if not log then log = require("leanpack.log") end
+    return log
+end
+
+local function get_spec_mod()
+    if not spec_mod then spec_mod = require("leanpack.spec") end
+    return spec_mod
+end
 
 -- Lazy-loaded modules (only required when actually used)
 local commands = nil
@@ -219,7 +255,7 @@ local function fix_broken_plugins()
     for _, p in ipairs(installed) do
         if p.path and is_plugin_broken(p.path) then
             table.insert(broken, p.spec.name)
-            log.warn(("Detected broken plugin: %s"):format(p.spec.name))
+            get_log().warn(("Detected broken plugin: %s"):format(p.spec.name))
         end
     end
 
@@ -253,13 +289,38 @@ local function process_all(ctx)
     profile_start("vim.pack.add")
 
     -- Setup build tracking before vim.pack.add
-    hooks.setup_build_tracking()
+    get_hooks().setup_build_tracking()
 
-    -- Register all plugins with vim.pack
-    vim.pack.add(ctx.vim_packs, {
+    -- Only add startup plugins immediately (fast path)
+    local startup_srcs = {}
+    for _, p in ipairs(ctx.startup_packs) do
+        startup_srcs[p.src] = true
+    end
+    local startup_vim_packs = {}
+    local lazy_vim_packs = {}
+    for _, p in ipairs(ctx.vim_packs) do
+        if startup_srcs[p.src] then
+            table.insert(startup_vim_packs, p)
+        else
+            table.insert(lazy_vim_packs, p)
+        end
+    end
+
+    -- Register startup plugins with vim.pack
+    vim.pack.add(startup_vim_packs, {
         load = ctx.load,
         confirm = ctx.confirm,
     })
+
+    -- Defer lazy plugin registration to avoid blocking startup
+    if #lazy_vim_packs > 0 then
+        vim.schedule(function()
+            vim.pack.add(lazy_vim_packs, {
+                load = false,
+                confirm = ctx.confirm,
+            })
+        end)
+    end
 
     profile_end("vim.pack.add")
     profile_start("fix_broken_plugins")
@@ -284,24 +345,24 @@ local function process_all(ctx)
     profile_end("update_paths")
 
     -- Setup lazy build tracking after vim.pack.add
-    hooks.setup_build_tracking({ lazy = true })
+    get_hooks().setup_build_tracking({ lazy = true })
 
     profile_start("process_startup")
 
     -- Process startup plugins
-    loader.process_startup(ctx)
+    get_loader().process_startup(ctx)
 
     profile_end("process_startup")
     profile_start("process_lazy")
 
     -- Process lazy plugins
-    lazy_mod.process_lazy(ctx)
+    get_lazy_mod().process_lazy(ctx)
 
     profile_end("process_lazy")
     profile_start("run_pending_builds")
 
     -- Run pending builds
-    hooks.run_pending_builds(ctx)
+    get_hooks().run_pending_builds(ctx)
 
     profile_end("run_pending_builds")
 
@@ -315,7 +376,7 @@ end
 ---@param is_dependency? boolean
 local function register_spec(spec, ctx, is_dependency)
     -- Normalize spec
-    local normalized, src = spec_mod.normalize_spec(spec, { defaults = ctx.defaults })
+    local normalized, src = get_spec_mod().normalize_spec(spec, { defaults = ctx.defaults })
     if not normalized then
         return
     end
@@ -352,8 +413,8 @@ local function register_spec(spec, ctx, is_dependency)
     end
 
     -- Resolve dependencies
-    local is_lazy_parent = normalized.lazy == true or lazy_mod.is_lazy(normalized, nil, src)
-    local dep_specs = deps_mod.resolve_dependencies(normalized, ctx)
+    local is_lazy_parent = normalized.lazy == true or get_lazy_mod().is_lazy(normalized, nil, src)
+    local dep_specs = get_deps().resolve_dependencies(normalized, ctx)
     for _, dep_spec in ipairs(dep_specs) do
         if is_lazy_parent and dep_spec.lazy == nil then
             dep_spec.lazy = true
@@ -363,7 +424,7 @@ local function register_spec(spec, ctx, is_dependency)
 
     -- Create vim.pack.Spec (only once per src)
     if is_new then
-        local pack_spec = spec_mod.to_pack_spec(normalized)
+        local pack_spec = get_spec_mod().to_pack_spec(normalized)
         state.register_pack_spec(pack_spec)
         table.insert(ctx.vim_packs, pack_spec)
     end
@@ -374,7 +435,7 @@ local function finalize_specs()
     for src, entry in pairs(state.get_all_entries()) do
         -- Merge specs
         if #entry.specs > 1 then
-            entry.merged_spec = spec_mod.merge_specs(entry.specs)
+            entry.merged_spec = get_spec_mod().merge_specs(entry.specs)
         else
             entry.merged_spec = entry.specs[1]
         end
@@ -396,7 +457,7 @@ local function categorize_plugins(ctx)
     for _, pack_spec in ipairs(state.get_all_pack_specs()) do
         local entry = state.get_entry(pack_spec.src)
         if entry and entry.merged_spec then
-            if lazy_mod.is_lazy(entry.merged_spec, entry.plugin, pack_spec.src) then
+            if get_lazy_mod().is_lazy(entry.merged_spec, entry.plugin, pack_spec.src) then
                 table.insert(ctx.lazy_packs, pack_spec)
             else
                 table.insert(ctx.startup_packs, pack_spec)
@@ -419,8 +480,8 @@ function M.setup(opts)
     end
 
     -- Initialize logging
-    log.init()
-    log.info("leanpack.nvim setup started")
+    get_log().init()
+    get_log().info("leanpack.nvim setup started")
 
     opts = opts or {}
 
@@ -462,7 +523,7 @@ function M.setup(opts)
     profile_start("import_specs")
     local spec = direct_plugins or opts.spec or (opts[1] and opts) or nil
     if spec then
-        local specs = import_mod.process_import_result(spec, { import_order = 0, seen = {} })
+        local specs = get_import().process_import_result(spec, { import_order = 0, seen = {} })
         for _, s in ipairs(specs) do
             register_spec(s, ctx)
         end
@@ -470,7 +531,7 @@ function M.setup(opts)
 
     -- Auto-import from lua/plugins/ if no spec provided
     if not spec then
-        local specs = import_mod.import_specs("plugins", { import_order = 0, seen = {} })
+        local specs = get_import().import_specs("plugins", { import_order = 0, seen = {} })
         for _, s in ipairs(specs) do
             register_spec(s, ctx)
         end

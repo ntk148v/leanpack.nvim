@@ -1,8 +1,25 @@
 ---@module 'leanpack.commands'
 local state = require("leanpack.state")
-local hooks = require("leanpack.hooks")
-local loader = require("leanpack.loader")
-local log = require("leanpack.log")
+
+-- Lazy-loaded core modules
+local hooks_mod = nil
+local loader_mod = nil
+local log_mod = nil
+
+local function get_hooks()
+    if not hooks_mod then hooks_mod = require("leanpack.hooks") end
+    return hooks_mod
+end
+
+local function get_loader()
+    if not loader_mod then loader_mod = require("leanpack.loader") end
+    return loader_mod
+end
+
+local function get_log()
+    if not log_mod then log_mod = require("leanpack.log") end
+    return log_mod
+end
 
 local M = {}
 
@@ -72,15 +89,15 @@ function M.clean_unused()
 
   if #to_delete == 0 then
     vim.notify("No unused plugins to clean", vim.log.levels.INFO)
-    log.info("No unused plugins to clean")
+    get_log().info("No unused plugins to clean")
     return
   end
 
   local msg = ("Deleting %d unused plugin(s)..."):format(#to_delete)
   vim.notify(msg, vim.log.levels.INFO)
-  log.info(msg)
+  get_log().info(msg)
   vim.pack.del(to_delete)
-  log.info(("Deleted %d unused plugin(s)"):format(#to_delete))
+  get_log().info(("Deleted %d unused plugin(s)"):format(#to_delete))
 end
 
 ---Setup commands
@@ -110,23 +127,23 @@ function M.setup(prefix)
 
     if subcommand == "update" then
       if plugin_name == "" then
-        log.info("Updating all plugins")
+        get_log().info("Updating all plugins")
         vim.pack.update(nil, { force = true })
         vim.schedule(function()
           vim.cmd("redraw")
           vim.notify("All plugins updated successfully", vim.log.levels.INFO)
-          log.info("All plugins updated successfully")
+          get_log().info("All plugins updated successfully")
         end)
       else
         if not get_plugin_or_notify(plugin_name) then
           return
         end
-        log.info(("Updating plugin: %s"):format(plugin_name))
+        get_log().info(("Updating plugin: %s"):format(plugin_name))
         vim.pack.update({ plugin_name }, { force = true })
         vim.schedule(function()
           vim.cmd("redraw")
           vim.notify("Updated " .. plugin_name, vim.log.levels.INFO)
-          log.info(("Plugin updated successfully: %s"):format(plugin_name))
+          get_log().info(("Plugin updated successfully: %s"):format(plugin_name))
         end)
       end
     elseif subcommand == "clean" then
@@ -137,7 +154,7 @@ function M.setup(prefix)
           vim.notify(("Use :%s build! to run build hooks for all plugins"):format(prefix), vim.log.levels.WARN)
           return
         end
-        hooks.run_all_builds()
+        get_hooks().run_all_builds()
         return
       end
 
@@ -155,12 +172,12 @@ function M.setup(prefix)
 
       local pack_spec = state.get_pack_spec(pack.spec.src)
       if pack_spec then
-        loader.load_plugin(pack_spec, { bang = true })
+        get_loader().load_plugin(pack_spec, { bang = true })
       end
-      hooks.execute_build(spec.build, entry.plugin)
+      get_hooks().execute_build(spec.build, entry.plugin)
       local msg = ("Running build hook for %s"):format(plugin_name)
       vim.notify(msg, vim.log.levels.INFO)
-      log.info(msg)
+      get_log().info(msg)
     elseif subcommand == "load" then
       if plugin_name == "" then
         if not opts.bang then
@@ -175,7 +192,7 @@ function M.setup(prefix)
         for _, pack_spec in ipairs(state.get_all_pack_specs()) do
           local entry = state.get_entry(pack_spec.src)
           if entry and entry.load_status ~= "loaded" then
-            loader.load_plugin(pack_spec)
+            get_loader().load_plugin(pack_spec)
           end
         end
         vim.notify(("Loaded %d plugin(s)"):format(#unloaded), vim.log.levels.INFO)
@@ -200,11 +217,11 @@ function M.setup(prefix)
 
       local pack_spec = state.get_pack_spec(pack.spec.src)
       if pack_spec then
-        loader.load_plugin(pack_spec)
+        get_loader().load_plugin(pack_spec)
       end
       local msg = ("Loaded %s"):format(plugin_name)
       vim.notify(msg, vim.log.levels.INFO)
-      log.info(msg)
+      get_log().info(msg)
     elseif subcommand == "delete" then
       if plugin_name == "" then
         if not opts.bang then
@@ -238,15 +255,15 @@ function M.setup(prefix)
           plugin_name
         )
       vim.notify(msg, vim.log.levels.WARN)
-      log.warn(("Deleted plugin: %s"):format(plugin_name))
+      get_log().warn(("Deleted plugin: %s"):format(plugin_name))
     elseif subcommand == "sync" then
-      log.info("Syncing all plugins")
+      get_log().info("Syncing all plugins")
       vim.pack.update(nil, { force = true })
       M.clean_unused()
       vim.schedule(function()
         vim.cmd("redraw")
         vim.notify("Plugins synced successfully", vim.log.levels.INFO)
-        log.info("Plugins synced successfully")
+        get_log().info("Plugins synced successfully")
       end)
     elseif subcommand == "profile" then
       local profile = require("leanpack").get_profile_data()

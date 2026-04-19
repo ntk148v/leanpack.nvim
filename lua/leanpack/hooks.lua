@@ -1,7 +1,18 @@
----@module 'leanpack.hooks'
-local log = require("leanpack.log")
-local spec_mod = require("leanpack.spec")
 local state = require("leanpack.state")
+
+-- Lazy-loaded core modules
+local log_mod = nil
+local spec_mod_raw = nil -- spec_mod is a common local name, suffixing to be safe
+
+local function get_log()
+    if not log_mod then log_mod = require("leanpack.log") end
+    return log_mod
+end
+
+local function get_spec_mod()
+    if not spec_mod_raw then spec_mod_raw = require("leanpack.spec") end
+    return spec_mod_raw
+end
 
 -- Lazy require to avoid circular dependency
 local loader = nil
@@ -80,7 +91,7 @@ function M.run_config(src)
 
         -- Auto-detect main module if not explicitly provided
         if not main and plugin and plugin.path and plugin.path ~= "" then
-            main = spec_mod.detect_main(spec.name, plugin.path)
+            main = get_spec_mod().detect_main(spec.name, plugin.path)
         end
 
         if not main then
@@ -127,10 +138,10 @@ end
 ---@param plugin leanpack.Plugin
 function M.execute_build(build, plugin)
     if type(build) == "string" then
-        log.info(("Executing build command for %s: %s"):format(plugin.spec.name, build))
+        get_log().info(("Executing build command for %s: %s"):format(plugin.spec.name, build))
         vim.cmd(build)
     elseif type(build) == "function" then
-        log.info(("Executing build function for %s"):format(plugin.spec.name))
+        get_log().info(("Executing build function for %s"):format(plugin.spec.name))
         build(plugin)
     end
 end
