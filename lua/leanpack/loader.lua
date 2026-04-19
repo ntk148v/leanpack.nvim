@@ -1,30 +1,8 @@
 local state = require("leanpack.state")
-
--- Lazy-loaded core modules
-local hooks_mod = nil
-local keymap_mod = nil
-local log_mod = nil
-local spec_mod = nil
-
-local function get_hooks()
-    if not hooks_mod then hooks_mod = require("leanpack.hooks") end
-    return hooks_mod
-end
-
-local function get_keymap()
-    if not keymap_mod then keymap_mod = require("leanpack.keymap") end
-    return keymap_mod
-end
-
-local function get_log()
-    if not log_mod then log_mod = require("leanpack.log") end
-    return log_mod
-end
-
-local function get_spec_mod()
-    if not spec_mod then spec_mod = require("leanpack.spec") end
-    return spec_mod
-end
+local hooks = require("leanpack.hooks")
+local keymap = require("leanpack.keymap")
+local log = require("leanpack.log")
+local spec_mod = require("leanpack.spec")
 
 local M = {}
 
@@ -55,7 +33,7 @@ function M.load_plugin(pack_spec, opts)
 
     -- Explicit cycle guard (belt-and-suspenders with load_status check)
     if loading_set[src] then
-        get_log().warn(("Circular load detected for: %s"):format(src))
+        log.warn(("Circular load detected for: %s"):format(src))
         return
     end
 
@@ -64,7 +42,7 @@ function M.load_plugin(pack_spec, opts)
     if not entry then
         local msg = ("Plugin %s not found in registry"):format(src)
         vim.notify(msg, vim.log.levels.ERROR)
-        get_log().error(msg)
+        log.error(msg)
         return
     end
 
@@ -76,7 +54,7 @@ function M.load_plugin(pack_spec, opts)
     if entry.load_status == "loading" then
         local msg = ("Circular dependency detected involving plugin: %s"):format(src)
         vim.notify(msg, vim.log.levels.ERROR)
-        get_log().error(msg)
+        log.error(msg)
         return
     end
 
@@ -87,7 +65,7 @@ function M.load_plugin(pack_spec, opts)
             cond = cond(entry.plugin)
         end
         if not cond then
-            get_log().info(("Skipped loading plugin due to cond=false: %s"):format(pack_spec.name))
+            log.info(("Skipped loading plugin due to cond=false: %s"):format(pack_spec.name))
             entry.load_status = "loaded" -- Mark as loaded so dependents don't get stuck
             return
         end
@@ -95,7 +73,19 @@ function M.load_plugin(pack_spec, opts)
 
     loading_set[src] = true
     entry.load_status = "loading"
-    get_log().info(("Loading plugin: %s"):format(pack_spec.name))
+    log.info(("Loading plugin: %s"):format(pack_spec.name))
+
+    -- Add plugin to package.path immediately so dependencies can 'require' its modules
+    local plugin_path = entry.plugin and entry.plugin.path
+    if plugin_path and plugin_path ~= "" then
+        local plugin_lua = plugin_path .. "/lua"
+        if vim.fn.isdirectory(plugin_lua) == 1 then
+            local p = plugin_lua .. "/?.lua;" .. plugin_lua .. "/?/init.lua"
+            if not package.path:find(p, 1, true) then
+                package.path = package.path .. ";" .. p
+            end
+        end
+    end
 
     -- Load dependencies first
     local deps = state.get_dependencies(src)
@@ -135,22 +125,12 @@ function M.load_plugin(pack_spec, opts)
     -- Run packadd if not already loaded bit vim.pack.add
     -- If ctx.load was true in setup, vim.pack.add already added it to RTP
     if opts.bang ~= false then
-        local plugin_path = entry.plugin and entry.plugin.path
         if plugin_path and plugin_path ~= "" then
             -- Skip packadd if already on RTP to avoid redundant sourcing
             if not get_rtp_set()[plugin_path] then
                 vim.cmd.packadd(pack_spec.name)
                 -- Update cache since we just added it
                 get_rtp_set()[plugin_path] = true
-            end
-
-            -- Update package.path for Lua modules
-            local plugin_lua = plugin_path .. "/lua"
-            if vim.fn.isdirectory(plugin_lua) == 1 then
-                local p = plugin_lua .. "/?.lua;" .. plugin_lua .. "/?/init.lua"
-                if not package.path:find(p, 1, true) then
-                    package.path = package.path .. ";" .. p
-                end
             end
         else
             -- If path not known, fall back to default packadd
@@ -162,24 +142,24 @@ function M.load_plugin(pack_spec, opts)
     if spec.config or spec.opts ~= nil then
         if opts.force_defer then
             vim.schedule(function()
-                get_hooks().run_config(src)
+                hooks.run_config(src)
             end)
         else
-            get_hooks().run_config(src)
+            hooks.run_config(src)
         end
     end
 
     -- Apply keymaps
-    local keys = get_spec_mod().resolve_field(spec.keys, plugin)
+    local keys = spec_mod.resolve_field(spec.keys, plugin)
     if keys then
-        get_keymap().apply_keys(keys)
+        keymap.apply_keys(keys)
     end
 
     -- Mark as loaded
     loading_set[src] = nil
     entry.load_status = "loaded"
     state.mark_loaded(pack_spec.name)
-    get_log().info(("Successfully loaded plugin: %s"):format(pack_spec.name))
+    log.info(("Successfully loaded plugin: %s"):format(pack_spec.name))
 end
 
 ---Process startup plugins
@@ -200,7 +180,7 @@ function M.process_startup(ctx)
 
     -- Run init hooks first
     for _, src in ipairs(srcs_with_init) do
-        get_hooks().run_init(src)
+        hooks.run_init(src)
     end
 
     -- Topological sort for dependencies
@@ -211,8 +191,10 @@ function M.process_startup(ctx)
     for _, pack_spec in ipairs(sorted_packs) do
         local entry = state.get_entry(pack_spec.src)
         local priority = (entry and entry.merged_spec and entry.merged_spec.priority) or 50
-        -- Defer config for non-critical startup plugins
-        local force_defer = priority <= 50
+        -- Defer config for lower-priority startup plugins (strictly less than 50)
+        -- This ensures that colorschemes and other core plugins set to default priority 50
+        -- still load synchronously to avoid race conditions with init.lua overrides.
+        local force_defer = priority < 50
         -- Use load_plugin which handles dependency loading recursively
         M.load_plugin(pack_spec, { bang = not ctx.load, force_defer = force_defer })
     end

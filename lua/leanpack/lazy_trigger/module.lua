@@ -31,6 +31,9 @@ local module_to_src = {}
 -- Track modules we're currently loading to avoid recursion
 local loading_modules = {}
 
+-- Guard: only install the custom loader once
+local installed = false
+
 ---Custom loader that loads the plugin before requiring the module
 local function leanpack_module_loader(modname)
     if loading_modules[modname] then
@@ -88,6 +91,47 @@ end
 ---Setup module trigger
 ---@param lazy_packs vim.pack.Spec[] List of lazy plugin specs
 function M.setup(lazy_packs)
+    -- Guard against duplicate setup calls (called from both init.lua and lazy.lua)
+    if installed then
+        return
+    end
+
+    -- Phase 1: Determine each plugin's "primary" module name.
+    -- This prevents cross-registration where integration directories
+    -- (e.g., lualine/ inside a colorscheme plugin) incorrectly map
+    -- a module to the wrong plugin.
+    local primary_modules = {} -- module_name -> src of the owning plugin
+
+    for _, pack_spec in ipairs(lazy_packs or {}) do
+        local entry = state.get_entry(pack_spec.src)
+        if entry and entry.merged_spec then
+            local spec = entry.merged_spec
+            local src = pack_spec.src
+
+            -- Explicit main module always owns its name
+            if spec.main then
+                primary_modules[spec.main] = src
+            end
+
+            -- Detect main from directory structure
+            local path = entry.plugin and entry.plugin.path
+            if (not path or path == "") and pack_spec.name then
+                local opt_path = vim.fn.stdpath("data") .. "/site/pack/core/opt/" .. pack_spec.name
+                if vim.uv.fs_stat(opt_path) then
+                    path = opt_path
+                end
+            end
+
+            if path and path ~= "" then
+                local detected = get_spec_mod().detect_main(pack_spec.name, path)
+                if detected then
+                    primary_modules[detected] = src
+                end
+            end
+        end
+    end
+
+    -- Phase 2: Register all module mappings, respecting ownership
     local count = 0
     for _, pack_spec in ipairs(lazy_packs or {}) do
         local entry = state.get_entry(pack_spec.src)
@@ -95,17 +139,15 @@ function M.setup(lazy_packs)
             local spec = entry.merged_spec
             local src = pack_spec.src
 
-            -- 1. Register explicit main module
-            if spec.main then
+            -- Register explicit main module
+            if spec.main and not module_to_src[spec.main] then
                 module_to_src[spec.main] = src
                 count = count + 1
             end
 
-            -- 2. Scan plugin directory for top-level modules
-            -- Use the path from vim.pack.get() if available, or guestimate
+            -- Scan plugin directory for top-level modules
             local path = entry.plugin and entry.plugin.path
             if (not path or path == "") and pack_spec.name then
-                -- Try to find it in the standard location if not yet set
                 local opt_path = vim.fn.stdpath("data") .. "/site/pack/core/opt/" .. pack_spec.name
                 if vim.uv.fs_stat(opt_path) then
                     path = opt_path
@@ -126,7 +168,14 @@ function M.setup(lazy_packs)
                             mod = name
                         end
                         if mod and mod ~= "init" then
-                            if not module_to_src[mod] then
+                            -- Skip if this module is "owned" by a different plugin.
+                            -- This prevents cross-registration of integration directories
+                            -- (e.g., lua/lualine/ inside rose-pine should not map
+                            --  "lualine" to rose-pine; it belongs to the lualine plugin).
+                            local owner = primary_modules[mod]
+                            if owner and owner ~= src then
+                                -- Integration directory for another plugin, skip
+                            elseif not module_to_src[mod] then
                                 module_to_src[mod] = src
                                 count = count + 1
                             end
@@ -135,7 +184,7 @@ function M.setup(lazy_packs)
                 end
             end
 
-            -- 3. Fallback: use detect_main as a hint
+            -- Fallback: use detect_main as a hint
             if not spec.main and path and path ~= "" then
                 local detected = get_spec_mod().detect_main(pack_spec.name, path)
                 if detected and not module_to_src[detected] then
@@ -160,6 +209,7 @@ function M.setup(lazy_packs)
     local loaders = package.loaders or package.searchers
     table.insert(loaders, 2, leanpack_module_loader)
 
+    installed = true
     get_log().info("Module trigger loader installed for " .. tostring(count) .. " module(s)")
 end
 

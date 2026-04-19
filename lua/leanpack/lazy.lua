@@ -77,9 +77,8 @@ function M.process_lazy(ctx)
   -- Setup keymap triggers
   keys_handler.setup(ctx.lazy_packs)
 
-  -- Setup module trigger (for require-based lazy loading)
-  local module_handler = require("leanpack.lazy_trigger.module")
-  module_handler.setup(ctx.lazy_packs)
+  -- Note: module trigger is already set up synchronously in init.lua:process_all()
+  -- to ensure early autocmds (like BufReadPre) can intercept requires.
 end
 
 return M

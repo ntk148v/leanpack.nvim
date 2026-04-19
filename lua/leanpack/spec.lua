@@ -1,11 +1,5 @@
 local state = require("leanpack.state")
-
--- Lazy-loaded core modules
-local log_mod = nil
-local function get_log()
-    if not log_mod then log_mod = require("leanpack.log") end
-    return log_mod
-end
+local log = require("leanpack.log")
 
 local M = {}
 
@@ -227,7 +221,7 @@ local function validate_spec(spec)
 
     for key in pairs(spec) do
         if type(key) == "string" and not KNOWN_FIELDS[key] then
-            get_log().warn(
+            log.warn(
                 ("Unknown field '%s' in plugin spec for '%s'. Did you mean something else?"):format(
                     key,
                     spec.name or spec[1] or spec.src or "unknown"
@@ -382,7 +376,7 @@ function M.normalize_spec(spec, defaults)
         version = resolve_version(spec),
         dependencies = spec.dependencies,
         cond = spec.cond or (defaults and defaults.cond),
-        lazy = spec.lazy,
+        lazy = spec.lazy ~= nil and spec.lazy or (defaults and defaults.lazy),
         priority = spec.priority or 50,
         init = spec.init,
         config = spec.config,
