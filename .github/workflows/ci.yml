@@ -12,16 +12,16 @@ jobs:
     strategy:
       matrix:
         # leanpack requires Neovim 0.12.0+
-        # Once 0.12.0 is released, add 'v0.12.0' to test against stable
-        neovim_version: ["nightly"]
+        neovim_version: ["stable", "nightly"]
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Neovim
-        uses: rhymond/setup-neovim@v1
+        uses: rhysd/action-setup-vim@v1
         with:
-          neovim-version: ${{ matrix.neovim_version }}
+          neovim: true
+          version: ${{ matrix.neovim_version }}
 
       - name: Check Neovim version
         run: nvim --version
