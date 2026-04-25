@@ -89,13 +89,32 @@ T["normalize_spec()"]["handles dev mode"] = function()
 	MiniTest.expect.equality(result.src, expected)
 end
 
-T["normalize_spec()"]["resolves version field"] = function()
+T["normalize_spec()"]["resolves version field with semver wildcard"] = function()
 	child.lua([[
-		_G.result = spec.normalize_spec({ "user/repo", version = "v1.0.0" })
+		_G.result = spec.normalize_spec({ "user/repo", version = "1.*" })
 	]])
 
 	local result = child.lua_get("_G.result")
-	MiniTest.expect.equality(result.version, "v1.0.0")
+	-- Should be a table (vim.VersionRange)
+	MiniTest.expect.equality(type(result.version), "table")
+end
+
+T["normalize_spec()"]["resolves version field falling back to literal"] = function()
+	child.lua([[
+		_G.result = spec.normalize_spec({ "user/repo", version = "main" })
+	]])
+
+	local result = child.lua_get("_G.result")
+	MiniTest.expect.equality(result.version, "main")
+end
+
+T["normalize_spec()"]["handles version = false"] = function()
+	child.lua([[
+		_G.result = spec.normalize_spec({ "user/repo", version = false })
+	]])
+
+	local result = child.lua_get("_G.result")
+	MiniTest.expect.equality(result.version, nil)
 end
 
 T["normalize_spec()"]["resolves sem_version to range"] = function()
@@ -104,8 +123,7 @@ T["normalize_spec()"]["resolves sem_version to range"] = function()
 	]])
 
 	local result = child.lua_get("_G.result")
-	-- sem_version should be converted to a vim.VersionRange or string
-	MiniTest.expect.equality(result.version ~= nil, true)
+	MiniTest.expect.equality(type(result.version), "table")
 end
 
 T["normalize_spec()"]["resolves branch as version"] = function()

@@ -146,6 +146,15 @@ end
 ---@return string|vim.VersionRange?
 local function resolve_version(spec)
     if spec.version then
+        if type(spec.version) == "string" then
+            -- lazy.nvim uses `version` for semver (e.g., "1.*")
+            -- If it parses successfully as a version range, return the range object
+            -- so vim.pack resolves it as semver instead of a literal branch.
+            local ok, range = pcall(vim.version.range, spec.version)
+            if ok and range then
+                return range
+            end
+        end
         return spec.version
     end
 
