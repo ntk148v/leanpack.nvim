@@ -3,7 +3,7 @@ local state = require("leanpack.state")
 local loader = require("leanpack.loader")
 
 local M = {}
-local ui_state = { buf = nil, win = nil, plugins = {}, filter = "" }
+local ui_state = { buf = nil, win = nil, plugins = {}, filter = "", refresh_timer = nil }
 local NS = vim.api.nvim_create_namespace("leanpack-ui")
 
 local function define_highlights()
@@ -14,6 +14,7 @@ local function define_highlights()
   vim.api.nvim_set_hl(NS, "LeanpackStatusLoaded", { link = "DiagnosticOk", default = true })
   vim.api.nvim_set_hl(NS, "LeanpackStatusPending", { link = "Comment", default = true })
   vim.api.nvim_set_hl(NS, "LeanpackStatusLoading", { link = "DiagnosticWarn", default = true })
+  vim.api.nvim_set_hl(NS, "LeanpackStatusMissing", { link = "DiagnosticError", default = true })
   vim.api.nvim_set_hl(NS, "LeanpackLazy", { link = "Special", default = true })
   vim.api.nvim_set_hl(NS, "LeanpackKeybind", { link = "Keyword", default = true })
 end
@@ -24,6 +25,12 @@ local function get_status(entry)
   elseif entry.load_status == "loading" then
     return "◐"
   else
+    if entry.plugin and entry.plugin.path then
+      local stat = vim.uv.fs_stat(entry.plugin.path)
+      if not stat then
+        return "✗"
+      end
+    end
     return "○"
   end
 end
@@ -125,7 +132,8 @@ local function apply_highlights(lines)
   for i, plugin in ipairs(ui_state.plugins) do
     local line_num = i + 3
     local status_hl = plugin.status == "●" and "LeanpackStatusLoaded" or
-        (plugin.status == "◐" and "LeanpackStatusLoading" or "LeanpackStatusPending")
+        (plugin.status == "◐" and "LeanpackStatusLoading" or
+          (plugin.status == "✗" and "LeanpackStatusMissing" or "LeanpackStatusPending"))
     vim.api.nvim_buf_add_highlight(ui_state.buf, NS, status_hl, line_num, 2, 3)
 
     local name_start = 5
@@ -311,6 +319,50 @@ local function set_keymaps()
   vim.keymap.set("n", "<C-c>", clear_filter, opts)
 end
 
+local function stop_refresh_timer()
+  if ui_state.refresh_timer then
+    if not ui_state.refresh_timer:is_closing() then
+      ui_state.refresh_timer:stop()
+      ui_state.refresh_timer:close()
+    end
+    ui_state.refresh_timer = nil
+  end
+end
+
+local function start_refresh_timer()
+  stop_refresh_timer()
+  ui_state.refresh_timer = vim.uv.new_timer()
+  ui_state.refresh_timer:start(1000, 2000, vim.schedule_wrap(function()
+    if not ui_state.buf or not vim.api.nvim_buf_is_valid(ui_state.buf)
+        or not ui_state.win or not vim.api.nvim_win_is_valid(ui_state.win) then
+      stop_refresh_timer()
+      return
+    end
+
+    local has_missing = false
+    local changed = false
+    for _, p in ipairs(ui_state.plugins) do
+      if p.status == "✗" then
+        has_missing = true
+        if not changed and p.entry and p.entry.plugin and p.entry.plugin.path then
+          if vim.uv.fs_stat(p.entry.plugin.path) then
+            changed = true
+          end
+        end
+      end
+    end
+
+    if not has_missing then
+      stop_refresh_timer()
+      return
+    end
+
+    if changed then
+      M.refresh()
+    end
+  end))
+end
+
 function M.refresh()
   if not ui_state.buf or not ui_state.win then return end
   define_highlights()
@@ -340,9 +392,11 @@ function M.open()
   local line_count = vim.api.nvim_buf_line_count(ui_state.buf)
   local cursor_line = math.min(4, line_count)
   vim.api.nvim_win_set_cursor(ui_state.win, { cursor_line, 0 })
+  start_refresh_timer()
 end
 
 function M.close()
+  stop_refresh_timer()
   if ui_state.win and vim.api.nvim_win_is_valid(ui_state.win) then
     vim.api.nvim_win_close(ui_state.win, true)
   end

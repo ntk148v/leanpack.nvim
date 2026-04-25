@@ -276,9 +276,11 @@ local function process_all(ctx)
         confirm = ctx.confirm,
     })
 
-    -- Defer lazy plugin registration but set up module triggers synchronously
-    -- so that early autocmds (like BufReadPre) can still intercept requires.
+    -- Register lazy plugins with vim.pack (without loading) to trigger background installation
     if #lazy_vim_packs > 0 then
+        vim.pack.add(lazy_vim_packs, { load = false, confirm = false })
+        -- Defer lazy plugin registration but set up module triggers synchronously
+        -- so that early autocmds (like BufReadPre) can still intercept requires.
         module_trigger.setup(lazy_vim_packs)
     end
 
