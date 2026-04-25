@@ -1,5 +1,5 @@
-local state = require("leanpack.state")
 local log = require("leanpack.log")
+local state = require("leanpack.state")
 
 local M = {}
 

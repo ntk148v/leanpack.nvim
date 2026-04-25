@@ -6,10 +6,10 @@ local MiniTest = require("mini.test")
 local child = MiniTest.new_child_neovim()
 
 local T = MiniTest.new_set({
-	hooks = {
-		pre_case = function()
-			child.restart({ "-u", "NONE" })
-			child.lua([[
+    hooks = {
+        pre_case = function()
+            child.restart({ "-u", "NONE" })
+            child.lua([[
 				vim.opt.rtp:prepend("]] .. vim.fn.getcwd() .. [[")
 				_G.helpers = require("tests.helpers")
 				_G.helpers.reset_leanpack_state()
@@ -17,9 +17,9 @@ local T = MiniTest.new_set({
 				_G.spec_mod = require("leanpack.spec")
 				_G.state = require("leanpack.state")
 			]])
-		end,
-		post_once = child.stop,
-	},
+        end,
+        post_once = child.stop,
+    },
 })
 
 -- ============================================================================
@@ -29,57 +29,57 @@ local T = MiniTest.new_set({
 T["resolve_dependencies()"] = MiniTest.new_set()
 
 T["resolve_dependencies()"]["returns empty for no dependencies"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = deps.resolve_dependencies({ src = "test" }, {})
 	]])
 
-	local result = child.lua_get("_G.result")
-	MiniTest.expect.equality(type(result), "table")
-	MiniTest.expect.equality(#result, 0)
+    local result = child.lua_get("_G.result")
+    MiniTest.expect.equality(type(result), "table")
+    MiniTest.expect.equality(#result, 0)
 end
 
 T["resolve_dependencies()"]["resolves string dependency"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = deps.resolve_dependencies({
 			src = "parent",
 			dependencies = { "owner/dep-plugin" }
 		}, {})
 	]])
 
-	local result = child.lua_get("_G.result")
-	MiniTest.expect.equality(#result, 1)
-	MiniTest.expect.equality(result[1].src, "https://github.com/owner/dep-plugin")
-	MiniTest.expect.equality(result[1]._is_dependency, true)
+    local result = child.lua_get("_G.result")
+    MiniTest.expect.equality(#result, 1)
+    MiniTest.expect.equality(result[1].src, "https://github.com/owner/dep-plugin")
+    MiniTest.expect.equality(result[1]._is_dependency, true)
 end
 
 T["resolve_dependencies()"]["resolves table dependency"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = deps.resolve_dependencies({
 			src = "parent",
 			dependencies = { { "owner/dep-plugin", priority = 100 } }
 		}, {})
 	]])
 
-	local result = child.lua_get("_G.result")
-	MiniTest.expect.equality(#result, 1)
-	MiniTest.expect.equality(result[1].src, "https://github.com/owner/dep-plugin")
-	MiniTest.expect.equality(result[1].priority, 100)
+    local result = child.lua_get("_G.result")
+    MiniTest.expect.equality(#result, 1)
+    MiniTest.expect.equality(result[1].src, "https://github.com/owner/dep-plugin")
+    MiniTest.expect.equality(result[1].priority, 100)
 end
 
 T["resolve_dependencies()"]["resolves multiple dependencies"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = deps.resolve_dependencies({
 			src = "parent",
 			dependencies = { "owner/dep1", "owner/dep2" }
 		}, {})
 	]])
 
-	local result = child.lua_get("_G.result")
-	MiniTest.expect.equality(#result, 2)
+    local result = child.lua_get("_G.result")
+    MiniTest.expect.equality(#result, 2)
 end
 
 T["resolve_dependencies()"]["resolves multi-string table (lazy.nvim format)"] = function()
-	child.lua([[
+    child.lua([[
 		-- lazy.nvim allows { "a", "b", "c" } as a single entry in dependencies
 		-- meaning three separate dependencies
 		_G.result = deps.resolve_dependencies({
@@ -90,15 +90,15 @@ T["resolve_dependencies()"]["resolves multi-string table (lazy.nvim format)"] = 
 		}, {})
 	]])
 
-	local result = child.lua_get("_G.result")
-	MiniTest.expect.equality(#result, 3)
-	MiniTest.expect.equality(result[1].src, "https://github.com/owner/dep1")
-	MiniTest.expect.equality(result[2].src, "https://github.com/owner/dep2")
-	MiniTest.expect.equality(result[3].src, "https://github.com/owner/dep3")
+    local result = child.lua_get("_G.result")
+    MiniTest.expect.equality(#result, 3)
+    MiniTest.expect.equality(result[1].src, "https://github.com/owner/dep1")
+    MiniTest.expect.equality(result[2].src, "https://github.com/owner/dep2")
+    MiniTest.expect.equality(result[3].src, "https://github.com/owner/dep3")
 end
 
 T["resolve_dependencies()"]["multi-string table tracks all dependency relationships"] = function()
-	child.lua([[
+    child.lua([[
 		deps.resolve_dependencies({
 			src = "https://github.com/parent/plugin",
 			dependencies = {
@@ -108,13 +108,13 @@ T["resolve_dependencies()"]["multi-string table tracks all dependency relationsh
 		_G.deps_result = state.get_dependencies("https://github.com/parent/plugin")
 	]])
 
-	local deps_result = child.lua_get("_G.deps_result")
-	MiniTest.expect.equality(deps_result["https://github.com/owner/dep1"] ~= nil, true)
-	MiniTest.expect.equality(deps_result["https://github.com/owner/dep2"] ~= nil, true)
+    local deps_result = child.lua_get("_G.deps_result")
+    MiniTest.expect.equality(deps_result["https://github.com/owner/dep1"] ~= nil, true)
+    MiniTest.expect.equality(deps_result["https://github.com/owner/dep2"] ~= nil, true)
 end
 
 T["resolve_dependencies()"]["preserves optional flag from parent"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = deps.resolve_dependencies({
 			src = "parent",
 			optional = true,
@@ -122,12 +122,12 @@ T["resolve_dependencies()"]["preserves optional flag from parent"] = function()
 		}, {})
 	]])
 
-	local result = child.lua_get("_G.result")
-	MiniTest.expect.equality(result[1].optional, true)
+    local result = child.lua_get("_G.result")
+    MiniTest.expect.equality(result[1].optional, true)
 end
 
 T["resolve_dependencies()"]["does not override explicit optional on dep"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = deps.resolve_dependencies({
 			src = "parent",
 			optional = true,
@@ -135,12 +135,12 @@ T["resolve_dependencies()"]["does not override explicit optional on dep"] = func
 		}, {})
 	]])
 
-	local result = child.lua_get("_G.result")
-	MiniTest.expect.equality(result[1].optional, false)
+    local result = child.lua_get("_G.result")
+    MiniTest.expect.equality(result[1].optional, false)
 end
 
 T["resolve_dependencies()"]["tracks dependency relationships in state"] = function()
-	child.lua([[
+    child.lua([[
 		deps.resolve_dependencies({
 			src = "https://github.com/parent/parent",
 			dependencies = { "owner/child" }
@@ -149,10 +149,10 @@ T["resolve_dependencies()"]["tracks dependency relationships in state"] = functi
 		_G.reverse = state.get_reverse_dependencies("https://github.com/owner/child")
 	]])
 
-	local deps_result = child.lua_get("_G.deps")
-	local reverse = child.lua_get("_G.reverse")
-	MiniTest.expect.equality(deps_result ~= vim.NIL, true)
-	MiniTest.expect.equality(reverse ~= vim.NIL, true)
+    local deps_result = child.lua_get("_G.deps")
+    local reverse = child.lua_get("_G.reverse")
+    MiniTest.expect.equality(deps_result ~= vim.NIL, true)
+    MiniTest.expect.equality(reverse ~= vim.NIL, true)
 end
 
 -- ============================================================================
@@ -162,28 +162,28 @@ end
 T["toposort_startup()"] = MiniTest.new_set()
 
 T["toposort_startup()"]["returns empty for empty input"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = deps.toposort_startup({})
 	]])
 
-	local result = child.lua_get("_G.result")
-	MiniTest.expect.equality(#result, 0)
+    local result = child.lua_get("_G.result")
+    MiniTest.expect.equality(#result, 0)
 end
 
 T["toposort_startup()"]["returns single pack unchanged"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = deps.toposort_startup({
 			{ src = "test", name = "test", data = { priority = 50 } }
 		})
 	]])
 
-	local result = child.lua_get("_G.result")
-	MiniTest.expect.equality(#result, 1)
-	MiniTest.expect.equality(result[1].src, "test")
+    local result = child.lua_get("_G.result")
+    MiniTest.expect.equality(#result, 1)
+    MiniTest.expect.equality(result[1].src, "test")
 end
 
 T["toposort_startup()"]["sorts by priority descending"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = deps.toposort_startup({
 			{ src = "low", name = "low", data = { priority = 50 } },
 			{ src = "high", name = "high", data = { priority = 100 } },
@@ -191,14 +191,14 @@ T["toposort_startup()"]["sorts by priority descending"] = function()
 		})
 	]])
 
-	local result = child.lua_get("_G.result")
-	MiniTest.expect.equality(result[1].src, "high")
-	MiniTest.expect.equality(result[2].src, "medium")
-	MiniTest.expect.equality(result[3].src, "low")
+    local result = child.lua_get("_G.result")
+    MiniTest.expect.equality(result[1].src, "high")
+    MiniTest.expect.equality(result[2].src, "medium")
+    MiniTest.expect.equality(result[3].src, "low")
 end
 
 T["toposort_startup()"]["respects dependency order"] = function()
-	child.lua([[
+    child.lua([[
 		-- Setup: parent depends on child
 		state.add_dependency("parent", "child")
 
@@ -208,20 +208,24 @@ T["toposort_startup()"]["respects dependency order"] = function()
 		})
 	]])
 
-	local result = child.lua_get("_G.result")
-	-- Child should come before parent
-	local child_idx, parent_idx
-	for i, p in ipairs(result) do
-		if p.src == "child" then child_idx = i end
-		if p.src == "parent" then parent_idx = i end
-	end
-	MiniTest.expect.equality(child_idx ~= nil, true)
-	MiniTest.expect.equality(parent_idx ~= nil, true)
-	MiniTest.expect.equality(child_idx < parent_idx, true)
+    local result = child.lua_get("_G.result")
+    -- Child should come before parent
+    local child_idx, parent_idx
+    for i, p in ipairs(result) do
+        if p.src == "child" then
+            child_idx = i
+        end
+        if p.src == "parent" then
+            parent_idx = i
+        end
+    end
+    MiniTest.expect.equality(child_idx ~= nil, true)
+    MiniTest.expect.equality(parent_idx ~= nil, true)
+    MiniTest.expect.equality(child_idx < parent_idx, true)
 end
 
 T["toposort_startup()"]["handles deep dependencies"] = function()
-	child.lua([[
+    child.lua([[
 		-- a -> b -> c (a depends on b, b depends on c)
 		state.add_dependency("a", "b")
 		state.add_dependency("b", "c")
@@ -233,18 +237,18 @@ T["toposort_startup()"]["handles deep dependencies"] = function()
 		})
 	]])
 
-	local result = child.lua_get("_G.result")
-	-- Order should be c, b, a
-	local indices = {}
-	for i, p in ipairs(result) do
-		indices[p.src] = i
-	end
-	MiniTest.expect.equality(indices.c < indices.b, true)
-	MiniTest.expect.equality(indices.b < indices.a, true)
+    local result = child.lua_get("_G.result")
+    -- Order should be c, b, a
+    local indices = {}
+    for i, p in ipairs(result) do
+        indices[p.src] = i
+    end
+    MiniTest.expect.equality(indices.c < indices.b, true)
+    MiniTest.expect.equality(indices.b < indices.a, true)
 end
 
 T["toposort_startup()"]["handles diamond dependencies"] = function()
-	child.lua([[
+    child.lua([[
 		--   a
 		--  / \
 		-- b   c
@@ -263,20 +267,20 @@ T["toposort_startup()"]["handles diamond dependencies"] = function()
 		})
 	]])
 
-	local result = child.lua_get("_G.result")
-	local indices = {}
-	for i, p in ipairs(result) do
-		indices[p.src] = i
-	end
-	-- d must come before b and c, b and c must come before a
-	MiniTest.expect.equality(indices.d < indices.b, true)
-	MiniTest.expect.equality(indices.d < indices.c, true)
-	MiniTest.expect.equality(indices.b < indices.a, true)
-	MiniTest.expect.equality(indices.c < indices.a, true)
+    local result = child.lua_get("_G.result")
+    local indices = {}
+    for i, p in ipairs(result) do
+        indices[p.src] = i
+    end
+    -- d must come before b and c, b and c must come before a
+    MiniTest.expect.equality(indices.d < indices.b, true)
+    MiniTest.expect.equality(indices.d < indices.c, true)
+    MiniTest.expect.equality(indices.b < indices.a, true)
+    MiniTest.expect.equality(indices.c < indices.a, true)
 end
 
 T["toposort_startup()"]["handles circular dependency gracefully"] = function()
-	child.lua([[
+    child.lua([[
 		-- a -> b -> a (circular)
 		state.add_dependency("a", "b")
 		state.add_dependency("b", "a")
@@ -296,15 +300,15 @@ T["toposort_startup()"]["handles circular dependency gracefully"] = function()
 		vim.notify = orig_notify
 	]])
 
-	local warnings = child.lua_get("_G.warnings")
-	local found_warning = false
-	for _, w in ipairs(warnings) do
-		if w:match("Circular dependency") then
-			found_warning = true
-			break
-		end
-	end
-	MiniTest.expect.equality(found_warning, true)
+    local warnings = child.lua_get("_G.warnings")
+    local found_warning = false
+    for _, w in ipairs(warnings) do
+        if w:match("Circular dependency") then
+            found_warning = true
+            break
+        end
+    end
+    MiniTest.expect.equality(found_warning, true)
 end
 
 -- ============================================================================
@@ -314,15 +318,15 @@ end
 T["is_dependency_only()"] = MiniTest.new_set()
 
 T["is_dependency_only()"]["returns false for unknown src"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = deps.is_dependency_only("unknown")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), false)
+    MiniTest.expect.equality(child.lua_get("_G.result"), false)
 end
 
 T["is_dependency_only()"]["returns true when all specs are dependencies"] = function()
-	child.lua([[
+    child.lua([[
 		state.set_entry("test-src", {
 			specs = {
 				{ src = "test", _is_dependency = true },
@@ -332,11 +336,11 @@ T["is_dependency_only()"]["returns true when all specs are dependencies"] = func
 		_G.result = deps.is_dependency_only("test-src")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), true)
+    MiniTest.expect.equality(child.lua_get("_G.result"), true)
 end
 
 T["is_dependency_only()"]["returns false when any spec is not a dependency"] = function()
-	child.lua([[
+    child.lua([[
 		state.set_entry("test-src", {
 			specs = {
 				{ src = "test", _is_dependency = true },
@@ -346,11 +350,11 @@ T["is_dependency_only()"]["returns false when any spec is not a dependency"] = f
 		_G.result = deps.is_dependency_only("test-src")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), false)
+    MiniTest.expect.equality(child.lua_get("_G.result"), false)
 end
 
 T["is_dependency_only()"]["returns false when no specs have _is_dependency flag"] = function()
-	child.lua([[
+    child.lua([[
 		state.set_entry("test-src", {
 			specs = {
 				{ src = "test" },
@@ -360,7 +364,7 @@ T["is_dependency_only()"]["returns false when no specs have _is_dependency flag"
 		_G.result = deps.is_dependency_only("test-src")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), false)
+    MiniTest.expect.equality(child.lua_get("_G.result"), false)
 end
 
 -- ============================================================================
@@ -370,7 +374,7 @@ end
 T["integration"] = MiniTest.new_set()
 
 T["integration"]["complex dependency scenario"] = function()
-	child.lua([[
+    child.lua([[
 		-- Setup a complex scenario:
 		-- plugin-a depends on plugin-b and plugin-c
 		-- plugin-b depends on plugin-d
@@ -405,26 +409,26 @@ T["integration"]["complex dependency scenario"] = function()
 		_G.reverse_d = state.get_reverse_dependencies("https://github.com/owner/plugin-d")
 	]])
 
-	local deps_a = child.lua_get("_G.deps_a")
-	local deps_b = child.lua_get("_G.deps_b")
-	local deps_c = child.lua_get("_G.deps_c")
-	local deps_d = child.lua_get("_G.deps_d")
-	local reverse_d = child.lua_get("_G.reverse_d")
+    local deps_a = child.lua_get("_G.deps_a")
+    local deps_b = child.lua_get("_G.deps_b")
+    local deps_c = child.lua_get("_G.deps_c")
+    local deps_d = child.lua_get("_G.deps_d")
+    local reverse_d = child.lua_get("_G.reverse_d")
 
-	-- plugin-a depends on plugin-b and plugin-c
-	MiniTest.expect.equality(deps_a["https://github.com/owner/plugin-b"] ~= nil, true)
-	MiniTest.expect.equality(deps_a["https://github.com/owner/plugin-c"] ~= nil, true)
+    -- plugin-a depends on plugin-b and plugin-c
+    MiniTest.expect.equality(deps_a["https://github.com/owner/plugin-b"] ~= nil, true)
+    MiniTest.expect.equality(deps_a["https://github.com/owner/plugin-c"] ~= nil, true)
 
-	-- plugin-b and plugin-c both depend on plugin-d
-	MiniTest.expect.equality(deps_b["https://github.com/owner/plugin-d"] ~= nil, true)
-	MiniTest.expect.equality(deps_c["https://github.com/owner/plugin-d"] ~= nil, true)
+    -- plugin-b and plugin-c both depend on plugin-d
+    MiniTest.expect.equality(deps_b["https://github.com/owner/plugin-d"] ~= nil, true)
+    MiniTest.expect.equality(deps_c["https://github.com/owner/plugin-d"] ~= nil, true)
 
-	-- plugin-d has no dependencies
-	MiniTest.expect.equality(deps_d, vim.NIL)
+    -- plugin-d has no dependencies
+    MiniTest.expect.equality(deps_d, vim.NIL)
 
-	-- plugin-d is a dependency of both plugin-b and plugin-c
-	MiniTest.expect.equality(reverse_d["https://github.com/owner/plugin-b"] ~= nil, true)
-	MiniTest.expect.equality(reverse_d["https://github.com/owner/plugin-c"] ~= nil, true)
+    -- plugin-d is a dependency of both plugin-b and plugin-c
+    MiniTest.expect.equality(reverse_d["https://github.com/owner/plugin-b"] ~= nil, true)
+    MiniTest.expect.equality(reverse_d["https://github.com/owner/plugin-c"] ~= nil, true)
 end
 
 return T

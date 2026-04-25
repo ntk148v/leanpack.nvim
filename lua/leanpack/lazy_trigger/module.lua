@@ -8,17 +8,23 @@ local loader_mod = nil
 local spec_mod = nil
 
 local function get_log()
-    if not log_mod then log_mod = require("leanpack.log") end
+    if not log_mod then
+        log_mod = require("leanpack.log")
+    end
     return log_mod
 end
 
 local function get_loader()
-    if not loader_mod then loader_mod = require("leanpack.loader") end
+    if not loader_mod then
+        loader_mod = require("leanpack.loader")
+    end
     return loader_mod
 end
 
 local function get_spec_mod()
-    if not spec_mod then spec_mod = require("leanpack.spec") end
+    if not spec_mod then
+        spec_mod = require("leanpack.spec")
+    end
     return spec_mod
 end
 
@@ -160,7 +166,9 @@ function M.setup(lazy_packs)
                 if fd then
                     while true do
                         local name, type = vim.uv.fs_scandir_next(fd)
-                        if not name then break end
+                        if not name then
+                            break
+                        end
                         local mod = nil
                         if type == "file" and name:match("%.lua$") then
                             mod = name:sub(1, -5)

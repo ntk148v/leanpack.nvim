@@ -1,12 +1,12 @@
-local state = require("leanpack.state")
 local deps_mod = require("leanpack.deps")
 local hooks = require("leanpack.hooks")
 local import_mod = require("leanpack.import")
 local lazy_mod = require("leanpack.lazy")
 local loader = require("leanpack.loader")
 local log = require("leanpack.log")
-local spec_mod = require("leanpack.spec")
 local module_trigger = require("leanpack.lazy_trigger.module")
+local spec_mod = require("leanpack.spec")
+local state = require("leanpack.state")
 
 -- Lazy-loaded modules (only required when actually used)
 local commands = nil

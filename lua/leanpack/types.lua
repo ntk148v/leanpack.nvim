@@ -45,10 +45,10 @@
 ---@field pattern? string|string[] Global fallback pattern for events
 ---@field cmd? leanpack.CmdValue|fun(plugin: leanpack.Plugin):leanpack.CmdValue Lazy load on command
 ---@field keys? leanpack.KeysValue|fun(plugin: leanpack.Plugin):leanpack.KeysValue Lazy load on keymap
-  ---@field ft? leanpack.FtValue|fun(plugin: leanpack.Plugin):leanpack.FtValue Lazy load on filetype
-  ---@field import? string Module path to import specs from
-  ---@field dev? boolean Development mode, use ~/projects/{plugin-name} as source
-  ---@field optional? boolean Optional dependency, warn instead of error if not found
+---@field ft? leanpack.FtValue|fun(plugin: leanpack.Plugin):leanpack.FtValue Lazy load on filetype
+---@field import? string Module path to import specs from
+---@field dev? boolean Development mode, use ~/projects/{plugin-name} as source
+---@field optional? boolean Optional dependency, warn instead of error if not found
 
 ---@alias leanpack.LoadStatus "pending"|"loading"|"loaded"
 

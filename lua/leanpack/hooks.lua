@@ -5,12 +5,16 @@ local log_mod = nil
 local spec_mod_raw = nil -- spec_mod is a common local name, suffixing to be safe
 
 local function get_log()
-    if not log_mod then log_mod = require("leanpack.log") end
+    if not log_mod then
+        log_mod = require("leanpack.log")
+    end
     return log_mod
 end
 
 local function get_spec_mod()
-    if not spec_mod_raw then spec_mod_raw = require("leanpack.spec") end
+    if not spec_mod_raw then
+        spec_mod_raw = require("leanpack.spec")
+    end
     return spec_mod_raw
 end
 

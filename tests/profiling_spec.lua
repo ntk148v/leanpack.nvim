@@ -6,10 +6,10 @@ local MiniTest = require("mini.test")
 local child = MiniTest.new_child_neovim()
 
 local T = MiniTest.new_set({
-	hooks = {
-		pre_case = function()
-			child.restart({ "-u", "NONE" })
-			child.lua([[
+    hooks = {
+        pre_case = function()
+            child.restart({ "-u", "NONE" })
+            child.lua([[
 				vim.opt.rtp:prepend("]] .. vim.fn.getcwd() .. [[")
 				_G.helpers = require("tests.helpers")
 				_G.helpers.reset_leanpack_state()
@@ -21,15 +21,15 @@ local T = MiniTest.new_set({
 				
 				_G.leanpack = require("leanpack")
 			]])
-		end,
-		post_once = child.stop,
-	},
+        end,
+        post_once = child.stop,
+    },
 })
 
 T["Profiling"] = MiniTest.new_set()
 
 T["Profiling"]["can be enabled via setup({ profiling = true })"] = function()
-	child.lua([[
+    child.lua([[
 		leanpack.setup({
 			profiling = true,
 			plugins = {
@@ -39,14 +39,14 @@ T["Profiling"]["can be enabled via setup({ profiling = true })"] = function()
 		_G.profile = leanpack.get_profile_data()
 	]])
 
-	local profile = child.lua_get("_G.profile")
-	MiniTest.expect.equality(profile._total > 0, true)
-	MiniTest.expect.equality(profile.import_specs ~= nil, true)
-	MiniTest.expect.equality(profile.process_all ~= nil, true)
+    local profile = child.lua_get("_G.profile")
+    MiniTest.expect.equality(profile._total > 0, true)
+    MiniTest.expect.equality(profile.import_specs ~= nil, true)
+    MiniTest.expect.equality(profile.process_all ~= nil, true)
 end
 
 T["Profiling"]["can be enabled via setup({ profiling = { enabled = true } })"] = function()
-	child.lua([[
+    child.lua([[
 		leanpack.setup({
 			profiling = { enabled = true },
 			plugins = {
@@ -56,13 +56,13 @@ T["Profiling"]["can be enabled via setup({ profiling = { enabled = true } })"] =
 		_G.profile = leanpack.get_profile_data()
 	]])
 
-	local profile = child.lua_get("_G.profile")
-	MiniTest.expect.equality(profile._total > 0, true)
-	MiniTest.expect.equality(profile.import_specs ~= nil, true)
+    local profile = child.lua_get("_G.profile")
+    MiniTest.expect.equality(profile._total > 0, true)
+    MiniTest.expect.equality(profile.import_specs ~= nil, true)
 end
 
 T["Profiling"]["is disabled by default"] = function()
-	child.lua([[
+    child.lua([[
 		leanpack.setup({
 			plugins = {
 				{ src = "test/plugin", lazy = false }
@@ -71,8 +71,8 @@ T["Profiling"]["is disabled by default"] = function()
 		_G.profile = leanpack.get_profile_data()
 	]])
 
-	local profile = child.lua_get("_G.profile")
-	MiniTest.expect.equality(profile._total, 0)
+    local profile = child.lua_get("_G.profile")
+    MiniTest.expect.equality(profile._total, 0)
 end
 
 return T

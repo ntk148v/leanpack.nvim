@@ -6,19 +6,19 @@ local MiniTest = require("mini.test")
 local child = MiniTest.new_child_neovim()
 
 local T = MiniTest.new_set({
-	hooks = {
-		pre_case = function()
-			child.restart({ "-u", "NONE" })
-			child.lua([[
+    hooks = {
+        pre_case = function()
+            child.restart({ "-u", "NONE" })
+            child.lua([[
 				vim.opt.rtp:prepend("]] .. vim.fn.getcwd() .. [[")
 				_G.helpers = require("tests.helpers")
 				_G.helpers.reset_leanpack_state()
 				_G.hooks = require("leanpack.hooks")
 				_G.state = require("leanpack.state")
 			]])
-		end,
-		post_once = child.stop,
-	},
+        end,
+        post_once = child.stop,
+    },
 })
 
 -- ============================================================================
@@ -28,15 +28,15 @@ local T = MiniTest.new_set({
 T["run_init()"] = MiniTest.new_set()
 
 T["run_init()"]["returns false if entry not found"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = hooks.run_init("nonexistent")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), false)
+    MiniTest.expect.equality(child.lua_get("_G.result"), false)
 end
 
 T["run_init()"]["returns true if no init hook"] = function()
-	child.lua([[
+    child.lua([[
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
 			merged_spec = { src = "test-src", name = "test" },
@@ -45,11 +45,11 @@ T["run_init()"]["returns true if no init hook"] = function()
 		_G.result = hooks.run_init("test-src")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), true)
+    MiniTest.expect.equality(child.lua_get("_G.result"), true)
 end
 
 T["run_init()"]["executes init hook"] = function()
-	child.lua([[
+    child.lua([[
 		_G.init_called = false
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
@@ -63,12 +63,12 @@ T["run_init()"]["executes init hook"] = function()
 		_G.result = hooks.run_init("test-src")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.init_called"), true)
-	MiniTest.expect.equality(child.lua_get("_G.result"), true)
+    MiniTest.expect.equality(child.lua_get("_G.init_called"), true)
+    MiniTest.expect.equality(child.lua_get("_G.result"), true)
 end
 
 T["run_init()"]["handles init hook errors"] = function()
-	child.lua([[
+    child.lua([[
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
 			merged_spec = {
@@ -99,8 +99,8 @@ T["run_init()"]["handles init hook errors"] = function()
 		end
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), false)
-	MiniTest.expect.equality(child.lua_get("_G.has_error"), true)
+    MiniTest.expect.equality(child.lua_get("_G.result"), false)
+    MiniTest.expect.equality(child.lua_get("_G.has_error"), true)
 end
 
 -- ============================================================================
@@ -110,15 +110,15 @@ end
 T["run_config()"] = MiniTest.new_set()
 
 T["run_config()"]["returns false if entry not found"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = hooks.run_config("nonexistent")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), false)
+    MiniTest.expect.equality(child.lua_get("_G.result"), false)
 end
 
 T["run_config()"]["returns true if no config"] = function()
-	child.lua([[
+    child.lua([[
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
 			merged_spec = { src = "test-src", name = "test" },
@@ -127,11 +127,11 @@ T["run_config()"]["returns true if no config"] = function()
 		_G.result = hooks.run_config("test-src")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), true)
+    MiniTest.expect.equality(child.lua_get("_G.result"), true)
 end
 
 T["run_config()"]["executes config function"] = function()
-	child.lua([[
+    child.lua([[
 		_G.config_called = false
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
@@ -145,12 +145,12 @@ T["run_config()"]["executes config function"] = function()
 		_G.result = hooks.run_config("test-src")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.config_called"), true)
-	MiniTest.expect.equality(child.lua_get("_G.result"), true)
+    MiniTest.expect.equality(child.lua_get("_G.config_called"), true)
+    MiniTest.expect.equality(child.lua_get("_G.result"), true)
 end
 
 T["run_config()"]["resolves opts function"] = function()
-	child.lua([[
+    child.lua([[
 		_G.opts_resolved = false
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
@@ -167,11 +167,11 @@ T["run_config()"]["resolves opts function"] = function()
 		_G.result = hooks.run_config("test-src")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.opts_resolved"), true)
+    MiniTest.expect.equality(child.lua_get("_G.opts_resolved"), true)
 end
 
 T["run_config()"]["passes opts to config function"] = function()
-	child.lua([[
+    child.lua([[
 		_G.received_opts = nil
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
@@ -188,12 +188,12 @@ T["run_config()"]["passes opts to config function"] = function()
 		_G.result = hooks.run_config("test-src")
 	]])
 
-	local opts = child.lua_get("_G.received_opts")
-	MiniTest.expect.equality(opts.key, "value")
+    local opts = child.lua_get("_G.received_opts")
+    MiniTest.expect.equality(opts.key, "value")
 end
 
 T["run_config()"]["handles config hook errors"] = function()
-	child.lua([[
+    child.lua([[
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
 			merged_spec = {
@@ -224,8 +224,8 @@ T["run_config()"]["handles config hook errors"] = function()
 		end
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), false)
-	MiniTest.expect.equality(child.lua_get("_G.has_error"), true)
+    MiniTest.expect.equality(child.lua_get("_G.result"), false)
+    MiniTest.expect.equality(child.lua_get("_G.has_error"), true)
 end
 
 -- ============================================================================
@@ -235,7 +235,7 @@ end
 T["execute_build()"] = MiniTest.new_set()
 
 T["execute_build()"]["executes string build command"] = function()
-	child.lua([[
+    child.lua([[
 		_G.command_executed = false
 		local orig_cmd = vim.cmd
 		vim.cmd = function(cmd)
@@ -252,11 +252,11 @@ T["execute_build()"]["executes string build command"] = function()
 		vim.cmd = orig_cmd
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.command_executed"), true)
+    MiniTest.expect.equality(child.lua_get("_G.command_executed"), true)
 end
 
 T["execute_build()"]["executes function build"] = function()
-	child.lua([[
+    child.lua([[
 		_G.build_called = false
 		local plugin = { spec = { name = "test" }, path = "/tmp/test" }
 		hooks.execute_build(function(p)
@@ -264,7 +264,7 @@ T["execute_build()"]["executes function build"] = function()
 		end, plugin)
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.build_called"), true)
+    MiniTest.expect.equality(child.lua_get("_G.build_called"), true)
 end
 
 -- ============================================================================
@@ -274,15 +274,15 @@ end
 T["run_build()"] = MiniTest.new_set()
 
 T["run_build()"]["returns false if entry not found"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = hooks.run_build("nonexistent")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), false)
+    MiniTest.expect.equality(child.lua_get("_G.result"), false)
 end
 
 T["run_build()"]["returns false if no build hook"] = function()
-	child.lua([[
+    child.lua([[
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
 			merged_spec = { src = "test-src", name = "test" },
@@ -291,11 +291,11 @@ T["run_build()"]["returns false if no build hook"] = function()
 		_G.result = hooks.run_build("test-src")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), false)
+    MiniTest.expect.equality(child.lua_get("_G.result"), false)
 end
 
 T["run_build()"]["executes build hook"] = function()
-	child.lua([[
+    child.lua([[
 		_G.build_called = false
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
@@ -309,8 +309,8 @@ T["run_build()"]["executes build hook"] = function()
 		_G.result = hooks.run_build("test-src")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.build_called"), true)
-	MiniTest.expect.equality(child.lua_get("_G.result"), true)
+    MiniTest.expect.equality(child.lua_get("_G.build_called"), true)
+    MiniTest.expect.equality(child.lua_get("_G.result"), true)
 end
 
 -- ============================================================================
@@ -320,7 +320,7 @@ end
 T["setup_build_tracking()"] = MiniTest.new_set()
 
 T["setup_build_tracking()"]["marks pending build on install"] = function()
-	child.lua([[
+    child.lua([[
 		hooks.setup_build_tracking()
 
 		-- Simulate PackChanged event
@@ -335,12 +335,12 @@ T["setup_build_tracking()"]["marks pending build on install"] = function()
 		_G.pending_src = state.get_pending_builds()["test-src"] ~= nil
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.has_pending"), true)
-	MiniTest.expect.equality(child.lua_get("_G.pending_src"), true)
+    MiniTest.expect.equality(child.lua_get("_G.has_pending"), true)
+    MiniTest.expect.equality(child.lua_get("_G.pending_src"), true)
 end
 
 T["setup_build_tracking()"]["marks pending build on update"] = function()
-	child.lua([[
+    child.lua([[
 		hooks.setup_build_tracking()
 
 		-- Simulate PackChanged event
@@ -354,7 +354,7 @@ T["setup_build_tracking()"]["marks pending build on update"] = function()
 		_G.has_pending = state.has_pending_builds()
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.has_pending"), true)
+    MiniTest.expect.equality(child.lua_get("_G.has_pending"), true)
 end
 
 -- ============================================================================
@@ -370,7 +370,7 @@ T["setup_lazy_build_tracking()"] = MiniTest.new_set()
 T["run_pending_builds()"] = MiniTest.new_set()
 
 T["run_pending_builds()"]["returns early if no pending builds"] = function()
-	child.lua([[
+    child.lua([[
 		_G.builds_run = false
 		local orig_execute = hooks.execute_build
 		hooks.execute_build = function()
@@ -382,11 +382,11 @@ T["run_pending_builds()"]["returns early if no pending builds"] = function()
 		hooks.execute_build = orig_execute
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.builds_run"), false)
+    MiniTest.expect.equality(child.lua_get("_G.builds_run"), false)
 end
 
 T["run_pending_builds()"]["executes pending builds"] = function()
-	child.lua([[
+    child.lua([[
 		_G.builds_run = 0
 		local orig_execute = hooks.execute_build
 		hooks.execute_build = function()
@@ -413,11 +413,11 @@ T["run_pending_builds()"]["executes pending builds"] = function()
 		hooks.execute_build = orig_execute
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.builds_run"), 2)
+    MiniTest.expect.equality(child.lua_get("_G.builds_run"), 2)
 end
 
 T["run_pending_builds()"]["clears pending builds after execution"] = function()
-	child.lua([[
+    child.lua([[
 		state.set_entry("test-src", {
 			specs = { { src = "test-src", name = "test" } },
 			merged_spec = { src = "test-src", name = "test", build = "make" },
@@ -436,8 +436,8 @@ T["run_pending_builds()"]["clears pending builds after execution"] = function()
 		_G.has_pending_after = state.has_pending_builds()
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.has_pending_before"), true)
-	MiniTest.expect.equality(child.lua_get("_G.has_pending_after"), false)
+    MiniTest.expect.equality(child.lua_get("_G.has_pending_before"), true)
+    MiniTest.expect.equality(child.lua_get("_G.has_pending_after"), false)
 end
 
 -- ============================================================================
@@ -447,7 +447,7 @@ end
 T["run_all_builds()"] = MiniTest.new_set()
 
 T["run_all_builds()"]["executes builds for all plugins with build field"] = function()
-	child.lua([[
+    child.lua([[
 		_G.builds_run = 0
 		local orig_execute = hooks.execute_build
 		hooks.execute_build = function()
@@ -478,11 +478,11 @@ T["run_all_builds()"]["executes builds for all plugins with build field"] = func
 		hooks.execute_build = orig_execute
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.builds_run"), 2)
+    MiniTest.expect.equality(child.lua_get("_G.builds_run"), 2)
 end
 
 T["run_all_builds()"]["sends notification with count"] = function()
-	child.lua([[
+    child.lua([[
 		_G.notifications = {}
 		local orig_notify = vim.notify
 		vim.notify = function(msg, level)
@@ -511,7 +511,7 @@ T["run_all_builds()"]["sends notification with count"] = function()
 		end
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.has_count_notification"), true)
+    MiniTest.expect.equality(child.lua_get("_G.has_count_notification"), true)
 end
 
 -- ============================================================================
@@ -521,7 +521,7 @@ end
 T["integration"] = MiniTest.new_set()
 
 T["integration"]["complete hook workflow"] = function()
-	child.lua([[
+    child.lua([[
 		_G.init_called = false
 		_G.config_called = false
 		_G.build_called = false
@@ -543,13 +543,13 @@ T["integration"]["complete hook workflow"] = function()
 		hooks.run_build("test-src")
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.init_called"), true)
-	MiniTest.expect.equality(child.lua_get("_G.config_called"), true)
-	MiniTest.expect.equality(child.lua_get("_G.build_called"), true)
+    MiniTest.expect.equality(child.lua_get("_G.init_called"), true)
+    MiniTest.expect.equality(child.lua_get("_G.config_called"), true)
+    MiniTest.expect.equality(child.lua_get("_G.build_called"), true)
 end
 
 T["integration"]["hooks with opts"] = function()
-	child.lua([[
+    child.lua([[
 		_G.received_opts = nil
 
 		state.set_entry("test-src", {
@@ -568,8 +568,8 @@ T["integration"]["hooks with opts"] = function()
 		hooks.run_config("test-src")
 	]])
 
-	local opts = child.lua_get("_G.received_opts")
-	MiniTest.expect.equality(opts.key, "value")
+    local opts = child.lua_get("_G.received_opts")
+    MiniTest.expect.equality(opts.key, "value")
 end
 
 return T

@@ -6,10 +6,10 @@ local MiniTest = require("mini.test")
 local child = MiniTest.new_child_neovim()
 
 local T = MiniTest.new_set({
-	hooks = {
-		pre_case = function()
-			child.restart({ "-u", "NONE" })
-			child.lua([[
+    hooks = {
+        pre_case = function()
+            child.restart({ "-u", "NONE" })
+            child.lua([[
 				vim.opt.rtp:prepend("]] .. vim.fn.getcwd() .. [[")
 				_G.helpers = require("tests.helpers")
 				_G.helpers.reset_leanpack_state()
@@ -17,9 +17,9 @@ local T = MiniTest.new_set({
 				_G.spec_mod = require("leanpack.spec")
 				_G.state = require("leanpack.state")
 			]])
-		end,
-		post_once = child.stop,
-	},
+        end,
+        post_once = child.stop,
+    },
 })
 
 -- ============================================================================
@@ -29,71 +29,71 @@ local T = MiniTest.new_set({
 T["is_lazy()"] = MiniTest.new_set()
 
 T["is_lazy()"]["returns explicit lazy flag"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result_true = lazy.is_lazy({ lazy = true })
 		_G.result_false = lazy.is_lazy({ lazy = false })
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result_true"), true)
-	MiniTest.expect.equality(child.lua_get("_G.result_false"), false)
+    MiniTest.expect.equality(child.lua_get("_G.result_true"), true)
+    MiniTest.expect.equality(child.lua_get("_G.result_false"), false)
 end
 
 T["is_lazy()"]["detects event trigger"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = lazy.is_lazy({ event = "BufRead" })
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), true)
+    MiniTest.expect.equality(child.lua_get("_G.result"), true)
 end
 
 T["is_lazy()"]["detects cmd trigger"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = lazy.is_lazy({ cmd = "MyCommand" })
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), true)
+    MiniTest.expect.equality(child.lua_get("_G.result"), true)
 end
 
 T["is_lazy()"]["detects ft trigger"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = lazy.is_lazy({ ft = "lua" })
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), true)
+    MiniTest.expect.equality(child.lua_get("_G.result"), true)
 end
 
 T["is_lazy()"]["detects keys trigger"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = lazy.is_lazy({ keys = "<leader>x" })
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), true)
+    MiniTest.expect.equality(child.lua_get("_G.result"), true)
 end
 
 T["is_lazy()"]["returns false for no triggers"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = lazy.is_lazy({ src = "test" })
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), false)
+    MiniTest.expect.equality(child.lua_get("_G.result"), false)
 end
 
 T["is_lazy()"]["handles function fields"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = lazy.is_lazy({
 			event = function() return "BufRead" end
 		})
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), true)
+    MiniTest.expect.equality(child.lua_get("_G.result"), true)
 end
 
 T["is_lazy()"]["handles empty keys array"] = function()
-	child.lua([[
+    child.lua([[
 		_G.result = lazy.is_lazy({ keys = {} })
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.result"), false)
+    MiniTest.expect.equality(child.lua_get("_G.result"), false)
 end
 
 -- ============================================================================
@@ -103,7 +103,7 @@ end
 T["ft trigger"] = MiniTest.new_set()
 
 T["ft trigger"]["creates FileType autocmd"] = function()
-	child.lua([[
+    child.lua([[
 		local ft_handler = require("leanpack.lazy_trigger.ft")
 
 		-- Setup a mock pack_spec
@@ -127,12 +127,12 @@ T["ft trigger"]["creates FileType autocmd"] = function()
 		end
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.autocmd_count") >= 1, true)
-	MiniTest.expect.equality(child.lua_get("_G.has_lua_pattern"), true)
+    MiniTest.expect.equality(child.lua_get("_G.autocmd_count") >= 1, true)
+    MiniTest.expect.equality(child.lua_get("_G.has_lua_pattern"), true)
 end
 
 T["ft trigger"]["creates autocmd for multiple filetypes"] = function()
-	child.lua([[
+    child.lua([[
 		local ft_handler = require("leanpack.lazy_trigger.ft")
 
 		ft_handler.setup({ src = "test", name = "test" }, { "lua", "python", "javascript" })
@@ -152,8 +152,8 @@ T["ft trigger"]["creates autocmd for multiple filetypes"] = function()
 		end
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.autocmd_count") >= 1, true)
-	MiniTest.expect.equality(child.lua_get("_G.has_some_pattern"), true)
+    MiniTest.expect.equality(child.lua_get("_G.autocmd_count") >= 1, true)
+    MiniTest.expect.equality(child.lua_get("_G.has_some_pattern"), true)
 end
 
 -- ============================================================================
@@ -163,7 +163,7 @@ end
 T["event trigger"] = MiniTest.new_set()
 
 T["event trigger"]["creates event autocmd"] = function()
-	child.lua([[
+    child.lua([[
 		local event_handler = require("leanpack.lazy_trigger.event")
 
 		event_handler.setup(
@@ -179,11 +179,11 @@ T["event trigger"]["creates event autocmd"] = function()
 		_G.autocmd_count = #autocmds
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.autocmd_count") >= 1, true)
+    MiniTest.expect.equality(child.lua_get("_G.autocmd_count") >= 1, true)
 end
 
 T["event trigger"]["creates autocmd for multiple events"] = function()
-	child.lua([[
+    child.lua([[
 		local event_handler = require("leanpack.lazy_trigger.event")
 
 		event_handler.setup(
@@ -204,8 +204,8 @@ T["event trigger"]["creates autocmd for multiple events"] = function()
 		_G.bufwrite_count = #bufwrite
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.bufread_count") >= 1, true)
-	MiniTest.expect.equality(child.lua_get("_G.bufwrite_count") >= 1, true)
+    MiniTest.expect.equality(child.lua_get("_G.bufread_count") >= 1, true)
+    MiniTest.expect.equality(child.lua_get("_G.bufwrite_count") >= 1, true)
 end
 
 -- ============================================================================
@@ -215,7 +215,7 @@ end
 T["cmd trigger"] = MiniTest.new_set()
 
 T["cmd trigger"]["creates command for lazy plugin"] = function()
-	child.lua([[
+    child.lua([[
 		local cmd_handler = require("leanpack.lazy_trigger.cmd")
 
 		-- Setup state
@@ -233,11 +233,11 @@ T["cmd trigger"]["creates command for lazy plugin"] = function()
 		_G.cmd_exists = vim.fn.exists(":TestCommand") == 2
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.cmd_exists"), true)
+    MiniTest.expect.equality(child.lua_get("_G.cmd_exists"), true)
 end
 
 T["cmd trigger"]["creates commands for multiple plugins"] = function()
-	child.lua([[
+    child.lua([[
 		local cmd_handler = require("leanpack.lazy_trigger.cmd")
 
 		state.set_entry("src1", {
@@ -259,9 +259,9 @@ T["cmd trigger"]["creates commands for multiple plugins"] = function()
 		_G.cmd3_exists = vim.fn.exists(":Cmd3") == 2
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.cmd1_exists"), true)
-	MiniTest.expect.equality(child.lua_get("_G.cmd2_exists"), true)
-	MiniTest.expect.equality(child.lua_get("_G.cmd3_exists"), true)
+    MiniTest.expect.equality(child.lua_get("_G.cmd1_exists"), true)
+    MiniTest.expect.equality(child.lua_get("_G.cmd2_exists"), true)
+    MiniTest.expect.equality(child.lua_get("_G.cmd3_exists"), true)
 end
 
 -- ============================================================================
@@ -271,7 +271,7 @@ end
 T["keys trigger"] = MiniTest.new_set()
 
 T["keys trigger"]["creates keymap for lazy plugin"] = function()
-	child.lua([[
+    child.lua([[
 		local keys_handler = require("leanpack.lazy_trigger.keys")
 
 		state.set_entry("test-src", {
@@ -286,11 +286,11 @@ T["keys trigger"]["creates keymap for lazy plugin"] = function()
 		_G.setup_ok = ok
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.setup_ok"), true)
+    MiniTest.expect.equality(child.lua_get("_G.setup_ok"), true)
 end
 
 T["keys trigger"]["handles complex key specs"] = function()
-	child.lua([[
+    child.lua([[
 		local keys_handler = require("leanpack.lazy_trigger.keys")
 
 		state.set_entry("test-src", {
@@ -310,7 +310,7 @@ T["keys trigger"]["handles complex key specs"] = function()
 		_G.setup_ok = ok
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.setup_ok"), true)
+    MiniTest.expect.equality(child.lua_get("_G.setup_ok"), true)
 end
 
 -- ============================================================================
@@ -320,7 +320,7 @@ end
 T["process_lazy()"] = MiniTest.new_set()
 
 T["process_lazy()"]["skips when pending builds exist"] = function()
-	child.lua([[
+    child.lua([[
 		-- Mark a pending build
 		state.mark_pending_build("test-src")
 
@@ -337,11 +337,11 @@ T["process_lazy()"]["skips when pending builds exist"] = function()
 		require("leanpack.lazy_trigger.event").setup = orig_event_setup
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.processed"), false)
+    MiniTest.expect.equality(child.lua_get("_G.processed"), false)
 end
 
 T["process_lazy()"]["processes lazy plugins with triggers"] = function()
-	child.lua([[
+    child.lua([[
 		-- Setup a lazy plugin with event trigger
 		state.set_entry("test-src", {
 			specs = {},
@@ -363,7 +363,7 @@ T["process_lazy()"]["processes lazy plugins with triggers"] = function()
 		_G.autocmd_count = #autocmds
 	]])
 
-	MiniTest.expect.equality(child.lua_get("_G.autocmd_count") >= 1, true)
+    MiniTest.expect.equality(child.lua_get("_G.autocmd_count") >= 1, true)
 end
 
 return T

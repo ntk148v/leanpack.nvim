@@ -1,8 +1,8 @@
-local state = require("leanpack.state")
 local hooks = require("leanpack.hooks")
 local keymap = require("leanpack.keymap")
 local log = require("leanpack.log")
 local spec_mod = require("leanpack.spec")
+local state = require("leanpack.state")
 
 local M = {}
 
