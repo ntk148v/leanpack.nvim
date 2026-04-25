@@ -268,7 +268,7 @@ function M.setup(prefix)
     elseif subcommand == "profile" then
       local profile = require("leanpack").get_profile_data()
       if next(profile) == nil or profile._total == 0 then
-        vim.notify("No profiling data available. Enable profiling with: require('leanpack').set_profiling(true)", vim.log.levels.WARN)
+        vim.notify("No profiling data available. Enable profiling by passing `profiling = { enabled = true }` to leanpack.setup()", vim.log.levels.WARN)
         return
       end
 

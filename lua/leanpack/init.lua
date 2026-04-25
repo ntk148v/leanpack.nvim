@@ -449,6 +449,17 @@ function M.setup(opts)
 
     opts = opts or {}
 
+    -- Support enabling profiling via opts
+    if opts.profiling ~= nil then
+        local enable_profiling = false
+        if type(opts.profiling) == "boolean" then
+            enable_profiling = opts.profiling
+        elseif type(opts.profiling) == "table" and opts.profiling.enabled ~= nil then
+            enable_profiling = opts.profiling.enabled
+        end
+        M.set_profiling(enable_profiling)
+    end
+
     -- Apply config
     if opts.cmd_prefix ~= nil then
         config.cmd_prefix = opts.cmd_prefix

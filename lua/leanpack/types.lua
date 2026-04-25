@@ -70,5 +70,6 @@
 ---@field cmd_prefix? string Command prefix, default "Leanpack"
 ---@field defaults? leanpack.Config.Defaults
 ---@field performance? leanpack.Config.Performance
+---@field profiling? boolean|{ enabled: boolean } Enable startup profiling
 
 return {}
