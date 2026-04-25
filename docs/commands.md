@@ -84,6 +84,14 @@ Show detailed internal startup timing profile for `leanpack.nvim`.
 :Leanpack profile
 ```
 
+Note: Profiling must be enabled in `setup()`:
+
+```lua
+require('leanpack').setup({
+  profiling = true
+})
+```
+
 ## UI Commands
 
 ### `:Leanpack`
@@ -116,6 +124,7 @@ Opens a floating window with:
 - `●` - Plugin is loaded
 - `○` - Plugin is pending (lazy)
 - `◐` - Plugin is currently loading
+- `✗` - Plugin is missing from disk (installing in background)
 
 ## Lua API
 

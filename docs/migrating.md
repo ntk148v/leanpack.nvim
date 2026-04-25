@@ -8,11 +8,11 @@ Most lazy.nvim specs work directly with leanpack.nvim.
 
 ### Key Differences
 
-| lazy.nvim          | leanpack.nvim       | Notes                              |
-| ------------------ | ------------------- | ---------------------------------- |
-| `version` (semver) | `sem_version`       | `version` is for branch/tag/commit |
-| `module` trigger   | Supported (auto)    | Auto-detected via `main` field     |
-| Profiling UI       | Use `--startuptime` | Built-in Neovim flag               |
+| lazy.nvim          | leanpack.nvim       | Notes                          |
+| ------------------ | ------------------- | ------------------------------ |
+| `version` (semver) | `version` (auto)    | Automatically parsed as semver |
+| `module` trigger   | Supported (auto)    | Auto-detected via `main` field |
+| Profiling UI       | `:Leanpack profile` | Enable via `profiling = true`  |
 
 ### Example Migration
 
@@ -35,7 +35,7 @@ Most lazy.nvim specs work directly with leanpack.nvim.
 ```lua
 {
   'folke/tokyonight.nvim',
-  sem_version = '^2.0',  -- or version = vim.version.range('^2.0')
+  version = '^2.0',  -- Automatically resolved as semver
   lazy = false,
   priority = 1000,
   config = function()
@@ -87,14 +87,14 @@ For plugins where auto-detection fails, set `main` explicitly:
 
 ### Common Mappings
 
-| lazy.nvim             | leanpack.nvim             |
-| --------------------- | ------------------------- |
-| `version = '^1.0'`    | `sem_version = '^1.0'`    |
-| `version = 'main'`    | `version = 'main'`        |
+| lazy.nvim             | leanpack.nvim                 |
+| --------------------- | ----------------------------- |
+| `version = '^1.0'`    | `sem_version = '^1.0'`        |
+| `version = 'main'`    | `version = 'main'`            |
 | `module = 'pattern'`  | `lazy = true` (auto-detected) |
-| `lazy = true`         | Keep as-is                |
-| `init = function()`   | Keep as-is                |
-| `config = function()` | Keep as-is                |
+| `lazy = true`         | Keep as-is                    |
+| `init = function()`   | Keep as-is                    |
+| `config = function()` | Keep as-is                    |
 
 ## From packer.nvim
 

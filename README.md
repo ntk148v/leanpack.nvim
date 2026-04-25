@@ -107,6 +107,8 @@ require('leanpack').setup({
     vim_loader = true,
     rtp_prune = true, -- Disable built-in plugins for faster startup
   },
+  -- Enable startup profiling
+  profiling = { enabled = true },
 })
 ```
 
@@ -116,7 +118,7 @@ See [Configuration](docs/configuration.md) for more options.
 
 Most of your lazy.nvim plugin specs will work as-is with leanpack. Key differences are documented in [Migrating](docs/migrating.md).
 
-- **version pinning**: lazy.nvim's `version` field maps to leanpack's `sem_version`
+- **version pinning**: leanpack's `version` field supports both semantic versioning (e.g., `1.*`) and literal git references (branch/tag/commit).
 - **dev mode**: Use `dev = true` with `dir = '~/projects/plugin-name'` for local development
 - **optional**: Use `optional = true` for dependencies that won't block plugin loading
 - **module trigger**: leanpack automatically supports require()-based lazy loading matching the auto-detected or explicit `main` module names.

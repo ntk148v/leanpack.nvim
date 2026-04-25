@@ -34,28 +34,25 @@ This document details all available options when defining plugin specifications.
 
 ## Version Control
 
-| Field         | Type     | Description                            |
-| ------------- | -------- | -------------------------------------- |
-| `version`     | `string` | Branch, tag, or commit                 |
-| `version`     | `Range`  | Semver range via `vim.version.range()` |
-| `sem_version` | `string` | Semver (lazy.nvim compat)              |
-| `branch`      | `string` | Git branch                             |
-| `tag`         | `string` | Git tag                                |
-| `commit`      | `string` | Git commit hash                        |
+| Field         | Type              | Description                             |
+| ------------- | ----------------- | --------------------------------------- |
+| `version`     | `string\|boolean` | Branch, tag, commit, or semver wildcard |
+| `version`     | `Range`           | Semver range via `vim.version.range()`  |
+| `sem_version` | `string`          | Semver (lazy.nvim compat)               |
+| `branch`      | `string`          | Git branch                              |
+| `tag`         | `string`          | Git tag                                 |
+| `commit`      | `string`          | Git commit hash                         |
 
 ### Version Examples
 
 ```lua
 { 'user/repo', version = 'main' }              -- Branch
 { 'user/repo', version = 'v1.0.0' }           -- Tag
+{ 'user/repo', version = '1.*' }               -- Semver wildcard
+{ 'user/repo', version = '^1.0.0' }            -- Semver range
 { 'user/repo', version = 'abc123' }            -- Commit
-{ 'user/repo', version = vim.version.range('^1.0') }  -- Semver
-
--- lazy.nvim compatibility
-{ 'user/repo', sem_version = '^1.0.0' }
-{ 'user/repo', branch = 'main' }
-{ 'user/repo', tag = 'v1.0.0' }
-{ 'user/repo', commit = 'abc123' }
+{ 'user/repo', version = false }               -- Disable semver (track default)
+{ 'user/repo', version = vim.version.range('^1.0') }  -- Explicit Range object
 ```
 
 ## Dependencies

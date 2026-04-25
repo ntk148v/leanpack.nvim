@@ -104,6 +104,11 @@ performance = {
 vim_loader = true, -- Enable vim.loader for faster startup
 },
 
+-- Enable startup profiling
+profiling = {
+enabled = true,
+},
+
 -- Git throttling (prevents hitting rate limits)
 git = {
 throttle = {
@@ -153,16 +158,18 @@ Custom name: >
 <
 Version Pinning ~
 
-Use branch, tag, or commit: >
+Use branch, tag, commit, or semver range: >
 
 { 'user/repo', version = 'main' }
 { 'user/repo', version = 'v1.0.0' }
+{ 'user/repo', version = '1.*' } -- semver wildcard
+{ 'user/repo', version = '^1.0' } -- semver range
 { 'user/repo', version = 'abc123' }
 
 <
-Use semver range: >
-
-{ 'user/repo', version = vim.version.range('^1.0') }
+Note: Strings that parse as semantic version ranges via |vim.version.range()|
+will be resolved as semver by the native package manager. Other strings are
+treated as literal git references.
 
 <
 lazy.nvim compat: >
@@ -406,6 +413,7 @@ Status indicators:
 ● - loaded
 ○ - pending
 ◐ - loading
+✗ - missing (installing in background)
 
 ==============================================================================
 10. HEALTH CHECK *leanpack-health*

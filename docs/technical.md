@@ -132,13 +132,13 @@ All operations logged to `stdpath("log")/leanpack.log`:
 
 ## Comparison with lazy.nvim
 
-| Feature         | leanpack.nvim | lazy.nvim  |
-| --------------- | ------------- | ---------- |
+| Feature         | leanpack.nvim      | lazy.nvim  |
+| --------------- | ------------------ | ---------- |
 | package.loaders | ✅ (self-cleaning) | ✅         |
-| vim.pack-based  | ✅            | ❌         |
-| Native lockfile | ✅            | Custom     |
-| Code size       | ~2,680 LOC    | ~3,100 LOC |
-| bytecode cache  | vim.loader    | Custom     |
+| vim.pack-based  | ✅                 | ❌         |
+| Native lockfile | ✅                 | Custom     |
+| Code size       | ~2,680 LOC         | ~3,100 LOC |
+| bytecode cache  | vim.loader         | Custom     |
 
 ## Testing
 
