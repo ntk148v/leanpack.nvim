@@ -181,42 +181,24 @@ end
 local function update_plugin()
     local p = get_plugin_at_cursor()
     if p then
-        vim.notify("Updating: " .. p.name)
-        vim.pack.update({ p.name }, { force = true })
-        vim.schedule(function()
-            vim.cmd("redraw")
-            vim.notify("Updated " .. p.name, vim.log.levels.INFO)
+        vim.notify("Updating " .. p.name .. " in background...", vim.log.levels.INFO)
+        require("leanpack.job").run("update", { p.name }, function(success)
+            if success then
+                vim.notify("Updated " .. p.name, vim.log.levels.INFO)
+                M.refresh()
+            end
         end)
     end
 end
 
 local function update_all_plugins()
-    local installed = vim.pack.get() or {}
-    local total = #installed
-    local current = 0
-
-    vim.notify(string.format("Updating all plugins (0/%d)...", total))
-
-    -- Create autocmd to track progress
-    local augroup = vim.api.nvim_create_augroup("leanpack_update_progress", { clear = true })
-    vim.api.nvim_create_autocmd("PackChanged", {
-        group = augroup,
-        callback = function(event)
-            if event.data.kind == "update" then
-                current = current + 1
-                vim.notify(string.format("Updating plugins (%d/%d)...", current, total), vim.log.levels.INFO)
-                if current >= total then
-                    vim.schedule(function()
-                        pcall(vim.api.nvim_del_augroup_by_id, augroup)
-                        vim.cmd("redraw")
-                        vim.notify(string.format("All plugins updated (%d/%d)", total, total), vim.log.levels.INFO)
-                    end)
-                end
-            end
-        end,
-    })
-
-    vim.pack.update(nil, { force = true })
+    vim.notify("Updating all plugins in background...", vim.log.levels.INFO)
+    require("leanpack.job").run("update", nil, function(success)
+        if success then
+            vim.notify("All plugins updated successfully", vim.log.levels.INFO)
+            M.refresh()
+        end
+    end)
 end
 
 local function update_loaded_plugins()
@@ -232,11 +214,12 @@ local function update_loaded_plugins()
         return
     end
 
-    vim.notify("Updating " .. #loaded_names .. " loaded plugins...")
-    vim.pack.update(loaded_names, { force = true })
-    vim.schedule(function()
-        vim.cmd("redraw")
-        vim.notify("Loaded plugins updated successfully", vim.log.levels.INFO)
+    vim.notify("Updating " .. #loaded_names .. " loaded plugins in background...", vim.log.levels.INFO)
+    require("leanpack.job").run("update", loaded_names, function(success)
+        if success then
+            vim.notify("Loaded plugins updated successfully", vim.log.levels.INFO)
+            M.refresh()
+        end
     end)
 end
 

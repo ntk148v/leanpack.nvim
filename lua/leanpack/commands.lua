@@ -133,23 +133,33 @@ function M.setup(prefix)
 
         if subcommand == "update" then
             if plugin_name == "" then
-                get_log().info("Updating all plugins")
-                vim.pack.update(nil, { force = true })
-                vim.schedule(function()
-                    vim.cmd("redraw")
-                    vim.notify("All plugins updated successfully", vim.log.levels.INFO)
-                    get_log().info("All plugins updated successfully")
+                get_log().info("Updating all plugins in background")
+                vim.notify("Updating all plugins in background...", vim.log.levels.INFO)
+                require("leanpack.job").run("update", nil, function(success)
+                    if success then
+                        get_log().info("All plugins updated successfully")
+                        vim.notify("All plugins updated successfully", vim.log.levels.INFO)
+                        local ui_ok, ui = pcall(require, "leanpack.ui")
+                        if ui_ok and ui.refresh then
+                            ui.refresh()
+                        end
+                    end
                 end)
             else
                 if not get_plugin_or_notify(plugin_name) then
                     return
                 end
-                get_log().info(("Updating plugin: %s"):format(plugin_name))
-                vim.pack.update({ plugin_name }, { force = true })
-                vim.schedule(function()
-                    vim.cmd("redraw")
-                    vim.notify("Updated " .. plugin_name, vim.log.levels.INFO)
-                    get_log().info(("Plugin updated successfully: %s"):format(plugin_name))
+                get_log().info(("Updating plugin in background: %s"):format(plugin_name))
+                vim.notify("Updating " .. plugin_name .. " in background...", vim.log.levels.INFO)
+                require("leanpack.job").run("update", { plugin_name }, function(success)
+                    if success then
+                        get_log().info(("Plugin updated successfully: %s"):format(plugin_name))
+                        vim.notify("Updated " .. plugin_name, vim.log.levels.INFO)
+                        local ui_ok, ui = pcall(require, "leanpack.ui")
+                        if ui_ok and ui.refresh then
+                            ui.refresh()
+                        end
+                    end
                 end)
             end
         elseif subcommand == "clean" then
@@ -269,13 +279,18 @@ function M.setup(prefix)
             vim.notify(msg, vim.log.levels.WARN)
             get_log().warn(("Deleted plugin: %s"):format(plugin_name))
         elseif subcommand == "sync" then
-            get_log().info("Syncing all plugins")
-            vim.pack.update(nil, { force = true })
-            M.clean_unused()
-            vim.schedule(function()
-                vim.cmd("redraw")
-                vim.notify("Plugins synced successfully", vim.log.levels.INFO)
-                get_log().info("Plugins synced successfully")
+            get_log().info("Syncing all plugins in background")
+            vim.notify("Syncing plugins in background...", vim.log.levels.INFO)
+            require("leanpack.job").run("update", nil, function(success)
+                if success then
+                    M.clean_unused()
+                    vim.notify("Plugins synced successfully", vim.log.levels.INFO)
+                    get_log().info("Plugins synced successfully")
+                    local ui_ok, ui = pcall(require, "leanpack.ui")
+                    if ui_ok and ui.refresh then
+                        ui.refresh()
+                    end
+                end
             end)
         elseif subcommand == "profile" then
             local profile = require("leanpack").get_profile_data()

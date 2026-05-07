@@ -270,36 +270,108 @@ local function process_all(ctx)
         end
     end
 
-    -- Register startup plugins with vim.pack
-    vim.pack.add(startup_vim_packs, {
-        load = ctx.load,
-        confirm = ctx.confirm,
-    })
+    local opt_path = vim.fn.stdpath("data") .. "/site/pack/core/opt/"
 
-    -- Register lazy plugins with vim.pack (without loading) to trigger background installation
-    if #lazy_vim_packs > 0 then
+    local installed_startup_packs = {}
+    local missing_packs = {}
+
+    for _, p in ipairs(startup_vim_packs) do
+        if vim.uv.fs_stat(opt_path .. p.name) then
+            table.insert(installed_startup_packs, p)
+        else
+            table.insert(missing_packs, p)
+        end
+    end
+
+    local installed_lazy_packs = {}
+    for _, p in ipairs(lazy_vim_packs) do
+        if vim.uv.fs_stat(opt_path .. p.name) then
+            table.insert(installed_lazy_packs, p)
+        else
+            table.insert(missing_packs, p)
+        end
+    end
+
+    -- Register installed startup plugins synchronously
+    if #installed_startup_packs > 0 then
+        vim.pack.add(installed_startup_packs, {
+            load = ctx.load,
+            confirm = false,
+        })
+    end
+
+    -- Register installed lazy plugins
+    if #installed_lazy_packs > 0 then
         local old_rtp = vim.o.rtp
         local old_path = package.path
 
-        vim.pack.add(lazy_vim_packs, { load = false, confirm = false })
+        vim.pack.add(installed_lazy_packs, { load = false, confirm = false })
 
-        -- Restore RTP and package.path so Neovim's load_plugins() doesn't eagerly source their plugin/ directories.
-        -- They will be properly added to RTP when loader.load_plugin() is called.
+        -- Restore RTP and package.path
         vim.o.rtp = old_rtp
         package.path = old_path
 
-        -- Source ftdetect scripts since they are no longer in RTP
-        for _, p in ipairs(lazy_vim_packs) do
-            local ftdetect_dir = vim.fn.stdpath("data") .. "/site/pack/core/opt/" .. p.name .. "/ftdetect"
+        -- Source ftdetect scripts
+        for _, p in ipairs(installed_lazy_packs) do
+            local ftdetect_dir = opt_path .. p.name .. "/ftdetect"
             if vim.uv.fs_stat(ftdetect_dir) then
                 vim.cmd("silent! source " .. ftdetect_dir .. "/*.vim")
                 vim.cmd("silent! source " .. ftdetect_dir .. "/*.lua")
             end
         end
 
-        -- Defer lazy plugin registration but set up module triggers synchronously
-        -- so that early autocmds (like BufReadPre) can still intercept requires.
-        module_trigger.setup(lazy_vim_packs)
+        module_trigger.setup(installed_lazy_packs)
+    end
+
+    -- Background install missing plugins
+    if #missing_packs > 0 then
+        vim.notify(("Installing %d missing plugin(s) in background..."):format(#missing_packs), vim.log.levels.INFO)
+        require("leanpack.job").run("install", missing_packs, function(success)
+            if success then
+                local m_startup = {}
+                local m_lazy = {}
+                for _, p in ipairs(missing_packs) do
+                    if startup_srcs[p.src] then
+                        table.insert(m_startup, p)
+                    else
+                        table.insert(m_lazy, p)
+                    end
+                end
+
+                if #m_startup > 0 then
+                    vim.pack.add(m_startup, { load = ctx.load, confirm = false })
+                    for _, p in ipairs(m_startup) do
+                        local entry = state.get_entry(p.src)
+                        if entry and entry.load_status ~= "loaded" then
+                            require("leanpack.loader").load_plugin(p)
+                        end
+                    end
+                end
+
+                if #m_lazy > 0 then
+                    local old_rtp = vim.o.rtp
+                    local old_path = package.path
+                    vim.pack.add(m_lazy, { load = false, confirm = false })
+                    vim.o.rtp = old_rtp
+                    package.path = old_path
+
+                    for _, p in ipairs(m_lazy) do
+                        local ftdetect_dir = opt_path .. p.name .. "/ftdetect"
+                        if vim.uv.fs_stat(ftdetect_dir) then
+                            vim.cmd("silent! source " .. ftdetect_dir .. "/*.vim")
+                            vim.cmd("silent! source " .. ftdetect_dir .. "/*.lua")
+                        end
+                    end
+                    module_trigger.setup(m_lazy)
+                end
+                
+                local ui_ok, ui = pcall(require, "leanpack.ui")
+                if ui_ok and ui.refresh then
+                    ui.refresh()
+                end
+                vim.notify(("Successfully installed %d plugin(s)"):format(#missing_packs), vim.log.levels.INFO)
+            end
+        end)
     end
 
     profile_end("vim.pack.add")
