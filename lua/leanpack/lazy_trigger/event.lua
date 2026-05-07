@@ -96,11 +96,17 @@ function M.setup(pack_spec, spec, event)
 
         -- Other events
         if #other_events > 0 then
-            vim.api.nvim_create_autocmd(other_events, {
+            local id
+            id = vim.api.nvim_create_autocmd(other_events, {
                 group = state.lazy_group,
-                once = true,
                 pattern = normalized.pattern,
                 callback = function(ev)
+                    -- Skip empty buffers (e.g. initial [No Name] buffer)
+                    if ev.file == "" then
+                        return
+                    end
+                    -- Delete the autocmd manually since we don't use 'once = true'
+                    pcall(vim.api.nvim_del_autocmd, id)
                     require("leanpack.lazy_trigger.util").load_and_retrigger(pack_spec, ev.buf)
                 end,
             })
