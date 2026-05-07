@@ -28,6 +28,10 @@ local loading_set = {}
 ---@param pack_spec vim.pack.Spec
 ---@param opts? { bang?: boolean }
 function M.load_plugin(pack_spec, opts)
+    if not pack_spec or not pack_spec.src then
+        return false
+    end
+
     opts = opts or {}
     local src = pack_spec.src
 
