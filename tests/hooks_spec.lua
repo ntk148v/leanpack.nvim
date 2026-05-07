@@ -239,7 +239,7 @@ T["execute_build()"]["executes string build command"] = function()
 		_G.command_executed = false
 		local orig_cmd = vim.cmd
 		vim.cmd = function(cmd)
-			if cmd == "echo test" then
+			if cmd == "!echo test" then
 				_G.command_executed = true
 			else
 				orig_cmd(cmd)

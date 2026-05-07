@@ -141,12 +141,21 @@ end
 ---@param build string|fun(plugin: leanpack.Plugin)
 ---@param plugin leanpack.Plugin
 function M.execute_build(build, plugin)
+    vim.notify(("Building %s..."):format(plugin.spec.name), vim.log.levels.INFO)
+
+    local ok, err
     if type(build) == "string" then
         get_log().info(("Executing build command for %s: %s"):format(plugin.spec.name, build))
-        vim.cmd(build)
+        -- If it starts with a colon, it's a vim command, otherwise default to shell command like lazy.nvim
+        local cmd = build:sub(1, 1) == ":" and build or ("!" .. build)
+        ok, err = pcall(vim.cmd, cmd)
     elseif type(build) == "function" then
         get_log().info(("Executing build function for %s"):format(plugin.spec.name))
-        build(plugin)
+        ok, err = pcall(build, plugin)
+    end
+
+    if not ok then
+        vim.notify(("Build failed for %s: %s"):format(plugin.spec.name, err), vim.log.levels.ERROR)
     end
 end
 
