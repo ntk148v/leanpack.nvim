@@ -278,7 +278,25 @@ local function process_all(ctx)
 
     -- Register lazy plugins with vim.pack (without loading) to trigger background installation
     if #lazy_vim_packs > 0 then
+        local old_rtp = vim.o.rtp
+        local old_path = package.path
+
         vim.pack.add(lazy_vim_packs, { load = false, confirm = false })
+
+        -- Restore RTP and package.path so Neovim's load_plugins() doesn't eagerly source their plugin/ directories.
+        -- They will be properly added to RTP when loader.load_plugin() is called.
+        vim.o.rtp = old_rtp
+        package.path = old_path
+
+        -- Source ftdetect scripts since they are no longer in RTP
+        for _, p in ipairs(lazy_vim_packs) do
+            local ftdetect_dir = vim.fn.stdpath("data") .. "/site/pack/core/opt/" .. p.name .. "/ftdetect"
+            if vim.uv.fs_stat(ftdetect_dir) then
+                vim.cmd("silent! source " .. ftdetect_dir .. "/*.vim")
+                vim.cmd("silent! source " .. ftdetect_dir .. "/*.lua")
+            end
+        end
+
         -- Defer lazy plugin registration but set up module triggers synchronously
         -- so that early autocmds (like BufReadPre) can still intercept requires.
         module_trigger.setup(lazy_vim_packs)
