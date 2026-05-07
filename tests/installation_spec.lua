@@ -35,6 +35,13 @@ T["Background Installation"]["registers lazy plugins with vim.pack.add(..., { lo
 			table.insert(add_calls, { specs = specs, opts = opts })
 		end
 
+		-- Mock leanpack.job.run to execute synchronously
+		package.loaded["leanpack.job"] = {
+			run = function(cmd, packs, cb)
+				cb(true)
+			end
+		}
+
 		leanpack.setup({
 			performance = { rtp_prune = false, vim_loader = false },
 			plugins = {

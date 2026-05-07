@@ -364,7 +364,7 @@ local function process_all(ctx)
                     end
                     module_trigger.setup(m_lazy)
                 end
-                
+
                 local ui_ok, ui = pcall(require, "leanpack.ui")
                 if ui_ok and ui.refresh then
                     ui.refresh()
