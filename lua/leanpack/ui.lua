@@ -3,7 +3,7 @@ local loader = require("leanpack.loader")
 local state = require("leanpack.state")
 
 local M = {}
-local ui_state = { buf = nil, win = nil, plugins = {}, filter = "", refresh_timer = nil }
+local ui_state = { buf = nil, win = nil, plugins = {}, filter = "", refresh_timer = nil, debounce_timer = nil }
 local NS = vim.api.nvim_create_namespace("leanpack-ui")
 
 local function define_highlights()
@@ -383,12 +383,29 @@ function M.refresh()
     if not ui_state.buf or not ui_state.win then
         return
     end
-    define_highlights()
-    local lines, width = format_content()
-    vim.api.nvim_buf_set_option(ui_state.buf, "modifiable", true)
-    vim.api.nvim_buf_set_lines(ui_state.buf, 0, -1, false, lines)
-    vim.api.nvim_buf_set_option(ui_state.buf, "modifiable", false)
-    apply_highlights(lines)
+
+    if ui_state.debounce_timer then
+        ui_state.debounce_timer:stop()
+        ui_state.debounce_timer:close()
+        ui_state.debounce_timer = nil
+    end
+
+    ui_state.debounce_timer = vim.uv.new_timer()
+    ui_state.debounce_timer:start(
+        50,
+        0,
+        vim.schedule_wrap(function()
+            if not ui_state.buf or not vim.api.nvim_buf_is_valid(ui_state.buf) then
+                return
+            end
+            define_highlights()
+            local lines, width = format_content()
+            vim.api.nvim_buf_set_option(ui_state.buf, "modifiable", true)
+            vim.api.nvim_buf_set_lines(ui_state.buf, 0, -1, false, lines)
+            vim.api.nvim_buf_set_option(ui_state.buf, "modifiable", false)
+            apply_highlights(lines)
+        end)
+    )
 end
 
 function M.open()
@@ -415,6 +432,13 @@ end
 
 function M.close()
     stop_refresh_timer()
+    if ui_state.debounce_timer then
+        if not ui_state.debounce_timer:is_closing() then
+            ui_state.debounce_timer:stop()
+            ui_state.debounce_timer:close()
+        end
+        ui_state.debounce_timer = nil
+    end
     if ui_state.win and vim.api.nvim_win_is_valid(ui_state.win) then
         vim.api.nvim_win_close(ui_state.win, true)
     end
