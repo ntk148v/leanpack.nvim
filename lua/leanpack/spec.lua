@@ -379,13 +379,20 @@ function M.normalize_spec(spec, defaults)
     validate_spec(spec)
 
     local src = resolve_src(spec)
+
+    -- Resolve lazy explicitly to preserve `false` (Lua's `and/or` drops falsy values)
+    local lazy_val = spec.lazy
+    if lazy_val == nil and defaults then
+        lazy_val = defaults.lazy
+    end
+
     local normalized = {
         src = src,
         name = spec.name or extract_name(src),
         version = resolve_version(spec),
         dependencies = spec.dependencies,
         cond = spec.cond or (defaults and defaults.cond),
-        lazy = spec.lazy ~= nil and spec.lazy or (defaults and defaults.lazy),
+        lazy = lazy_val,
         priority = spec.priority or 50,
         init = spec.init,
         config = spec.config,
