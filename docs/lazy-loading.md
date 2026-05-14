@@ -281,8 +281,8 @@ return {
 
 leanpack.nvim's lazy loading is optimized:
 
-- **No package.loaders interception** - Unlike lazy.nvim, leanpack doesn't intercept require()
-- **Self-destructing triggers** - Autocmds delete themselves after first trigger
+- **Self-cleaning package.loaders** - Installs a lightweight loader at position 2 for module-based lazy loading, then auto-removes it once all module-triggered plugins are loaded (unlike lazy.nvim's permanent interception)
+- **Self-destructing triggers** - Autocmds, commands, and keymaps delete themselves after first trigger
 - **O(V + E) dependency resolution** - Efficient topological sorting
 
 ## Next Steps
