@@ -68,6 +68,103 @@ local function filter_completions(list, prefix)
     end, list)
 end
 
+---Check if a plugin directory appears to be broken (empty or missing key files)
+---@param path string Plugin directory path
+---@return boolean
+local function is_plugin_broken(path)
+    local path_stat = vim.uv.fs_stat(path)
+    if not path_stat or path_stat.type ~= "directory" then
+        return true
+    end
+
+    -- Check for common plugin structures (lua/, plugin/, autoload/, ftplugin/)
+    local has_structure = false
+    for _, subdir in ipairs({ "lua", "plugin", "autoload", "ftplugin", "after" }) do
+        local stat = vim.uv.fs_stat(path .. "/" .. subdir)
+        if stat and stat.type == "directory" then
+            has_structure = true
+            break
+        end
+    end
+
+    -- If no standard structure, check if there are any .lua or .vim files
+    if not has_structure then
+        local fd = vim.uv.fs_scandir(path)
+        if not fd then
+            return true
+        end
+
+        local function scan_for_files(dir, pattern)
+            local dir_fd = vim.uv.fs_scandir(dir)
+            if not dir_fd then
+                return false
+            end
+            while true do
+                local entry_name, entry_type = vim.uv.fs_scandir_next(dir_fd)
+                if not entry_name then
+                    break
+                end
+                if entry_type == "file" and entry_name:match(pattern) then
+                    return true
+                elseif entry_type == "directory" then
+                    if scan_for_files(dir .. "/" .. entry_name, pattern) then
+                        return true
+                    end
+                end
+            end
+            return false
+        end
+
+        if not scan_for_files(path, "%.lua$") and not scan_for_files(path, "%.vim$") then
+            return true
+        end
+    end
+
+    return false
+end
+
+---Detect and reinstall broken plugins
+local function fix_broken_plugins()
+    local broken = {}
+    local installed = vim.pack.get() or {}
+
+    for _, p in ipairs(installed) do
+        if p.path and is_plugin_broken(p.path) then
+            table.insert(broken, p.spec.name)
+            get_log().warn(("Detected broken plugin: %s"):format(p.spec.name))
+        end
+    end
+
+    if #broken == 0 then
+        vim.notify("No broken plugins detected", vim.log.levels.INFO)
+        get_log().info("No broken plugins detected")
+        return
+    end
+
+    vim.notify(("Detected %d broken plugin(s), reinstalling..."):format(#broken), vim.log.levels.WARN)
+
+    -- Collect specs for broken plugins
+    local broken_specs = {}
+    for _, name in ipairs(broken) do
+        for _, p in ipairs(installed) do
+            if p.spec.name == name then
+                table.insert(broken_specs, p.spec)
+                break
+            end
+        end
+    end
+
+    -- Delete broken plugins
+    vim.pack.del(broken, { force = true })
+
+    -- Re-add the broken plugins after a short delay
+    vim.defer_fn(function()
+        vim.pack.add(broken_specs, { confirm = true })
+        vim.notify(("Reinstalled %d broken plugin(s)"):format(#broken), vim.log.levels.INFO)
+        get_log().info(("Reinstalled %d broken plugin(s)"):format(#broken))
+    end, 100)
+end
+
 ---Get plugin by name or notify error
 ---@param plugin_name string
 ---@return table?
@@ -292,6 +389,8 @@ function M.setup(prefix)
                     end
                 end
             end)
+        elseif subcommand == "fix" then
+            fix_broken_plugins()
         elseif subcommand == "profile" then
             local profile = require("leanpack").get_profile_data()
             if next(profile) == nil or profile._total == 0 then
@@ -343,7 +442,7 @@ function M.setup(prefix)
         complete = function(arg_lead, cmd_line, cursor_pos)
             local parts = vim.split(cmd_line, "%s+", { trimempty = true })
             if #parts <= 2 then
-                local subcommands = { "build", "clean", "delete", "load", "profile", "sync", "update" }
+                local subcommands = { "build", "clean", "delete", "fix", "load", "profile", "sync", "update" }
                 return filter_completions(subcommands, arg_lead)
             elseif #parts == 3 then
                 local subcommand = parts[2]

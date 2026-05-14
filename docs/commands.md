@@ -41,6 +41,14 @@ Remove plugins that are no longer in your spec.
 :Leanpack clean
 ```
 
+### `:Leanpack fix`
+
+Detect and reinstall broken plugins. A plugin is considered broken if its directory is empty or missing standard structure (`lua/`, `plugin/`, `autoload/`, `ftplugin/`).
+
+```vim
+:Leanpack fix
+```
+
 ### `:Leanpack build[!]` [plugin]
 
 Run the build hook for a plugin.

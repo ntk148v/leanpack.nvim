@@ -127,9 +127,6 @@ local config = {
         vim_loader = true,
         rtp_prune = true,
     },
-    checker = {
-        enabled = false,
-    },
 }
 
 local default_prune_list = {
@@ -152,98 +149,6 @@ local function prune_rtp(list)
     local plugins = list == true and default_prune_list or list
     for _, plugin in ipairs(plugins) do
         vim.g["loaded_" .. plugin] = 1
-    end
-end
-
----Check if a plugin directory appears to be broken (empty or missing key files)
----@param path string Plugin directory path
----@return boolean
-local function is_plugin_broken(path)
-    local path_stat = vim.uv.fs_stat(path)
-    if not path_stat or path_stat.type ~= "directory" then
-        return true
-    end
-
-    -- Check for common plugin structures (lua/, plugin/, autoload/, ftplugin/)
-    local has_structure = false
-    for _, subdir in ipairs({ "lua", "plugin", "autoload", "ftplugin", "after" }) do
-        local stat = vim.uv.fs_stat(path .. "/" .. subdir)
-        if stat and stat.type == "directory" then
-            has_structure = true
-            break
-        end
-    end
-
-    -- If no standard structure, check if there are any .lua files
-    if not has_structure then
-        local fd = vim.uv.fs_scandir(path)
-        if not fd then
-            return true
-        end
-
-        -- Check for files matching pattern recursively
-        local function scan_for_files(dir, pattern)
-            local dir_fd = vim.uv.fs_scandir(dir)
-            if not dir_fd then
-                return false
-            end
-            while true do
-                local entry_name, type = vim.uv.fs_scandir_next(dir_fd)
-                if not entry_name then
-                    break
-                end
-                if type == "file" and entry_name:match(pattern) then
-                    return true
-                elseif type == "directory" then
-                    if scan_for_files(dir .. "/" .. entry_name, pattern) then
-                        return true
-                    end
-                end
-            end
-            return false
-        end
-
-        if not scan_for_files(path, "%.lua$") and not scan_for_files(path, "%.vim$") then
-            return true
-        end
-    end
-
-    return false
-end
-
----Reinstall broken plugins by deleting and re-adding them
-local function fix_broken_plugins()
-    local broken = {}
-    local installed = vim.pack.get() or {}
-
-    for _, p in ipairs(installed) do
-        if p.path and is_plugin_broken(p.path) then
-            table.insert(broken, p.spec.name)
-            log.warn(("Detected broken plugin: %s"):format(p.spec.name))
-        end
-    end
-
-    if #broken > 0 then
-        vim.notify(("Detected %d broken plugin(s), reinstalling..."):format(#broken), vim.log.levels.WARN)
-
-        -- Collect specs for broken plugins
-        local broken_specs = {}
-        for _, name in ipairs(broken) do
-            for _, p in ipairs(installed) do
-                if p.spec.name == name then
-                    table.insert(broken_specs, p.spec)
-                    break
-                end
-            end
-        end
-
-        -- Delete broken plugins
-        vim.pack.del(broken, { force = true })
-
-        -- Re-add the broken plugins after a short delay
-        vim.defer_fn(function()
-            vim.pack.add(broken_specs, { confirm = true })
-        end, 100)
     end
 end
 
@@ -375,14 +280,6 @@ local function process_all(ctx)
     end
 
     profile_end("vim.pack.add")
-    profile_start("fix_broken_plugins")
-
-    -- Fix any broken plugins that failed to install properly
-    if config.checker.enabled then
-        fix_broken_plugins()
-    end
-
-    profile_end("fix_broken_plugins")
     -- Compute plugin paths manually instead of calling slow vim.pack.get()
     local data_path = vim.fn.stdpath("data")
     local opt_path = data_path .. "/site/pack/core/opt/"
@@ -559,9 +456,6 @@ function M.setup(opts)
     end
     if opts.performance ~= nil then
         config.performance = vim.tbl_extend("force", config.performance, opts.performance)
-    end
-    if opts.checker ~= nil then
-        config.checker = vim.tbl_extend("force", config.checker, opts.checker)
     end
 
     -- Store plugins for direct specification

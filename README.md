@@ -90,6 +90,7 @@ return {
 - `:Leanpack sync` - Sync all plugins (update + clean)
 - `:Leanpack update` - Update all or specific plugin
 - `:Leanpack clean` - Remove unused plugins
+- `:Leanpack fix` - Detect and reinstall broken plugins
 - `:Leanpack build!` - Run all build hooks
 - `:Leanpack load!` - Load all pending plugins
 - `:Leanpack profile` - View detailed startup timing profile
