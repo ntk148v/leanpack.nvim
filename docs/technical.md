@@ -72,6 +72,7 @@ lua/leanpack/
 ├── lazy.lua          -- Lazy loading detection
 ├── deps.lua          -- Topological sort
 ├── hooks.lua         -- init/config/build hooks
+├── job.lua           -- Async job runner
 ├── keymap.lua        -- Keymap utilities
 ├── commands.lua      -- :Leanpack commands
 ├── health.lua        -- :checkhealth integration

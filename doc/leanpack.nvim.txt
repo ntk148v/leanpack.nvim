@@ -89,40 +89,27 @@ end,
 
 Setup with options: >
 
-require('leanpack').setup({
--- Command prefix (default: "Leanpack")
-cmd_prefix = "Leanpack",
+  require('leanpack').setup({
+    -- Command prefix (default: "Leanpack")
+    cmd_prefix = "Leanpack",
 
--- Default options for all plugins
-defaults = {
-confirm = true, -- Ask for confirmation on install
-cond = nil, -- Global condition for all plugins
-},
+    -- Default options for all plugins
+    defaults = {
+      confirm = true, -- Ask for confirmation on install
+      cond = nil, -- Global condition for all plugins
+    },
 
--- Performance options
-performance = {
-vim_loader = true, -- Enable vim.loader for faster startup
-},
+    -- Performance options
+    performance = {
+      vim_loader = true, -- Enable vim.loader for faster startup
+      rtp_prune = true,  -- Disable built-in plugins for faster startup
+    },
 
--- Enable startup profiling
-profiling = {
-enabled = true,
-},
-
--- Git throttling (prevents hitting rate limits)
-git = {
-throttle = {
-requests = 10, -- Max concurrent git operations
-interval = 1000, -- Interval in ms between requests
-},
-},
-
--- Update checker
-checker = {
-enabled = true, -- Enable periodic update checking
-frequency = 3600, -- Check every hour (in seconds)
-},
-})
+    -- Enable startup profiling
+    profiling = {
+      enabled = true,
+    },
+  })
 
 <
 ==============================================================================
@@ -377,6 +364,10 @@ Supports tab completion.
 :Leanpack clean~
 Remove plugins that are no longer in your spec.
 
+:Leanpack fix~
+Detect and reinstall broken plugins. A plugin is considered broken if
+its directory is empty or missing standard structure.
+
 :Leanpack build[!] [plugin]~
 Run build hook for a specific plugin, or all plugins with `!`.
 
@@ -431,32 +422,32 @@ Run `:checkhealth leanpack` to check:
 
 Most lazy.nvim specs work as-is. Key differences:
 
-- `version` maps to `sem_version`
-- `module` triggers natively intercept require() based on the `main` field.
+- `version` handles semver ranges directly via |vim.version.range()|
+- `module` triggers natively intercept require() based on the `main` field
 
 Example migration: >
 
--- lazy.nvim
-{
-'folke/tokyonight.nvim',
-version = '^2.0',
-lazy = false,
-priority = 1000,
-config = function()
-vim.cmd('colorscheme tokyonight')
-end,
-}
+  -- lazy.nvim
+  {
+    'folke/tokyonight.nvim',
+    version = '^2.0',
+    lazy = false,
+    priority = 1000,
+    config = function()
+      vim.cmd('colorscheme tokyonight')
+    end,
+  }
 
--- leanpack.nvim (same spec works)
-{
-'folke/tokyonight.nvim',
-sem_version = '^2.0', -- or version = vim.version.range('^2.0')
-lazy = false,
-priority = 1000,
-config = function()
-vim.cmd('colorscheme tokyonight')
-end,
-}
+  -- leanpack.nvim (same spec works as-is)
+  {
+    'folke/tokyonight.nvim',
+    version = '^2.0',  -- Automatically resolved as semver
+    lazy = false,
+    priority = 1000,
+    config = function()
+      vim.cmd('colorscheme tokyonight')
+    end,
+  }
 
 <
 ==============================================================================

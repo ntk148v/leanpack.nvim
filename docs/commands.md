@@ -96,7 +96,7 @@ Note: Profiling must be enabled in `setup()`:
 
 ```lua
 require('leanpack').setup({
-  profiling = true
+  profiling = { enabled = true }
 })
 ```
 
@@ -136,34 +136,20 @@ Opens a floating window with:
 
 ## Lua API
 
-Commands can also be called from Lua:
-
-### Update Plugins
+leanpack.nvim exposes a minimal Lua API. For plugin management operations, use the `:Leanpack` commands documented above.
 
 ```lua
-require('leanpack').update()              -- Update all
-require('leanpack').update('plugin-name') -- Update specific
+-- Initialize leanpack
+require('leanpack').setup({ ... })
+
+-- Enable/disable profiling
+require('leanpack').set_profiling(true)
+
+-- Get profiling results
+local profile = require('leanpack').get_profile_data()
 ```
 
-### Build Plugins
-
-```lua
-require('leanpack').build()                -- Build all
-require('leanpack').build('plugin-name')  -- Build specific
-```
-
-### Load Plugins
-
-```lua
-require('leanpack').load()                 -- Load all pending
-require('leanpack').load('plugin-name')    -- Load specific
-```
-
-### Clean Plugins
-
-```lua
-require('leanpack').clean()
-```
+See [API](api.md) for the complete Lua API reference.
 
 ## Health Check
 

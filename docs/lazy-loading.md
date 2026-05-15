@@ -240,6 +240,7 @@ return {
 | Command  | CLI tools            | Very low |
 | Keymap   | User-facing features | Low      |
 | Filetype | Language tools       | Low      |
+| Module   | Autoload via require | Very low |
 
 ## Best Practices
 

@@ -21,80 +21,47 @@ require('leanpack').setup({
 })
 ```
 
-### `leanpack.update([plugin])`
+### `leanpack.set_profiling(enabled)`
 
-Update plugins.
-
-**Parameters:**
-
-- `plugin` (`string`, optional): Specific plugin to update
-
-**Returns:** `nil`
-
-```lua
--- Update all
-require('leanpack').update()
-
--- Update specific
-require('leanpack').update('nvim-lspconfig')
-```
-
-### `leanpack.build([plugin])`
-
-Run build hooks for plugins.
+Enable or disable startup profiling.
 
 **Parameters:**
 
-- `plugin` (`string`, optional): Specific plugin to build
+- `enabled` (`boolean`): Whether to enable profiling
 
 **Returns:** `nil`
 
 ```lua
--- Build all
-require('leanpack').build()
-
--- Build specific
-require('leanpack').build('telescope-fzf-native')
+require('leanpack').set_profiling(true)
 ```
 
-### `leanpack.load([plugin])`
+### `leanpack.get_profile_data()`
 
-Load lazy plugins.
+Get profiling results. Only meaningful after profiling has been enabled and `setup()` has run.
 
-**Parameters:**
-
-- `plugin` (`string`, optional): Specific plugin to load
-
-**Returns:** `nil`
+**Returns:** `table` with phase names as keys and elapsed milliseconds as values. Includes a `_total` key.
 
 ```lua
--- Load all pending
-require('leanpack').load()
-
--- Load specific
-require('leanpack').load('nvim-tree')
+local profile = require('leanpack').get_profile_data()
+-- { import_specs = 1.23, finalize_specs = 0.45, ..., _total = 12.34 }
 ```
 
-### `leanpack.clean()`
+## Plugin Management Commands
 
-Remove plugins not in spec.
+All plugin management operations are available as `:Leanpack` commands (not Lua API functions):
 
-**Returns:** `nil`
-
-```lua
-require('leanpack').clean()
+```vim
+:Leanpack update              " Update all plugins
+:Leanpack update plugin-name  " Update specific plugin
+:Leanpack clean               " Remove unused plugins
+:Leanpack sync                " Update + clean
+:Leanpack fix                 " Detect and reinstall broken plugins
+:Leanpack build!              " Run all build hooks
+:Leanpack load!               " Load all pending plugins
+:Leanpack profile             " View startup timing profile
 ```
 
-### `leanpack.status()`
-
-Get plugin status summary.
-
-**Returns:** `table` with plugin counts
-
-```lua
-local status = require('leanpack').status()
--- { loaded = 10, pending = 5, total = 15 }
-```
+See [Commands](commands.md) for full details.
 
 ## State Functions
 
@@ -153,52 +120,6 @@ Normalize a plugin spec.
 local normalized = require('leanpack.spec').normalize_spec({
   'user/repo',
   opts = {},
-})
-```
-
-## Events
-
-leanpack.nvim uses Neovim autocommands. You can hook into these:
-
-### `leanpackInstalled`
-
-Fires after a plugin is installed.
-
-```lua
-vim.api.nvim_create_autocmd('User', {
-  pattern = 'leanpackInstalled',
-  callback = function(args)
-    local plugin = args.data.plugin
-    print('Installed: ' .. plugin.name)
-  end,
-})
-```
-
-### `leanpackUpdated`
-
-Fires after a plugin is updated.
-
-```lua
-vim.api.nvim_create_autocmd('User', {
-  pattern = 'leanpackUpdated',
-  callback = function(args)
-    local plugin = args.data.plugin
-    print('Updated: ' .. plugin.name)
-  end,
-})
-```
-
-### `leanpackLoaded`
-
-Fires after a plugin is loaded.
-
-```lua
-vim.api.nvim_create_autocmd('User', {
-  pattern = 'leanpackLoaded',
-  callback = function(args)
-    local plugin = args.data.plugin
-    print('Loaded: ' .. plugin.name)
-  end,
 })
 ```
 

@@ -81,20 +81,20 @@ For plugins where auto-detection fails, set `main` explicitly:
 ### Migrating Plugin Specs
 
 1. Copy your plugin specs to `lua/plugins/`
-2. Update `version` to `sem_version` for semver ranges
-3. Remove `module` triggers (use explicit deps instead)
+2. `version` handles semver ranges automatically — no changes needed
+3. `module` triggers auto-detected via `main` field, or set `main` explicitly if needed
 4. Test with `:Leanpack update`
 
 ### Common Mappings
 
-| lazy.nvim             | leanpack.nvim                 |
-| --------------------- | ----------------------------- |
-| `version = '^1.0'`    | `sem_version = '^1.0'`        |
-| `version = 'main'`    | `version = 'main'`            |
-| `module = 'pattern'`  | `lazy = true` (auto-detected) |
-| `lazy = true`         | Keep as-is                    |
-| `init = function()`   | Keep as-is                    |
-| `config = function()` | Keep as-is                    |
+| lazy.nvim             | leanpack.nvim                          |
+| --------------------- | -------------------------------------- |
+| `version = '^1.0'`    | Keep as-is (auto-resolved as semver)   |
+| `version = 'main'`    | Keep as-is                             |
+| `module = 'pattern'`  | `lazy = true` + `main` (auto-detected) |
+| `lazy = true`         | Keep as-is                             |
+| `init = function()`   | Keep as-is                             |
+| `config = function()` | Keep as-is                             |
 
 ## From packer.nvim
 
