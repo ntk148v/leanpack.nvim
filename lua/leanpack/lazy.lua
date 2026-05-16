@@ -1,9 +1,55 @@
 ---@module 'leanpack.lazy'
 local deps = require("leanpack.deps")
+local loader = require("leanpack.loader")
 local spec_mod = require("leanpack.spec")
 local state = require("leanpack.state")
 
 local M = {}
+
+local function setup_ft_trigger(pack_spec, ft)
+    local filetypes = spec_mod.normalize_list(ft) or {}
+    vim.api.nvim_create_autocmd("FileType", {
+        group = state.lazy_group,
+        pattern = filetypes,
+        once = true,
+        callback = function(ev)
+            require("leanpack.lazy_trigger.util").load_and_retrigger(pack_spec, ev.buf)
+        end,
+    })
+end
+
+local function setup_cmd_triggers(registered_pack_specs)
+    local cmd_to_packs = {}
+    for _, pack_spec in ipairs(registered_pack_specs) do
+        local entry = state.get_entry(pack_spec.src)
+        if entry and entry.merged_spec then
+            local spec = entry.merged_spec
+            local plugin = entry.plugin
+            local cmd = spec_mod.resolve_field(spec.cmd, plugin)
+            if cmd then
+                local commands = spec_mod.normalize_list(cmd) or {}
+                for _, c in ipairs(commands) do
+                    if not cmd_to_packs[c] then cmd_to_packs[c] = {} end
+                    table.insert(cmd_to_packs[c], pack_spec)
+                end
+            end
+        end
+    end
+    for cmd_name, pack_specs in pairs(cmd_to_packs) do
+        if vim.fn.exists(":" .. cmd_name) == 2 then goto continue end
+        vim.api.nvim_create_user_command(cmd_name, function(cmd_args)
+            pcall(vim.api.nvim_del_user_command, cmd_name)
+            for _, pack_spec in ipairs(pack_specs) do
+                local entry = state.get_entry(pack_spec.src)
+                if entry and entry.load_status == "pending" then
+                    loader.load_plugin(pack_spec)
+                end
+            end
+            pcall(vim.api.nvim_cmd, { cmd = cmd_name, args = cmd_args.fargs }, {})
+        end, { nargs = "*" })
+        ::continue::
+    end
+end
 
 ---Check if a plugin should be lazy loaded
 ---@param spec leanpack.Spec
@@ -43,9 +89,7 @@ function M.process_lazy(ctx)
     end
 
     local event_handler = require("leanpack.lazy_trigger.event")
-    local cmd_handler = require("leanpack.lazy_trigger.cmd")
     local keys_handler = require("leanpack.lazy_trigger.keys")
-    local ft_handler = require("leanpack.lazy_trigger.ft")
 
     for _, pack_spec in ipairs(ctx.lazy_packs) do
         local entry = state.get_entry(pack_spec.src)
@@ -65,14 +109,14 @@ function M.process_lazy(ctx)
         -- Setup filetype triggers
         local ft = spec_mod.resolve_field(spec.ft, plugin)
         if ft then
-            ft_handler.setup(pack_spec, ft)
+            setup_ft_trigger(pack_spec, ft)
         end
 
         ::continue::
     end
 
     -- Setup command triggers
-    cmd_handler.setup(ctx.lazy_packs)
+    setup_cmd_triggers(ctx.lazy_packs)
 
     -- Setup keymap triggers
     keys_handler.setup(ctx.lazy_packs)

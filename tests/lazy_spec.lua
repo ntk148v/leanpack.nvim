@@ -104,13 +104,18 @@ T["ft trigger"] = MiniTest.new_set()
 
 T["ft trigger"]["creates FileType autocmd"] = function()
     child.lua([[
-		local ft_handler = require("leanpack.lazy_trigger.ft")
+		-- Setup state with ft trigger
+		state.set_entry("test-src", {
+			specs = {},
+			merged_spec = { ft = "lua" }
+		})
 
-		-- Setup a mock pack_spec
-		local pack_spec = { src = "test", name = "test" }
-
-		-- Setup filetype trigger
-		ft_handler.setup(pack_spec, "lua")
+		-- Process lazy plugins to setup ft trigger
+		lazy.process_lazy({
+			lazy_packs = {
+				{ src = "test-src", name = "test", data = { leanpack = true } }
+			}
+		})
 
 		-- Check autocmd was created
 		local autocmds = vim.api.nvim_get_autocmds({
@@ -133,9 +138,16 @@ end
 
 T["ft trigger"]["creates autocmd for multiple filetypes"] = function()
     child.lua([[
-		local ft_handler = require("leanpack.lazy_trigger.ft")
+		state.set_entry("test-src", {
+			specs = {},
+			merged_spec = { ft = { "lua", "python", "javascript" } }
+		})
 
-		ft_handler.setup({ src = "test", name = "test" }, { "lua", "python", "javascript" })
+		lazy.process_lazy({
+			lazy_packs = {
+				{ src = "test-src", name = "test", data = { leanpack = true } }
+			}
+		})
 
 		local autocmds = vim.api.nvim_get_autocmds({
 			group = state.lazy_group,
@@ -216,17 +228,17 @@ T["cmd trigger"] = MiniTest.new_set()
 
 T["cmd trigger"]["creates command for lazy plugin"] = function()
     child.lua([[
-		local cmd_handler = require("leanpack.lazy_trigger.cmd")
-
 		-- Setup state
 		state.set_entry("test-src", {
 			specs = {},
 			merged_spec = { cmd = "TestCommand" }
 		})
 
-		-- Setup command trigger
-		cmd_handler.setup({
-			{ src = "test-src", name = "test", data = { leanpack = true } }
+		-- Process lazy plugins to setup command trigger
+		lazy.process_lazy({
+			lazy_packs = {
+				{ src = "test-src", name = "test", data = { leanpack = true } }
+			}
 		})
 
 		-- Check if command exists
@@ -238,8 +250,6 @@ end
 
 T["cmd trigger"]["creates commands for multiple plugins"] = function()
     child.lua([[
-		local cmd_handler = require("leanpack.lazy_trigger.cmd")
-
 		state.set_entry("src1", {
 			specs = {},
 			merged_spec = { cmd = "Cmd1" }
@@ -249,9 +259,11 @@ T["cmd trigger"]["creates commands for multiple plugins"] = function()
 			merged_spec = { cmd = { "Cmd2", "Cmd3" } }
 		})
 
-		cmd_handler.setup({
-			{ src = "src1", name = "plugin1", data = { leanpack = true } },
-			{ src = "src2", name = "plugin2", data = { leanpack = true } }
+		lazy.process_lazy({
+			lazy_packs = {
+				{ src = "src1", name = "plugin1", data = { leanpack = true } },
+				{ src = "src2", name = "plugin2", data = { leanpack = true } }
+			}
 		})
 
 		_G.cmd1_exists = vim.fn.exists(":Cmd1") == 2
