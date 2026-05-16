@@ -328,37 +328,6 @@ local function detect_main(name, dir)
         return modules[normalized]
     end
 
-    -- Strategy 2: Lowercase substring match
-    local name_base = name:lower():gsub("%.nvim$", ""):gsub("%.vim$", "")
-    for _, mod in ipairs(module_list) do
-        local mod_base = mod.original:lower():gsub("%.nvim$", ""):gsub("%.vim$", "")
-        if name_base:find(mod_base, 1, true) or mod_base:find(name_base, 1, true) then
-            state.cache_main(name, dir, mod.original)
-            return mod.original
-        end
-    end
-
-    -- Strategy 3: Semantic match (split name parts, check against modules)
-    local significant_parts = {}
-    for part in name:gmatch("[^%.%-]+") do
-        local lower = part:lower()
-        if lower ~= "nvim" and lower ~= "neovim" and lower ~= "lua" then
-            table.insert(significant_parts, lower)
-        end
-    end
-
-    if #significant_parts > 0 and #significant_parts <= 3 then
-        for _, mod in ipairs(module_list) do
-            local mod_lower = mod.original:lower()
-            for _, part in ipairs(significant_parts) do
-                if mod_lower:find(part, 1, true) then
-                    state.cache_main(name, dir, mod.original)
-                    return mod.original
-                end
-            end
-        end
-    end
-
     -- Strategy 4: Single module directory fallback
     if module_count == 1 then
         local only = module_list[1].original
