@@ -3,6 +3,7 @@ local M = {}
 
 local log_file = nil
 local log_enabled = false
+local autocmd_registered = false
 local buffer = {}
 local FLUSH_THRESHOLD = 20
 
@@ -24,12 +25,6 @@ function M.init()
     local log_path = vim.fn.stdpath("log")
     log_file = log_path .. "/leanpack.log"
     log_enabled = true
-
-    -- Flush on exit to ensure no messages lost
-    vim.api.nvim_create_autocmd("VimLeavePre", {
-        callback = flush,
-        once = true,
-    })
 end
 
 ---Write a log message
@@ -38,6 +33,15 @@ end
 function M.write(level, message)
     if not log_enabled or not log_file then
         return
+    end
+
+    -- Register flush autocmd on first actual write
+    if not autocmd_registered then
+        autocmd_registered = true
+        vim.api.nvim_create_autocmd("VimLeavePre", {
+            callback = flush,
+            once = true,
+        })
     end
 
     -- Sanitize message to prevent log injection (remove newlines and control chars)
