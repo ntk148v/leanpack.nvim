@@ -8,11 +8,10 @@ Most lazy.nvim specs work directly with leanpack.nvim.
 
 ### Key Differences
 
-| lazy.nvim          | leanpack.nvim       | Notes                          |
-| ------------------ | ------------------- | ------------------------------ |
-| `version` (semver) | `version` (auto)    | Automatically parsed as semver |
-| `module` trigger   | Supported (auto)    | Auto-detected via `main` field |
-| Profiling UI       | `:Leanpack profile` | Enable via `profiling = true`  |
+| lazy.nvim          | leanpack.nvim    | Notes                          |
+| ------------------ | ---------------- | ------------------------------ |
+| `version` (semver) | `version` (auto) | Automatically parsed as semver |
+| `module` trigger   | Supported (auto) | Auto-detected via `main` field |
 
 ### Example Migration
 

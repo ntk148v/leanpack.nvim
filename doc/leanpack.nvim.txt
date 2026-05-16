@@ -104,11 +104,6 @@ Setup with options: >
       vim_loader = true, -- Enable vim.loader for faster startup
       rtp_prune = true,  -- Disable built-in plugins for faster startup
     },
-
-    -- Enable startup profiling
-    profiling = {
-      enabled = true,
-    },
   })
 
 <
@@ -364,10 +359,6 @@ Supports tab completion.
 :Leanpack clean~
 Remove plugins that are no longer in your spec.
 
-:Leanpack fix~
-Detect and reinstall broken plugins. A plugin is considered broken if
-its directory is empty or missing standard structure.
-
 :Leanpack build[!] [plugin]~
 Run build hook for a specific plugin, or all plugins with `!`.
 
@@ -376,9 +367,6 @@ Load a specific unloaded plugin, or all unloaded plugins with `!`.
 
 :Leanpack delete[!] [plugin]~
 Remove a specific plugin, or all plugins with `!`.
-
-:Leanpack profile~
-Show detailed internal startup timing profile for `leanpack.nvim`.
 
 :Leanpack sync~
 Synchronize all plugins. Shortcut for update followed by clean.

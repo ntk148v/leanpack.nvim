@@ -29,14 +29,18 @@ local function setup_cmd_triggers(registered_pack_specs)
             if cmd then
                 local commands = spec_mod.normalize_list(cmd) or {}
                 for _, c in ipairs(commands) do
-                    if not cmd_to_packs[c] then cmd_to_packs[c] = {} end
+                    if not cmd_to_packs[c] then
+                        cmd_to_packs[c] = {}
+                    end
                     table.insert(cmd_to_packs[c], pack_spec)
                 end
             end
         end
     end
     for cmd_name, pack_specs in pairs(cmd_to_packs) do
-        if vim.fn.exists(":" .. cmd_name) == 2 then goto continue end
+        if vim.fn.exists(":" .. cmd_name) == 2 then
+            goto continue
+        end
         vim.api.nvim_create_user_command(cmd_name, function(cmd_args)
             pcall(vim.api.nvim_del_user_command, cmd_name)
             for _, pack_spec in ipairs(pack_specs) do

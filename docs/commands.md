@@ -41,14 +41,6 @@ Remove plugins that are no longer in your spec.
 :Leanpack clean
 ```
 
-### `:Leanpack fix`
-
-Detect and reinstall broken plugins. A plugin is considered broken if its directory is empty or missing standard structure (`lua/`, `plugin/`, `autoload/`, `ftplugin/`).
-
-```vim
-:Leanpack fix
-```
-
 ### `:Leanpack build[!]` [plugin]
 
 Run the build hook for a plugin.
@@ -82,22 +74,6 @@ Synchronize all plugins. This is a shortcut for `update` followed by `clean`.
 
 ```vim
 :Leanpack sync
-```
-
-### `:Leanpack profile`
-
-Show detailed internal startup timing profile for `leanpack.nvim`.
-
-```vim
-:Leanpack profile
-```
-
-Note: Profiling must be enabled in `setup()`:
-
-```lua
-require('leanpack').setup({
-  profiling = { enabled = true }
-})
 ```
 
 ## UI Commands
@@ -141,12 +117,6 @@ leanpack.nvim exposes a minimal Lua API. For plugin management operations, use t
 ```lua
 -- Initialize leanpack
 require('leanpack').setup({ ... })
-
--- Enable/disable profiling
-require('leanpack').set_profiling(true)
-
--- Get profiling results
-local profile = require('leanpack').get_profile_data()
 ```
 
 See [API](api.md) for the complete Lua API reference.

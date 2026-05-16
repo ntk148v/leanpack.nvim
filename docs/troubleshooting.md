@@ -213,16 +213,8 @@ Common issues and their solutions when using leanpack.nvim.
 2. Profile startup natively:
 
    ```vim
-   :Leanpack profile
+   nvim --startuptime startuptime.log +quit
    ```
-
-   Note: Ensure profiling is enabled in your `setup()`:
-
-   ```lua
-   require('leanpack').setup({ profiling = true })
-   ```
-
-   _(Alternatively: `nvim --startuptime startuptime.log +quit`)_
 
 3. Use lazy loading for more plugins
 

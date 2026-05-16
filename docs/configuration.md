@@ -49,20 +49,6 @@ performance = {
 }
 ```
 
-### `profiling`
-
-- **Type**: `boolean|table`
-- **Default**: `false`
-- **Description**: Enable detailed startup profiling. Results can be viewed with `:Leanpack profile`.
-
-```lua
-profiling = {
-  enabled = true,
-}
--- or simply
-profiling = true
-```
-
 ## Full Configuration Example
 
 ```lua
@@ -80,11 +66,6 @@ require('leanpack').setup({
   performance = {
     vim_loader = true,  -- Enable vim.loader
     rtp_prune = true,   -- Disable built-in plugins
-  },
-
-  -- Enable startup profiling
-  profiling = {
-    enabled = true,
   },
 
 })

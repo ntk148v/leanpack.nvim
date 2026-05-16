@@ -69,7 +69,7 @@ lua/leanpack/
 ├── spec.lua          -- Spec parsing, normalization
 ├── import.lua        -- Import from lua/plugins/
 ├── loader.lua        -- Plugin loading with deps
-├── lazy.lua          -- Lazy loading detection
+├── lazy.lua          -- Lazy loading detection + ft/cmd triggers
 ├── deps.lua          -- Topological sort
 ├── hooks.lua         -- init/config/build hooks
 ├── job.lua           -- Async job runner
@@ -80,10 +80,9 @@ lua/leanpack/
 ├── ui.lua            -- Native floating UI
 └── lazy_trigger/
     ├── event.lua
-    ├── cmd.lua
     ├── keys.lua
-    ├── ft.lua
-    └── module.lua
+    ├── module.lua
+    └── util.lua
 ```
 
 ## Key Implementation Details

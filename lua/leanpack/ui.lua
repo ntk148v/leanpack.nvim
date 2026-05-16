@@ -183,7 +183,9 @@ local function update(opts)
     local names = nil
     if opts.cursor then
         local p = get_plugin_at_cursor()
-        if not p then return end
+        if not p then
+            return
+        end
         names = { p.name }
     elseif opts.loaded then
         names = {}
@@ -283,14 +285,26 @@ end
 
 local actions = {
     ["<CR>"] = load_plugin,
-    u = function() update({ cursor = true }) end,
-    U = function() update() end,
-    ["<C-u>"] = function() update({ loaded = true }) end,
+    u = function()
+        update({ cursor = true })
+    end,
+    U = function()
+        update()
+    end,
+    ["<C-u>"] = function()
+        update({ loaded = true })
+    end,
     b = build_plugin,
     d = delete_plugin,
-    r = function() M.refresh() end,
-    q = function() M.close() end,
-    ["<Esc>"] = function() M.close() end,
+    r = function()
+        M.refresh()
+    end,
+    q = function()
+        M.close()
+    end,
+    ["<Esc>"] = function()
+        M.close()
+    end,
     ["/"] = prompt_filter,
     ["<C-c>"] = clear_filter,
 }

@@ -21,31 +21,6 @@ require('leanpack').setup({
 })
 ```
 
-### `leanpack.set_profiling(enabled)`
-
-Enable or disable startup profiling.
-
-**Parameters:**
-
-- `enabled` (`boolean`): Whether to enable profiling
-
-**Returns:** `nil`
-
-```lua
-require('leanpack').set_profiling(true)
-```
-
-### `leanpack.get_profile_data()`
-
-Get profiling results. Only meaningful after profiling has been enabled and `setup()` has run.
-
-**Returns:** `table` with phase names as keys and elapsed milliseconds as values. Includes a `_total` key.
-
-```lua
-local profile = require('leanpack').get_profile_data()
--- { import_specs = 1.23, finalize_specs = 0.45, ..., _total = 12.34 }
-```
-
 ## Plugin Management Commands
 
 All plugin management operations are available as `:Leanpack` commands (not Lua API functions):
@@ -55,10 +30,8 @@ All plugin management operations are available as `:Leanpack` commands (not Lua 
 :Leanpack update plugin-name  " Update specific plugin
 :Leanpack clean               " Remove unused plugins
 :Leanpack sync                " Update + clean
-:Leanpack fix                 " Detect and reinstall broken plugins
 :Leanpack build!              " Run all build hooks
 :Leanpack load!               " Load all pending plugins
-:Leanpack profile             " View startup timing profile
 ```
 
 See [Commands](commands.md) for full details.

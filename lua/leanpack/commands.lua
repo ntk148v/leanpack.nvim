@@ -68,8 +68,6 @@ local function filter_completions(list, prefix)
     end, list)
 end
 
-
-
 ---Get plugin by name or notify error
 ---@param plugin_name string
 ---@return table?
@@ -294,7 +292,6 @@ function M.setup(prefix)
                     end
                 end
             end)
-
         else
             vim.notify(("Unknown subcommand: %s"):format(subcommand), vim.log.levels.ERROR)
         end

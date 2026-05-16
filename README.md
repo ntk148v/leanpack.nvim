@@ -75,11 +75,28 @@ return {
 }
 ```
 
+## Why leanpack.nvim over bare `vim.pack`?
+
+`vim.pack` (Neovim 0.12+) is a solid native foundation — leanpack builds on top of it, not around it. Here's what you get:
+
+| Feature                        | bare `vim.pack`                                                 | leanpack.nvim                                                                     |
+| ------------------------------ | --------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **Spec format**                | Raw `vim.pack.add()` calls                                      | lazy.nvim-compatible declarative spec (`'user/repo'`, `opts = {}`, `config = fn`) |
+| **Lazy-loading**               | Manual — write your own VimEnter queues and autocmds per plugin | Built-in triggers: `event`, `cmd`, `keys`, `ft`, `module` (require-based)         |
+| **Dependencies**               | Manual ordering                                                 | Automatic resolution with topological sort                                        |
+| **Build hooks**                | None                                                            | `build = ':TSUpdate'` or `build = function() ... end`                             |
+| **Plugin management UI**       | None                                                            | `:Leanpack` floating window with filtering, load/update/delete                    |
+| **Install/Update**             | Manual `vim.pack.add()` + restart                               | Background jobs via headless Neovim, no restart needed                            |
+| **ftdetect sourcing**          | Manual                                                          | Automatic for lazy-loaded plugins                                                 |
+| **Config from multiple files** | Manual `require` chains                                         | `{ import = "plugins" }` auto-discovers `lua/plugins/*.lua`                       |
+
+In short: if you're happy writing ~250 lines of helper code (lazyload queues, deep merge, local dev support) around `vim.pack` for every config, you don't need leanpack. If you want a lazy.nvim-style declarative experience on top of native `vim.pack`, that's exactly what this is.
+
 ## Features
 
-- **Native Core**: Completely leverages the native `vim.pack` infrastructure (Neovim 0.12+).
-- **Lazy-loading**: Load plugins on demand via events, commands, keymaps, or filetypes.
-- **lazy.nvim Compatible**: Uses the same declarative spec format you know.
+- **Native Core**: Builds on top of `vim.pack` — no custom package management, no fork.
+- **Lazy-loading**: Load plugins on demand via events, commands, keymaps, filetypes, or `require()`.
+- **lazy.nvim Compatible**: Uses the same declarative spec format you already know.
 - **Dependency Management**: Automatic resolution and topological loading.
 - **Build Hooks**: Run commands or Lua functions on install/update.
 - **Performance**: Built-in `vim.loader` integration and RTP pruning.
@@ -90,10 +107,8 @@ return {
 - `:Leanpack sync` - Sync all plugins (update + clean)
 - `:Leanpack update` - Update all or specific plugin
 - `:Leanpack clean` - Remove unused plugins
-- `:Leanpack fix` - Detect and reinstall broken plugins
 - `:Leanpack build!` - Run all build hooks
 - `:Leanpack load!` - Load all pending plugins
-- `:Leanpack profile` - View detailed startup timing profile
 
 See [Commands](docs/commands.md) for details.
 
@@ -108,8 +123,6 @@ require('leanpack').setup({
     vim_loader = true,
     rtp_prune = true, -- Disable built-in plugins for faster startup
   },
-  -- Enable startup profiling
-  profiling = { enabled = true },
 })
 ```
 
