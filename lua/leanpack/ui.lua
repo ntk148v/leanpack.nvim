@@ -288,9 +288,9 @@ local actions = {
     ["<C-u>"] = function() update({ loaded = true }) end,
     b = build_plugin,
     d = delete_plugin,
-    r = M.refresh,
-    q = M.close,
-    ["<Esc>"] = M.close,
+    r = function() M.refresh() end,
+    q = function() M.close() end,
+    ["<Esc>"] = function() M.close() end,
     ["/"] = prompt_filter,
     ["<C-c>"] = clear_filter,
 }
