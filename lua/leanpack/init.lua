@@ -34,58 +34,7 @@ local function get_health()
     return health_mod
 end
 
--- Profiling data
-local profile_data = {
-    enabled = false,
-    phases = {},
-}
-
----Start timing a phase
----@param name string
-local function profile_start(name)
-    if profile_data.enabled then
-        profile_data.phases[name] = { start = vim.uv.hrtime() }
-    end
-end
-
----End timing a phase
----@param name string
-local function profile_end(name)
-    if profile_data.enabled and profile_data.phases[name] then
-        local elapsed = (vim.uv.hrtime() - profile_data.phases[name].start) / 1e6 -- ms
-        profile_data.phases[name].elapsed = elapsed
-    end
-end
-
----Get profiling results
----@return table
-local function get_profile_data()
-    local result = {}
-    local total = 0
-    for name, data in pairs(profile_data.phases) do
-        result[name] = data.elapsed or 0
-        total = total + (data.elapsed or 0)
-    end
-    result._total = total
-    return result
-end
-
 local M = {}
-
----Enable profiling
----@param enabled boolean
-function M.set_profiling(enabled)
-    profile_data.enabled = enabled
-    if enabled then
-        profile_data.phases = {}
-    end
-end
-
----Get profiling results
----@return table
-function M.get_profile_data()
-    return get_profile_data()
-end
 
 ---@class leanpack.ProcessContext
 ---@field vim_packs vim.pack.Spec[]
@@ -155,8 +104,6 @@ end
 ---Process all specs and register plugins
 ---@param ctx leanpack.ProcessContext
 local function process_all(ctx)
-    profile_start("vim.pack.add")
-
     -- Setup build tracking before vim.pack.add
     hooks.setup_build_tracking()
 
@@ -279,7 +226,6 @@ local function process_all(ctx)
         end)
     end
 
-    profile_end("vim.pack.add")
     -- Compute plugin paths manually instead of calling slow vim.pack.get()
     local data_path = vim.fn.stdpath("data")
     local opt_path = data_path .. "/site/pack/core/opt/"
@@ -293,29 +239,17 @@ local function process_all(ctx)
         end
     end
 
-    profile_end("update_paths")
-
     -- Setup lazy build tracking after vim.pack.add
     hooks.setup_build_tracking({ lazy = true })
-
-    profile_start("process_startup")
 
     -- Process startup plugins
     loader.process_startup(ctx)
 
-    profile_end("process_startup")
-    profile_start("process_lazy")
-
     -- Process lazy plugins
     lazy_mod.process_lazy(ctx)
 
-    profile_end("process_lazy")
-    profile_start("run_pending_builds")
-
     -- Run pending builds
     hooks.run_pending_builds(ctx)
-
-    profile_end("run_pending_builds")
 
     -- Clear startup group
     vim.api.nvim_clear_autocmds({ group = state.startup_group })
@@ -436,17 +370,6 @@ function M.setup(opts)
 
     opts = opts or {}
 
-    -- Support enabling profiling via opts
-    if opts.profiling ~= nil then
-        local enable_profiling = false
-        if type(opts.profiling) == "boolean" then
-            enable_profiling = opts.profiling
-        elseif type(opts.profiling) == "table" and opts.profiling.enabled ~= nil then
-            enable_profiling = opts.profiling.enabled
-        end
-        M.set_profiling(enable_profiling)
-    end
-
     -- Apply config
     if opts.cmd_prefix ~= nil then
         config.cmd_prefix = opts.cmd_prefix
@@ -479,7 +402,6 @@ function M.setup(opts)
     })
 
     -- Import specs
-    profile_start("import_specs")
     local spec = direct_plugins or opts.spec or (opts[1] and opts) or nil
     if spec then
         local specs = import_mod.process_import_result(spec, { import_order = 0, seen = {} })
@@ -495,22 +417,15 @@ function M.setup(opts)
             register_spec(s, ctx)
         end
     end
-    profile_end("import_specs")
 
     -- Finalize specs
-    profile_start("finalize_specs")
     finalize_specs()
-    profile_end("finalize_specs")
 
     -- Categorize into startup and lazy
-    profile_start("categorize_plugins")
     categorize_plugins(ctx)
-    profile_end("categorize_plugins")
 
     -- Process all plugins
-    profile_start("process_all")
     process_all(ctx)
-    profile_end("process_all")
 
     -- Save main module cache on exit
     vim.api.nvim_create_autocmd("VimLeavePre", {
