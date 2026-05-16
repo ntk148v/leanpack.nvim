@@ -98,13 +98,6 @@ function M.get_dependencies(src)
     return state.dependency_graph[src]
 end
 
----Get reverse dependencies (parents) for a plugin
----@param src string
----@return table<string, boolean>?
-function M.get_reverse_dependencies(src)
-    return state.reverse_dependency_graph[src]
-end
-
 ---Register a vim.pack spec
 ---@param pack_spec vim.pack.Spec
 function M.register_pack_spec(pack_spec)
@@ -162,32 +155,6 @@ function M.mark_loaded(name)
     end
 end
 
----Mark plugin as unloaded
----@param name string
-function M.mark_unloaded(name)
-    local entry = get_entry_by_name(name)
-    if entry then
-        entry.load_status = "pending"
-        return
-    end
-
-    -- If plugin not in registry, create a minimal entry
-    state.spec_registry[name] = {
-        specs = {},
-        load_status = "pending",
-        merged_spec = { name = name, src = name },
-    }
-    state.name_to_src[name] = name
-end
-
----Check if plugin is unloaded
----@param name string
----@return boolean
-function M.is_unloaded(name)
-    local entry = get_entry_by_name(name)
-    return entry and entry.load_status ~= "loaded" or false
-end
-
 ---Get all unloaded plugin names
 ---@return string[]
 function M.get_unloaded_names()
@@ -204,12 +171,6 @@ end
 ---@param src string
 function M.mark_pending_build(src)
     state.src_with_pending_build[src] = true
-end
-
----Clear pending build
----@param src string
-function M.clear_pending_build(src)
-    state.src_with_pending_build[src] = nil
 end
 
 ---Get all pending builds

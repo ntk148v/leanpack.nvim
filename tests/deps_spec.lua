@@ -146,13 +146,10 @@ T["resolve_dependencies()"]["tracks dependency relationships in state"] = functi
 			dependencies = { "owner/child" }
 		}, {})
 		_G.deps = state.get_dependencies("https://github.com/parent/parent")
-		_G.reverse = state.get_reverse_dependencies("https://github.com/owner/child")
 	]])
 
     local deps_result = child.lua_get("_G.deps")
-    local reverse = child.lua_get("_G.reverse")
     MiniTest.expect.equality(deps_result ~= vim.NIL, true)
-    MiniTest.expect.equality(reverse ~= vim.NIL, true)
 end
 
 -- ============================================================================
@@ -405,15 +402,12 @@ T["integration"]["complex dependency scenario"] = function()
 		_G.deps_c = state.get_dependencies("https://github.com/owner/plugin-c")
 		_G.deps_d = state.get_dependencies("https://github.com/owner/plugin-d")
 
-		-- Get reverse dependencies
-		_G.reverse_d = state.get_reverse_dependencies("https://github.com/owner/plugin-d")
 	]])
 
     local deps_a = child.lua_get("_G.deps_a")
     local deps_b = child.lua_get("_G.deps_b")
     local deps_c = child.lua_get("_G.deps_c")
     local deps_d = child.lua_get("_G.deps_d")
-    local reverse_d = child.lua_get("_G.reverse_d")
 
     -- plugin-a depends on plugin-b and plugin-c
     MiniTest.expect.equality(deps_a["https://github.com/owner/plugin-b"] ~= nil, true)
@@ -425,10 +419,6 @@ T["integration"]["complex dependency scenario"] = function()
 
     -- plugin-d has no dependencies
     MiniTest.expect.equality(deps_d, vim.NIL)
-
-    -- plugin-d is a dependency of both plugin-b and plugin-c
-    MiniTest.expect.equality(reverse_d["https://github.com/owner/plugin-b"] ~= nil, true)
-    MiniTest.expect.equality(reverse_d["https://github.com/owner/plugin-c"] ~= nil, true)
 end
 
 return T

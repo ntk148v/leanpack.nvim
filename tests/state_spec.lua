@@ -33,7 +33,6 @@ T["reset()"]["clears all state"] = function()
 		state.add_dependency("parent", "child")
 		state.register_pack_spec({ src = "test", name = "test" })
 		state.mark_plugin_with_build("test")
-		state.mark_unloaded("test")
 		state.mark_pending_build("test")
 
 		-- Reset
@@ -113,17 +112,6 @@ T["dependency graph"]["add_dependency creates forward edge"] = function()
     MiniTest.expect.equality(result.child, true)
 end
 
-T["dependency graph"]["add_dependency creates reverse edge"] = function()
-    child.lua([[
-		state.add_dependency("parent", "child")
-		_G.result = state.get_reverse_dependencies("child")
-	]])
-
-    local result = child.lua_get("_G.result")
-    MiniTest.expect.equality(result ~= vim.NIL, true)
-    MiniTest.expect.equality(result.parent, true)
-end
-
 T["dependency graph"]["handles multiple dependencies"] = function()
     child.lua([[
 		state.add_dependency("parent", "child1")
@@ -134,18 +122,6 @@ T["dependency graph"]["handles multiple dependencies"] = function()
     local result = child.lua_get("_G.result")
     MiniTest.expect.equality(result.child1, true)
     MiniTest.expect.equality(result.child2, true)
-end
-
-T["dependency graph"]["handles multiple parents"] = function()
-    child.lua([[
-		state.add_dependency("parent1", "child")
-		state.add_dependency("parent2", "child")
-		_G.result = state.get_reverse_dependencies("child")
-	]])
-
-    local result = child.lua_get("_G.result")
-    MiniTest.expect.equality(result.parent1, true)
-    MiniTest.expect.equality(result.parent2, true)
 end
 
 -- ============================================================================
@@ -198,22 +174,6 @@ T["build tracking"]["mark_plugin_with_build tracks unique names"] = function()
     MiniTest.expect.equality(#result, 2)
 end
 
-T["build tracking"]["pending builds can be marked and cleared"] = function()
-    child.lua([[
-		state.mark_pending_build("testsrc")
-		_G.has_pending = state.has_pending_builds()
-		_G.pending = state.get_pending_builds()
-		_G.has_testsrc = _G.pending["testsrc"] ~= nil
-
-		state.clear_pending_build("testsrc")
-		_G.has_pending_after = state.has_pending_builds()
-	]])
-
-    MiniTest.expect.equality(child.lua_get("_G.has_pending"), true)
-    MiniTest.expect.equality(child.lua_get("_G.has_testsrc"), true)
-    MiniTest.expect.equality(child.lua_get("_G.has_pending_after"), false)
-end
-
 T["build tracking"]["clear_all_pending_builds clears all"] = function()
     child.lua([[
 		state.mark_pending_build("src1")
@@ -231,27 +191,6 @@ end
 
 T["load status"] = MiniTest.new_set()
 
-T["load status"]["tracks unloaded plugins"] = function()
-    child.lua([[
-		state.mark_unloaded("plugin1")
-		_G.is_unloaded = state.is_unloaded("plugin1")
-		_G.unloaded_names = state.get_unloaded_names()
-	]])
-
-    MiniTest.expect.equality(child.lua_get("_G.is_unloaded"), true)
-    MiniTest.expect.equality(#child.lua_get("_G.unloaded_names"), 1)
-end
-
-T["load status"]["mark_loaded removes from unloaded"] = function()
-    child.lua([[
-		state.mark_unloaded("plugin1")
-		state.mark_loaded("plugin1")
-		_G.is_unloaded = state.is_unloaded("plugin1")
-	]])
-
-    MiniTest.expect.equality(child.lua_get("_G.is_unloaded"), false)
-end
-
 -- ============================================================================
 -- remove plugin tests
 -- ============================================================================
@@ -264,7 +203,6 @@ T["remove plugin"]["remove_plugin clears all references"] = function()
 		state.set_entry("test-src", { specs = {} })
 		state.register_pack_spec({ src = "test-src", name = "test-name" })
 		state.mark_plugin_with_build("test-name")
-		state.mark_unloaded("test-name")
 		state.mark_pending_build("test-src")
 
 		-- Remove

@@ -219,12 +219,10 @@ T["load_plugin()"]["marks plugin as loaded"] = function()
 		_G.loaded_before = state.get_entry("test-src").load_status
 		loader.load_plugin({ src = "test-src", name = "test" })
 		_G.loaded_after = state.get_entry("test-src").load_status
-		_G.is_loaded = not state.is_unloaded("test")
 	]])
 
     MiniTest.expect.equality(child.lua_get("_G.loaded_before"), "pending")
     MiniTest.expect.equality(child.lua_get("_G.loaded_after"), "loaded")
-    MiniTest.expect.equality(child.lua_get("_G.is_loaded"), true)
 end
 
 -- ============================================================================
