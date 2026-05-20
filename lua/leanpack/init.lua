@@ -229,13 +229,10 @@ local function process_all(ctx)
     -- Compute plugin paths manually instead of calling slow vim.pack.get()
     local data_path = vim.fn.stdpath("data")
     local opt_path = data_path .. "/site/pack/core/opt/"
-    local start_path = data_path .. "/site/pack/core/start/"
 
     for _, entry in pairs(state.get_all_entries()) do
         if entry.plugin and entry.plugin.spec then
-            local is_lazy = entry.merged_spec and entry.merged_spec.lazy
-            local base = is_lazy and opt_path or start_path
-            entry.plugin.path = base .. entry.plugin.spec.name
+            entry.plugin.path = opt_path .. entry.plugin.spec.name
         end
     end
 

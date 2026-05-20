@@ -28,6 +28,41 @@ local T = MiniTest.new_set({
 
 T["Background Installation"] = MiniTest.new_set()
 
+T["Background Installation"]["uses native opt path for eager plugin metadata"] = function()
+    child.lua([[
+		local data_path = vim.fn.stdpath("data")
+		local plugin_name = "eager-plugin"
+		local expected_path = data_path .. "/site/pack/core/opt/" .. plugin_name
+
+		local original_stat = vim.uv.fs_stat
+		vim.uv.fs_stat = function(path)
+			if path == expected_path then
+				return { type = "directory" }
+			end
+			return original_stat(path)
+		end
+
+		local add_calls = {}
+		vim.pack.add = function(specs, opts)
+			table.insert(add_calls, { specs = specs, opts = opts })
+		end
+
+		leanpack.setup({
+			performance = { rtp_prune = false, vim_loader = false },
+			plugins = {
+				{ src = "eager/plugin", name = plugin_name, lazy = false },
+			}
+		})
+
+		local entry = require("leanpack.state").get_entry("eager/plugin")
+		_G.actual_path = entry and entry.plugin and entry.plugin.path
+		_G.expected_path = expected_path
+		vim.uv.fs_stat = original_stat
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.actual_path"), child.lua_get("_G.expected_path"))
+end
+
 T["Background Installation"]["registers lazy plugins with vim.pack.add(..., { load = false })"] = function()
     child.lua([[
 		local add_calls = {}
