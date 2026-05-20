@@ -97,11 +97,6 @@ end
 ---Setup module trigger
 ---@param lazy_packs vim.pack.Spec[] List of lazy plugin specs
 function M.setup(lazy_packs)
-    -- Guard against duplicate setup calls (called from both init.lua and lazy.lua)
-    if installed then
-        return
-    end
-
     -- Phase 1: Determine each plugin's "primary" module name.
     -- This prevents cross-registration where integration directories
     -- (e.g., lualine/ inside a colorscheme plugin) incorrectly map
@@ -208,16 +203,18 @@ function M.setup(lazy_packs)
         return
     end
 
-    -- Save original loaders
-    for i, l in ipairs(package.loaders or package.searchers) do
-        original_loaders[i] = l
+    if not installed then
+        -- Save original loaders
+        for i, l in ipairs(package.loaders or package.searchers) do
+            original_loaders[i] = l
+        end
+
+        -- Insert our loader at position 2 (after preload, before file system)
+        local loaders = package.loaders or package.searchers
+        table.insert(loaders, 2, leanpack_module_loader)
+
+        installed = true
     end
-
-    -- Insert our loader at position 2 (after preload, before file system)
-    local loaders = package.loaders or package.searchers
-    table.insert(loaders, 2, leanpack_module_loader)
-
-    installed = true
     get_log().info("Module trigger loader installed for " .. tostring(count) .. " module(s)")
 end
 

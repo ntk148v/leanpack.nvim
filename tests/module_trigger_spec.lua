@@ -74,6 +74,52 @@ T["setup()"]["registers main module and .init variant"] = function()
     -- Cannot directly inspect module_to_src (local), but setup completed without error
 end
 
+T["setup()"]["registers additional modules when setup is called again"] = function()
+    child.lua([[
+		local module_dir = helpers.create_temp_dir("module-trigger-append")
+		local module_file = module_dir .. "/second_module.lua"
+		local f = assert(io.open(module_file, "w"))
+		f:write("return { loaded = true }\n")
+		f:close()
+		package.path = module_dir .. "/?.lua;" .. package.path
+
+		state.set_entry("first-src", {
+			specs = { { src = "first-src", name = "first-plugin" } },
+			merged_spec = { src = "first-src", name = "first-plugin", main = "first_module" },
+			load_status = "pending",
+			plugin = { spec = { src = "first-src", name = "first-plugin" }, path = "/tmp/first" },
+		})
+		state.register_pack_spec({ src = "first-src", name = "first-plugin" })
+
+		state.set_entry("second-src", {
+			specs = { { src = "second-src", name = "second-plugin" } },
+			merged_spec = { src = "second-src", name = "second-plugin", main = "second_module" },
+			load_status = "pending",
+			plugin = { spec = { src = "second-src", name = "second-plugin" }, path = "/tmp/second" },
+		})
+		state.register_pack_spec({ src = "second-src", name = "second-plugin" })
+
+		package.loaded["leanpack.loader"] = {
+			load_plugin = function(pack_spec)
+				_G.loaded_src = pack_spec.src
+				local entry = state.get_entry(pack_spec.src)
+				if entry then
+					entry.load_status = "loaded"
+				end
+			end,
+		}
+
+		module_trigger.setup({ { src = "first-src", name = "first-plugin" } })
+		module_trigger.setup({ { src = "second-src", name = "second-plugin" } })
+
+		_G.require_ok = pcall(require, "second_module")
+		helpers.remove_temp_dir("module-trigger-append")
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.require_ok"), true)
+    MiniTest.expect.equality(child.lua_get("_G.loaded_src"), "second-src")
+end
+
 -- ============================================================================
 -- recursion guard tests
 -- ============================================================================
