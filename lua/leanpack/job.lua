@@ -35,7 +35,10 @@ function M.run(type, payload, on_complete)
         table.insert(cmd, "-c")
         table.insert(cmd, "qa")
     elseif type == "update" then
-        local arg = payload and vim.json.encode(payload) or "nil"
+        local arg = "nil"
+        if payload then
+            arg = ("vim.json.decode(%s)"):format(string.format("%q", vim.json.encode(payload)))
+        end
         table.insert(cmd, "-c")
         table.insert(cmd, string.format("lua vim.pack.update(%s, {force=true})", arg))
         table.insert(cmd, "-c")
