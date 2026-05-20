@@ -325,6 +325,46 @@ T["keys trigger"]["handles complex key specs"] = function()
     MiniTest.expect.equality(child.lua_get("_G.setup_ok"), true)
 end
 
+T["keys trigger"]["executes string rhs after lazy load"] = function()
+    child.lua([[
+		package.loaded["leanpack.loader"] = {
+			load_plugin = function(pack_spec)
+				_G.loaded_src = pack_spec.src
+				local entry = state.get_entry(pack_spec.src)
+				if entry then
+					entry.load_status = "loaded"
+					require("leanpack.keymap").apply_keys(entry.merged_spec.keys)
+				end
+			end,
+		}
+
+		local keys_handler = require("leanpack.lazy_trigger.keys")
+
+		vim.api.nvim_create_user_command("LeanpackKeySpecCommand", function()
+			_G.key_command_ran = true
+		end, {})
+
+		state.set_entry("key-src", {
+			specs = {},
+			load_status = "pending",
+			merged_spec = {
+				keys = {
+					{ "<F17>", "<cmd>LeanpackKeySpecCommand<cr>", mode = "n" },
+				},
+			},
+		})
+
+		keys_handler.setup({
+			{ src = "key-src", name = "key-plugin", data = { leanpack = true } }
+		})
+
+		vim.api.nvim_feedkeys(vim.keycode("<F17>"), "xt", false)
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.loaded_src"), "key-src")
+    MiniTest.expect.equality(child.lua_get("_G.key_command_ran"), true)
+end
+
 -- ============================================================================
 -- process_lazy integration tests
 -- ============================================================================
