@@ -97,23 +97,46 @@ function M.toposort_startup(packs)
 
     local in_progress = {}
     local done = {}
+    local stack = {}
     local result = {}
+
+    local function make_cycle(src)
+        local start_idx = 1
+        for i, item in ipairs(stack) do
+            if item == src then
+                start_idx = i
+                break
+            end
+        end
+        local cycle = {}
+        for i = start_idx, #stack do
+            table.insert(cycle, stack[i])
+        end
+        table.insert(cycle, src)
+        return table.concat(cycle, " -> ")
+    end
 
     local function visit(pack)
         if done[pack.src] then
             return
         end
         if in_progress[pack.src] then
-            vim.notify(("Circular dependency: %s"):format(pack.src), vim.log.levels.WARN)
-            return
+            error(("Circular dependency: %s"):format(make_cycle(pack.src)))
         end
 
         in_progress[pack.src] = true
+        table.insert(stack, pack.src)
 
         -- Visit dependencies first (only those in the startup set)
         local deps = state.get_dependencies(pack.src)
         if deps then
+            local dep_srcs = {}
             for dep_src in pairs(deps) do
+                table.insert(dep_srcs, dep_src)
+            end
+            table.sort(dep_srcs)
+
+            for _, dep_src in ipairs(dep_srcs) do
                 local dep_pack = src_to_pack[dep_src]
                 if dep_pack then
                     visit(dep_pack)
@@ -121,14 +144,20 @@ function M.toposort_startup(packs)
             end
         end
 
+        stack[#stack] = nil
         in_progress[pack.src] = nil
         done[pack.src] = true
         table.insert(result, pack)
     end
 
-    -- Sort by priority first (higher priority first)
+    -- Sort by priority first (higher priority first), then alphabetically as tiebreaker
     table.sort(packs, function(a, b)
-        return ((a.data and a.data.priority) or 50) > ((b.data and b.data.priority) or 50)
+        local pa = (a.data and a.data.priority) or 50
+        local pb = (b.data and b.data.priority) or 50
+        if pa == pb then
+            return a.src < b.src
+        end
+        return pa > pb
     end)
 
     for _, pack in ipairs(packs) do

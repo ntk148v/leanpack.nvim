@@ -34,8 +34,14 @@ function M.import_specs(import_path, ctx)
         all_paths[p] = true
     end
 
-    -- Load each file
+    -- Load each file in sorted order for determinism
+    local sorted_paths = {}
     for path in pairs(all_paths) do
+        table.insert(sorted_paths, path)
+    end
+    table.sort(sorted_paths)
+
+    for _, path in ipairs(sorted_paths) do
         -- Convert path to module name
         -- Find the lua/ directory in the path and extract module name
         local module_name = path:match("lua/(.+)%.lua$")

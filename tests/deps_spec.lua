@@ -276,36 +276,41 @@ T["toposort_startup()"]["handles diamond dependencies"] = function()
     MiniTest.expect.equality(indices.c < indices.a, true)
 end
 
-T["toposort_startup()"]["handles circular dependency gracefully"] = function()
+T["toposort_startup()"]["fails fast on circular dependency"] = function()
     child.lua([[
 		-- a -> b -> a (circular)
 		state.add_dependency("a", "b")
 		state.add_dependency("b", "a")
 
-		-- Capture warning
-		_G.warnings = {}
-		local orig_notify = vim.notify
-		vim.notify = function(msg, level)
-			table.insert(_G.warnings, msg)
-		end
-
-		_G.result = deps.toposort_startup({
-			{ src = "a", name = "a", data = { priority = 50 } },
-			{ src = "b", name = "b", data = { priority = 50 } }
-		})
-
-		vim.notify = orig_notify
+		_G.ok, _G.err = pcall(function()
+			deps.toposort_startup({
+				{ src = "a", name = "a", data = { priority = 50 } },
+				{ src = "b", name = "b", data = { priority = 50 } }
+			})
+		end)
 	]])
 
-    local warnings = child.lua_get("_G.warnings")
-    local found_warning = false
-    for _, w in ipairs(warnings) do
-        if w:match("Circular dependency") then
-            found_warning = true
-            break
-        end
-    end
-    MiniTest.expect.equality(found_warning, true)
+    MiniTest.expect.equality(child.lua_get("_G.ok"), false)
+    MiniTest.expect.equality(child.lua_get("_G.err"):match("Circular dependency") ~= nil, true)
+end
+
+T["toposort_startup()"]["fails fast with explicit cycle path"] = function()
+    child.lua([[
+		state.add_dependency("a", "b")
+		state.add_dependency("b", "c")
+		state.add_dependency("c", "a")
+
+		_G.ok, _G.err = pcall(function()
+			deps.toposort_startup({
+				{ src = "a", name = "a", data = { priority = 50 } },
+				{ src = "b", name = "b", data = { priority = 50 } },
+				{ src = "c", name = "c", data = { priority = 50 } },
+			})
+		end)
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.ok"), false)
+    MiniTest.expect.equality(child.lua_get("_G.err"):match("Circular dependency: a %-> b %-> c %-> a") ~= nil, true)
 end
 
 -- ============================================================================

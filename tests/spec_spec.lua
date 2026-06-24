@@ -428,4 +428,54 @@ T["sort_by_priority()"]["uses default priority of 50"] = function()
     MiniTest.expect.equality(result[2].src, "a") -- default 50
 end
 
+-- ============================================================================
+-- import order tests
+-- ============================================================================
+
+T["import order"] = MiniTest.new_set()
+
+T["import order"]["loads lua plugin files in sorted path order"] = function()
+    child.lua([[
+		local import = require("leanpack.import")
+		local original_get_runtime_file = vim.api.nvim_get_runtime_file
+		local required = {}
+
+		vim.api.nvim_get_runtime_file = function(pattern, all)
+			if pattern == "lua/plugins.lua" or pattern == "lua/plugins/init.lua" then
+				return {}
+			end
+			if pattern == "lua/plugins/*.lua" then
+				return {
+					"/tmp/nvim/lua/plugins/zeta.lua",
+					"/tmp/nvim/lua/plugins/alpha.lua",
+					"/tmp/nvim/lua/plugins/middle.lua",
+				}
+			end
+			return {}
+		end
+
+		package.loaded["plugins.alpha"] = { "owner/alpha" }
+		package.loaded["plugins.middle"] = { "owner/middle" }
+		package.loaded["plugins.zeta"] = { "owner/zeta" }
+
+		local original_require = require
+		_G.require = function(name)
+			table.insert(required, name)
+			return package.loaded[name] or original_require(name)
+		end
+
+		import.import_specs("plugins", { import_order = 0, seen = {} })
+
+		_G.required = required
+		_G.require = original_require
+		vim.api.nvim_get_runtime_file = original_get_runtime_file
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.required"), {
+        "plugins.alpha",
+        "plugins.middle",
+        "plugins.zeta",
+    })
+end
+
 return T
