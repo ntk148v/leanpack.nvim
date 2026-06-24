@@ -1,4 +1,5 @@
 local deps_mod = require("leanpack.deps")
+local fs = require("leanpack.fs")
 local hooks = require("leanpack.hooks")
 local import_mod = require("leanpack.import")
 local lazy_mod = require("leanpack.lazy")
@@ -166,9 +167,8 @@ local function process_all(ctx)
         -- Source ftdetect scripts
         for _, p in ipairs(installed_lazy_packs) do
             local ftdetect_dir = opt_path .. p.name .. "/ftdetect"
-            if vim.uv.fs_stat(ftdetect_dir) then
-                vim.cmd("silent! source " .. ftdetect_dir .. "/*.vim")
-                vim.cmd("silent! source " .. ftdetect_dir .. "/*.lua")
+            if fs.is_dir(ftdetect_dir) then
+                fs.source_ftdetect_dir(ftdetect_dir)
             end
         end
 
@@ -209,9 +209,8 @@ local function process_all(ctx)
 
                     for _, p in ipairs(m_lazy) do
                         local ftdetect_dir = opt_path .. p.name .. "/ftdetect"
-                        if vim.uv.fs_stat(ftdetect_dir) then
-                            vim.cmd("silent! source " .. ftdetect_dir .. "/*.vim")
-                            vim.cmd("silent! source " .. ftdetect_dir .. "/*.lua")
+                        if fs.is_dir(ftdetect_dir) then
+                            fs.source_ftdetect_dir(ftdetect_dir)
                         end
                     end
                     module_trigger.setup(m_lazy)
