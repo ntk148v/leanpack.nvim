@@ -248,6 +248,53 @@ T["cmd trigger"]["creates command for lazy plugin"] = function()
     MiniTest.expect.equality(child.lua_get("_G.cmd_exists"), true)
 end
 
+T["cmd trigger"]["re-executes command after loading lazy plugin"] = function()
+    child.lua([[
+		_G.config_called = false
+		_G.cmd_invocation_count = 0
+
+		-- Create a plugin entry with cmd trigger and config that makes a real command
+		state.set_entry("test-src", {
+			specs = {},
+			load_status = "pending",
+			merged_spec = {
+				cmd = "TestReplay",
+				config = function()
+					_G.config_called = true
+					vim.api.nvim_create_user_command("TestReplay", function()
+						_G.cmd_invocation_count = _G.cmd_invocation_count + 1
+					end, { nargs = "*" })
+				end,
+			},
+			plugin = { spec = { src = "test-src", name = "test" }, path = "/tmp/test" },
+		})
+		state.register_pack_spec({ src = "test-src", name = "test" })
+
+		-- Process lazy plugins to setup command trigger
+		local lazy = require("leanpack.lazy")
+		lazy.process_lazy({
+			lazy_packs = {
+				{ src = "test-src", name = "test", data = { leanpack = true } }
+			}
+		})
+
+		-- Trigger the stub command
+		vim.api.nvim_cmd({ cmd = "TestReplay", args = {}, bang = false }, {})
+		_G.after_first_invocation = _G.cmd_invocation_count
+		_G.config_was_called = _G.config_called
+		_G.cmd_exists = vim.fn.exists(":TestReplay") == 2
+
+		-- Trigger the same command again to prove the real command stays
+		vim.api.nvim_cmd({ cmd = "TestReplay", args = {}, bang = false }, {})
+		_G.after_second_invocation = _G.cmd_invocation_count
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.config_was_called"), true)
+    MiniTest.expect.equality(child.lua_get("_G.after_first_invocation"), 1)
+    MiniTest.expect.equality(child.lua_get("_G.cmd_exists"), true)
+    MiniTest.expect.equality(child.lua_get("_G.after_second_invocation"), 2)
+end
+
 T["cmd trigger"]["creates commands for multiple plugins"] = function()
     child.lua([[
 		state.set_entry("src1", {
