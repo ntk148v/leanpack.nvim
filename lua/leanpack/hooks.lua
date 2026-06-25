@@ -137,6 +137,17 @@ function M.run_config(src)
     return true
 end
 
+---Run builds for a list of packs in the parent process
+---@param packs vim.pack.Spec[]
+function M.run_parent_builds(packs)
+    for _, pack_spec in ipairs(packs) do
+        local entry = state.get_entry(pack_spec.src)
+        if entry and entry.merged_spec and entry.merged_spec.build then
+            M.execute_build(entry.merged_spec.build, entry.plugin)
+        end
+    end
+end
+
 ---Execute build hook
 ---@param build string|fun(plugin: leanpack.Plugin)
 ---@param plugin leanpack.Plugin
@@ -146,9 +157,21 @@ function M.execute_build(build, plugin)
     local ok, err
     if type(build) == "string" then
         get_log().info(("Executing build command for %s: %s"):format(plugin.spec.name, build))
-        -- If it starts with a colon, it's a vim command, otherwise default to shell command like lazy.nvim
-        local cmd = build:sub(1, 1) == ":" and build or ("!" .. build)
-        ok, err = pcall(vim.cmd, cmd)
+        if build:sub(1, 1) == ":" then
+            -- Vim command
+            ok, err = pcall(vim.cmd, build)
+        else
+            -- Shell command via vim.system for safe async execution
+            local obj = vim.system({ "sh", "-c", build }, {
+                cwd = plugin.path,
+                text = true,
+            })
+            local result = obj:wait()
+            ok = result.code == 0
+            if not ok then
+                err = ("exit code %d: %s"):format(result.code, result.stderr)
+            end
+        end
     elseif type(build) == "function" then
         get_log().info(("Executing build function for %s"):format(plugin.spec.name))
         ok, err = pcall(build, plugin)

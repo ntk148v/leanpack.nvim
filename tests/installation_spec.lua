@@ -63,6 +63,43 @@ T["Background Installation"]["uses native opt path for eager plugin metadata"] =
     MiniTest.expect.equality(child.lua_get("_G.actual_path"), child.lua_get("_G.expected_path"))
 end
 
+T["Background Installation"]["runs build hooks in parent after missing plugin install succeeds"] = function()
+    child.lua([[
+		local leanpack = require("leanpack")
+		local original_stat = vim.uv.fs_stat
+		local original_job_run = require("leanpack.job").run
+		local built = {}
+
+		vim.uv.fs_stat = function(path)
+			if path:match("build%-plugin$") then
+				return nil
+			end
+			return { type = "directory" }
+		end
+
+		require("leanpack.job").run = function(kind, payload, cb)
+			cb(true)
+		end
+
+		package.loaded["leanpack.hooks"].execute_build = function(build, plugin)
+			table.insert(built, plugin.spec.name)
+		end
+
+		leanpack.setup({
+			performance = { rtp_prune = false, vim_loader = false },
+			plugins = {
+				{ "owner/build-plugin", build = ":BuildPlugin", lazy = true },
+			},
+		})
+
+		_G.built = built
+		vim.uv.fs_stat = original_stat
+		require("leanpack.job").run = original_job_run
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.built"), { "build-plugin" })
+end
+
 T["Background Installation"]["registers lazy plugins with vim.pack.add(..., { load = false })"] = function()
     child.lua([[
 		local add_calls = {}

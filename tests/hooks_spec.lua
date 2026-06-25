@@ -234,25 +234,28 @@ end
 
 T["execute_build()"] = MiniTest.new_set()
 
-T["execute_build()"]["executes string build command"] = function()
+T["execute_build()"]["executes string build command via vim.system"] = function()
     child.lua([[
-		_G.command_executed = false
-		local orig_cmd = vim.cmd
-		vim.cmd = function(cmd)
-			if cmd == "!echo test" then
-				_G.command_executed = true
-			else
-				orig_cmd(cmd)
-			end
+		local calls = {}
+		local original_system = vim.system
+		vim.system = function(cmd, opts)
+			table.insert(calls, { cmd = cmd, opts = opts })
+			return {
+				wait = function()
+					return { code = 0, stdout = "ok", stderr = "" }
+				end,
+			}
 		end
 
 		local plugin = { spec = { name = "test" }, path = "/tmp/test" }
 		hooks.execute_build("echo test", plugin)
 
-		vim.cmd = orig_cmd
+		_G.calls = calls
+		vim.system = original_system
 	]])
 
-    MiniTest.expect.equality(child.lua_get("_G.command_executed"), true)
+    local calls = child.lua_get("_G.calls")
+    MiniTest.expect.equality(#calls, 1)
 end
 
 T["execute_build()"]["executes function build"] = function()
@@ -265,6 +268,36 @@ T["execute_build()"]["executes function build"] = function()
 	]])
 
     MiniTest.expect.equality(child.lua_get("_G.build_called"), true)
+end
+
+T["execute_build()"]["runs shell build with vim.system in plugin cwd"] = function()
+    child.lua([[
+		local hooks = require("leanpack.hooks")
+		local calls = {}
+
+		local original_system = vim.system
+		vim.system = function(cmd, opts)
+			table.insert(calls, { cmd = cmd, opts = opts })
+			return {
+				wait = function()
+					return { code = 0, stdout = "ok", stderr = "" }
+				end,
+			}
+		end
+
+		hooks.execute_build("make install", {
+			spec = { name = "plugin-a" },
+			path = "/tmp/plugin-a",
+		})
+
+		_G.calls = calls
+		vim.system = original_system
+	]])
+
+    local calls = child.lua_get("_G.calls")
+    MiniTest.expect.equality(#calls, 1)
+    MiniTest.expect.equality(calls[1].opts.cwd, "/tmp/plugin-a")
+    MiniTest.expect.equality(calls[1].opts.text, true)
 end
 
 -- ============================================================================

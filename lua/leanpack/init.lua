@@ -214,6 +214,8 @@ local function process_all(ctx)
                         end
                     end
                     module_trigger.setup(m_lazy)
+                    -- Run builds for newly installed lazy packs in parent process
+                    hooks.run_parent_builds(m_lazy)
                 end
 
                 local ui_ok, ui = pcall(require, "leanpack.ui")
