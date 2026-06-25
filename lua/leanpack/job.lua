@@ -1,11 +1,30 @@
 ---@module 'leanpack.job'
 local M = {}
 
+-- Semaphore tracking per job lane
+local running_lanes = {}
+
 ---Run a vim.pack command in background
 ---@param type "install"|"update"
 ---@param payload string|table|nil
 ---@param on_complete function?
+---@return boolean true if job was started, false if blocked by concurrent job
 function M.run(type, payload, on_complete)
+    if running_lanes[type] then
+        vim.notify(("A %q job is already running. Skipping duplicate."):format(type), vim.log.levels.WARN)
+        return false
+    end
+    running_lanes[type] = true
+
+    -- Wrap on_complete to clear lane
+    local original_on_complete = on_complete
+    on_complete = function(success)
+        running_lanes[type] = nil
+        if original_on_complete then
+            original_on_complete(success)
+        end
+    end
+
     local cmd = { vim.v.progpath, "--headless", "--noplugin" }
     local temp_file = nil
 

@@ -48,4 +48,38 @@ T["update"]["emits parseable Lua for targeted updates"] = function()
     MiniTest.expect.equality(child.lua_get("_G.load_ok"), true)
 end
 
+T["concurrency guard"] = MiniTest.new_set()
+
+T["concurrency guard"]["rejects duplicate install before first completes"] = function()
+    child.lua([[
+		local original_jobstart = vim.fn.jobstart
+		local original_notify = vim.notify
+		_G.running = {}
+		_G.warns = {}
+
+		vim.fn.jobstart = function(cmd, opts)
+			_G.running[#_G.running + 1] = cmd
+			return 1
+		end
+
+		vim.notify = function(msg, level)
+			if level == vim.log.levels.WARN then
+				_G.warns[#_G.warns + 1] = msg
+			end
+		end
+
+		job.run("install", { { src = "p1" } }, function() end)
+		job.run("install", { { src = "p2" } }, function() end)
+
+		_G.running_count = #_G.running
+		_G.warn_count = #_G.warns
+
+		vim.fn.jobstart = original_jobstart
+		vim.notify = original_notify
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.running_count"), 1)
+    MiniTest.expect.equality(child.lua_get("_G.warn_count") >= 1, true)
+end
+
 return T
