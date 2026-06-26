@@ -6,6 +6,27 @@ local state = require("leanpack.state")
 
 local M = {}
 
+local function replay_command(cmd_name, cmd_args)
+    local cmd = {
+        cmd = cmd_name,
+        args = cmd_args.fargs,
+        bang = cmd_args.bang,
+        mods = cmd_args.smods,
+    }
+
+    if cmd_args.range and cmd_args.range > 0 then
+        cmd.range = { cmd_args.line1, cmd_args.line2 }
+    end
+    if (not cmd.range) and cmd_args.count and cmd_args.count >= 0 then
+        cmd.count = cmd_args.count
+    end
+    if cmd_args.reg and cmd_args.reg ~= "" then
+        cmd.reg = cmd_args.reg
+    end
+
+    pcall(vim.api.nvim_cmd, cmd, {})
+end
+
 local function setup_ft_trigger(pack_spec, ft)
     local filetypes = spec_mod.normalize_list(ft) or {}
     vim.api.nvim_create_autocmd("FileType", {
@@ -13,7 +34,7 @@ local function setup_ft_trigger(pack_spec, ft)
         pattern = filetypes,
         once = true,
         callback = function(ev)
-            require("leanpack.lazy_trigger.util").load_and_retrigger(pack_spec, ev.buf)
+            require("leanpack.lazy_trigger.util").load_and_retrigger(pack_spec, ev.buf, "FileType")
         end,
     })
 end
@@ -49,8 +70,8 @@ local function setup_cmd_triggers(registered_pack_specs)
                     loader.load_plugin(pack_spec)
                 end
             end
-            pcall(vim.api.nvim_cmd, { cmd = cmd_name, args = cmd_args.fargs }, {})
-        end, { nargs = "*" })
+            replay_command(cmd_name, cmd_args)
+        end, { nargs = "*", bang = true, range = true, bar = true })
         ::continue::
     end
 end

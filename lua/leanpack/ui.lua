@@ -205,6 +205,7 @@ local function update(opts)
     vim.notify("Updating " .. label .. " in background...", vim.log.levels.INFO)
     require("leanpack.job").run("update", names, function(success)
         if success then
+            require("leanpack.hooks").run_builds_for_names(names)
             vim.notify(label .. " updated", vim.log.levels.INFO)
             M.refresh()
         end

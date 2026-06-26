@@ -82,4 +82,30 @@ T["concurrency guard"]["rejects duplicate install before first completes"] = fun
     MiniTest.expect.equality(child.lua_get("_G.warn_count") >= 1, true)
 end
 
+T["concurrency guard"]["clears lane when install payload write fails"] = function()
+    child.lua([[
+		local original_writefile = vim.fn.writefile
+		local original_jobstart = vim.fn.jobstart
+		local calls = 0
+
+		vim.fn.writefile = function()
+			error("write failed")
+		end
+		vim.fn.jobstart = function()
+			calls = calls + 1
+			return 1
+		end
+
+		job.run("install", { { src = "p1" } }, function() end)
+
+		vim.fn.writefile = original_writefile
+		job.run("install", { { src = "p2" } }, function() end)
+
+		_G.calls = calls
+		vim.fn.jobstart = original_jobstart
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.calls"), 1)
+end
+
 return T

@@ -295,6 +295,58 @@ T["cmd trigger"]["re-executes command after loading lazy plugin"] = function()
     MiniTest.expect.equality(child.lua_get("_G.after_second_invocation"), 2)
 end
 
+T["cmd trigger"]["replays bang range and raw args"] = function()
+    child.lua([[
+		local replayed = nil
+		vim.api.nvim_buf_set_lines(0, 0, -1, false, { "one", "two", "three", "four" })
+
+		state.set_entry("test-src", {
+			specs = {},
+			load_status = "pending",
+			merged_spec = { cmd = "ReplayCommand" },
+			plugin = { spec = { src = "test-src", name = "test" }, path = "/tmp/test" },
+		})
+		state.register_pack_spec({ src = "test-src", name = "test" })
+
+		local loader = require("leanpack.loader")
+		local original_load_plugin = loader.load_plugin
+		loader.load_plugin = function(pack_spec)
+			local entry = state.get_entry(pack_spec.src)
+			if entry then
+				entry.load_status = "loaded"
+			end
+			vim.api.nvim_create_user_command("ReplayCommand", function(opts)
+				replayed = {
+					bang = opts.bang,
+					args = opts.args,
+					range = opts.range,
+					line1 = opts.line1,
+					line2 = opts.line2,
+				}
+			end, { nargs = "*", bang = true, range = true })
+		end
+
+		require("leanpack.lazy").process_lazy({
+			lazy_packs = {
+				{ src = "test-src", name = "test", data = { leanpack = true } }
+			}
+		})
+
+		_G.ok, _G.err = pcall(vim.cmd, "2,4ReplayCommand! alpha beta")
+		_G.replayed = replayed
+		loader.load_plugin = original_load_plugin
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.ok"), true)
+    MiniTest.expect.equality(child.lua_get("_G.replayed"), {
+        bang = true,
+        args = "alpha beta",
+        range = 2,
+        line1 = 2,
+        line2 = 4,
+    })
+end
+
 T["cmd trigger"]["creates commands for multiple plugins"] = function()
     child.lua([[
 		state.set_entry("src1", {
@@ -443,11 +495,11 @@ T["event trigger"]["only retriggers events the plugin actually listens for"] = f
     child.lua([[
 		local util = require("leanpack.lazy_trigger.util")
 		_G.fired_events = {}
-		local orig_func = util.retrigger_events
+		local orig_func = util.retrigger_event
 
-		-- Override retrigger_events to capture what would be fired
-		util.retrigger_events = function(bufnr, spec)
-			_G.fired_events = { bufnr = bufnr, spec = spec }
+		-- Override retrigger_event to capture what would be fired
+		util.retrigger_event = function(event_name, bufnr)
+			_G.fired_events = { event_name = event_name, bufnr = bufnr }
 		end
 
 		state.set_entry("bufread-plugin", {
@@ -466,15 +518,76 @@ T["event trigger"]["only retriggers events the plugin actually listens for"] = f
 
 		util.load_and_retrigger(
 			{ src = "bufread-plugin", name = "bufread" },
-			vim.api.nvim_get_current_buf()
+			vim.api.nvim_get_current_buf(),
+			"BufRead"
 		)
 
 		_G.result = _G.fired_events
-		util.retrigger_events = orig_func
+		util.retrigger_event = orig_func
 	]])
 
     local result = child.lua_get("_G.result")
-    MiniTest.expect.equality(result ~= nil and result.spec ~= nil, true)
+    MiniTest.expect.equality(result ~= nil and result.event_name, "BufRead")
+end
+
+T["event trigger"]["replays only triggering event"] = function()
+    child.lua([[
+		local util = require("leanpack.lazy_trigger.util")
+		local replayed = {}
+		local original_exec = vim.api.nvim_exec_autocmds
+
+		vim.api.nvim_exec_autocmds = function(event, opts)
+			table.insert(replayed, event)
+		end
+
+		util.retrigger_event("BufReadPost", vim.api.nvim_get_current_buf())
+		vim.wait(50, function()
+			return #replayed > 0
+		end)
+
+		_G.replayed = replayed
+		vim.api.nvim_exec_autocmds = original_exec
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.replayed"), { "BufReadPost" })
+end
+
+T["event trigger"]["passes triggering event to replay utility"] = function()
+    child.lua([[
+		local event_handler = require("leanpack.lazy_trigger.event")
+		local util = require("leanpack.lazy_trigger.util")
+		local original_load = util.load_and_retrigger
+		local captured = nil
+		vim.api.nvim_buf_set_name(0, "/tmp/event-replay.lua")
+
+		state.set_entry("event-src", {
+			specs = {},
+			load_status = "pending",
+			merged_spec = { event = { "BufReadPre", "BufReadPost" } },
+			plugin = { spec = { src = "event-src", name = "event-plugin" }, path = "/tmp/event-plugin" },
+		})
+
+		util.load_and_retrigger = function(pack_spec, bufnr, event_name)
+			captured = event_name
+		end
+
+		event_handler.setup(
+			{ src = "event-src", name = "event-plugin" },
+			{ event = { "BufReadPre", "BufReadPost" } },
+			{ "BufReadPre", "BufReadPost" }
+		)
+
+		vim.api.nvim_exec_autocmds("BufReadPost", {
+			group = state.lazy_group,
+			buffer = vim.api.nvim_get_current_buf(),
+			modeline = false,
+		})
+
+		_G.captured = captured
+		util.load_and_retrigger = original_load
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.captured"), "BufReadPost")
 end
 
 T["keys trigger"]["preserves silent expr and noremap-compatible options"] = function()

@@ -107,7 +107,7 @@ function M.setup(pack_spec, spec, event)
                     end
                     -- Delete the autocmd manually since we don't use 'once = true'
                     pcall(vim.api.nvim_del_autocmd, id)
-                    require("leanpack.lazy_trigger.util").load_and_retrigger(pack_spec, ev.buf)
+                    require("leanpack.lazy_trigger.util").load_and_retrigger(pack_spec, ev.buf, ev.event)
                 end,
             })
         end

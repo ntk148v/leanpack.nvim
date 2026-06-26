@@ -139,13 +139,45 @@ end
 
 ---Run builds for a list of packs in the parent process
 ---@param packs vim.pack.Spec[]
-function M.run_parent_builds(packs)
-    for _, pack_spec in ipairs(packs) do
+---@return number count
+function M.run_builds_for_packs(packs)
+    local count = 0
+    for _, pack_spec in ipairs(packs or {}) do
         local entry = state.get_entry(pack_spec.src)
         if entry and entry.merged_spec and entry.merged_spec.build then
             M.execute_build(entry.merged_spec.build, entry.plugin)
+            count = count + 1
         end
     end
+    return count
+end
+
+---Run builds for plugins by name. Nil means all registered pack specs.
+---@param names? string[]
+---@return number count
+function M.run_builds_for_names(names)
+    if not names then
+        return M.run_builds_for_packs(state.get_all_pack_specs())
+    end
+
+    local name_lookup = {}
+    for _, name in ipairs(names) do
+        name_lookup[name] = true
+    end
+
+    local packs = {}
+    for _, pack_spec in ipairs(state.get_all_pack_specs()) do
+        if name_lookup[pack_spec.name] then
+            table.insert(packs, pack_spec)
+        end
+    end
+    return M.run_builds_for_packs(packs)
+end
+
+---Backward-compatible alias for parent install recovery.
+---@param packs vim.pack.Spec[]
+function M.run_parent_builds(packs)
+    return M.run_builds_for_packs(packs)
 end
 
 ---Execute build hook

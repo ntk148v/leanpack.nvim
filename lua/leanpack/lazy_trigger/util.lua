@@ -7,20 +7,24 @@ local M = {}
 -- Default events to retrigger when no spec is available (safety net)
 local DEFAULT_EVENTS = { "BufReadPre", "BufReadPost", "FileType" }
 
----Load a plugin and re-trigger events
+---Load a plugin and re-trigger the triggering event
 ---@param pack_spec vim.pack.Spec
 ---@param bufnr? number
-function M.load_and_retrigger(pack_spec, bufnr)
+---@param event_name? string
+function M.load_and_retrigger(pack_spec, bufnr, event_name)
     local entry = state.get_entry(pack_spec.src)
     -- Skip loading if already loading or loaded (e.g., another event fired during packadd)
     if entry and entry.load_status ~= "pending" then
-        M.retrigger_events(bufnr or vim.api.nvim_get_current_buf(), entry.merged_spec)
+        if event_name then
+            M.retrigger_event(event_name, bufnr or vim.api.nvim_get_current_buf())
+        end
         return
     end
 
     require("leanpack.loader").load_plugin(pack_spec)
-    local loaded_entry = state.get_entry(pack_spec.src)
-    M.retrigger_events(bufnr or vim.api.nvim_get_current_buf(), loaded_entry and loaded_entry.merged_spec)
+    if event_name then
+        M.retrigger_event(event_name, bufnr or vim.api.nvim_get_current_buf())
+    end
 end
 
 ---Resolve the set of events a plugin actually listens for from its spec
@@ -45,6 +49,17 @@ local function resolve_plugin_events(spec)
     return result
 end
 
+---Re-trigger one event for the current buffer to ensure plugins attach correctly.
+---@param event_name string
+---@param bufnr number
+function M.retrigger_event(event_name, bufnr)
+    vim.schedule(function()
+        if vim.api.nvim_buf_is_valid(bufnr) then
+            vim.api.nvim_exec_autocmds(event_name, { buffer = bufnr, modeline = false })
+        end
+    end)
+end
+
 ---Re-trigger events for the current buffer to ensure plugins attach correctly.
 ---Only fires events that the specific plugin actually listens for, rather than
 ---re-firing all known buffer events for every loaded plugin.
@@ -58,7 +73,9 @@ function M.retrigger_events(bufnr, spec)
     vim.schedule(function()
         if vim.api.nvim_buf_is_valid(bufnr) then
             for _, event in ipairs(events_to_fire) do
-                vim.api.nvim_exec_autocmds(event, { buffer = bufnr, modeline = false })
+                if type(event) == "string" then
+                    vim.api.nvim_exec_autocmds(event, { buffer = bufnr, modeline = false })
+                end
             end
         end
     end)

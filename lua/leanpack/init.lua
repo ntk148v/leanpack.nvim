@@ -178,6 +178,13 @@ local function process_all(ctx)
         module_trigger.setup(installed_lazy_packs)
     end
 
+    -- Compute plugin paths manually before async callbacks may run.
+    for _, entry in pairs(state.get_all_entries()) do
+        if entry.plugin and entry.plugin.spec then
+            entry.plugin.path = opt_path .. entry.plugin.spec.name
+        end
+    end
+
     -- Background install missing plugins
     if #missing_packs > 0 then
         vim.notify(("Installing %d missing plugin(s) in background..."):format(#missing_packs), vim.log.levels.INFO)
@@ -217,9 +224,9 @@ local function process_all(ctx)
                         end
                     end
                     module_trigger.setup(m_lazy)
-                    -- Run builds for newly installed lazy packs in parent process
-                    hooks.run_parent_builds(m_lazy)
                 end
+
+                hooks.run_builds_for_packs(missing_packs)
 
                 local ui_ok, ui = pcall(require, "leanpack.ui")
                 if ui_ok and ui.refresh then
@@ -228,16 +235,6 @@ local function process_all(ctx)
                 vim.notify(("Successfully installed %d plugin(s)"):format(#missing_packs), vim.log.levels.INFO)
             end
         end)
-    end
-
-    -- Compute plugin paths manually instead of calling slow vim.pack.get()
-    local data_path = vim.fn.stdpath("data")
-    local opt_path = data_path .. "/site/pack/core/opt/"
-
-    for _, entry in pairs(state.get_all_entries()) do
-        if entry.plugin and entry.plugin.spec then
-            entry.plugin.path = opt_path .. entry.plugin.spec.name
-        end
     end
 
     -- Setup lazy build tracking after vim.pack.add

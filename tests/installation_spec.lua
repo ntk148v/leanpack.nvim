@@ -10,17 +10,17 @@ local T = MiniTest.new_set({
         pre_case = function()
             child.restart({ "-u", "NONE" })
             child.lua([[
-				vim.opt.rtp:prepend("]] .. vim.fn.getcwd() .. [[")
-				_G.helpers = require("tests.helpers")
-				_G.helpers.reset_leanpack_state()
-				
-				-- Mock vim.pack globally for tests
-				vim.pack = vim.pack or {}
-				vim.pack.add = function() end
-				vim.pack.get = function() return {} end
-				
-				_G.leanpack = require("leanpack")
-			]])
+					vim.opt.rtp:prepend("]] .. vim.fn.getcwd() .. [[")
+					_G.helpers = require("tests.helpers")
+					_G.helpers.reset_leanpack_state()
+
+					-- Mock vim.pack globally for tests
+					vim.pack = vim.pack or {}
+					vim.pack.add = function() end
+					vim.pack.get = function() return {} end
+
+					_G.leanpack = require("leanpack")
+				]])
         end,
         post_once = child.stop,
     },
@@ -100,6 +100,88 @@ T["Background Installation"]["runs build hooks in parent after missing plugin in
     MiniTest.expect.equality(child.lua_get("_G.built"), { "build-plugin" })
 end
 
+T["Background Installation"]["runs startup build hooks in parent after missing plugin install succeeds"] = function()
+    child.lua([[
+		local leanpack = require("leanpack")
+		local original_stat = vim.uv.fs_stat
+		local original_job_run = require("leanpack.job").run
+		local built = {}
+
+		vim.uv.fs_stat = function(path)
+			if path:match("startup%-build$") then
+				return nil
+			end
+			return { type = "directory" }
+		end
+
+		require("leanpack.job").run = function(kind, payload, cb)
+			cb(true)
+		end
+
+		package.loaded["leanpack.hooks"].execute_build = function(build, plugin)
+			table.insert(built, plugin.spec.name)
+		end
+
+		leanpack.setup({
+			performance = { rtp_prune = false, vim_loader = false },
+			plugins = {
+				{ "owner/startup-build", build = ":BuildPlugin", lazy = false },
+			},
+		})
+
+		_G.built = built
+		vim.uv.fs_stat = original_stat
+		require("leanpack.job").run = original_job_run
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.built"), { "startup-build" })
+end
+
+T["Background Installation"]["runs build hooks after targeted background update succeeds"] = function()
+    child.lua([[
+		local state = require("leanpack.state")
+		local commands = require("leanpack.commands")
+		local original_job_run = require("leanpack.job").run
+		local built = {}
+
+		vim.pack.get = function(names)
+			if names and names[1] == "update-build" then
+				return { { spec = { src = "owner/update-build", name = "update-build" } } }
+			end
+			return {}
+		end
+
+		state.set_entry("owner/update-build", {
+			specs = {},
+			load_status = "loaded",
+			merged_spec = { src = "owner/update-build", name = "update-build", build = ":BuildPlugin" },
+			plugin = {
+				spec = { src = "owner/update-build", name = "update-build" },
+				path = "/tmp/update-build",
+			},
+		})
+		state.register_pack_spec({ src = "owner/update-build", name = "update-build" })
+
+		require("leanpack.job").run = function(kind, payload, cb)
+			_G.job_payload = payload
+			cb(true)
+		end
+
+		package.loaded["leanpack.hooks"].execute_build = function(build, plugin)
+			table.insert(built, plugin.spec.name)
+		end
+
+		commands.setup("Leanpack")
+		vim.cmd("Leanpack update update-build")
+
+		_G.built = built
+		require("leanpack.job").run = original_job_run
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.job_payload"), { "update-build" })
+    MiniTest.expect.equality(child.lua_get("_G.built"), { "update-build" })
+end
+
 T["Background Installation"]["registers lazy plugins with vim.pack.add(..., { load = false })"] = function()
     child.lua([[
 		local add_calls = {}
@@ -138,14 +220,14 @@ T["UI Status"]["shows '✗' for missing plugins"] = function()
 		local original_stat = vim.uv.fs_stat
 		vim.uv.fs_stat = function(path) return nil end
 
-		leanpack.setup({
-			performance = { rtp_prune = false, vim_loader = false },
-			plugins = {
-				{ src = "missing/plugin", lazy = true },
-			}
-		})
-		
-		local ui = require("leanpack.ui")
+			leanpack.setup({
+				performance = { rtp_prune = false, vim_loader = false },
+				plugins = {
+					{ src = "missing/plugin", lazy = true },
+				}
+			})
+
+			local ui = require("leanpack.ui")
 		ui.open()
 		_G.buffer_content = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 		_G.plugin_entry = require("leanpack.state").get_entry("missing/plugin")
@@ -219,7 +301,7 @@ T["setup()"]["registers cache save autocmd only once"] = function()
 		local content = vim.fn.readfile(init_path)
 		local has_guard = false
 		local has_check = false
-		
+
 		for _, line in ipairs(content) do
 			if line:match("save_cache_autocmd_registered") then
 				has_guard = true
@@ -228,7 +310,7 @@ T["setup()"]["registers cache save autocmd only once"] = function()
 				has_check = true
 			end
 		end
-		
+
 		_G.has_guard = has_guard
 		_G.has_check = has_check
 	]])

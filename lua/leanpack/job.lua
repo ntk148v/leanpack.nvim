@@ -16,10 +16,14 @@ function M.run(type, payload, on_complete)
     end
     running_lanes[type] = true
 
+    local function clear_lane()
+        running_lanes[type] = nil
+    end
+
     -- Wrap on_complete to clear lane
     local original_on_complete = on_complete
     on_complete = function(success)
-        running_lanes[type] = nil
+        clear_lane()
         if original_on_complete then
             original_on_complete(success)
         end
@@ -33,7 +37,8 @@ function M.run(type, payload, on_complete)
         local ok, err = pcall(vim.fn.writefile, { vim.json.encode(payload) }, temp_file)
         if not ok then
             vim.notify("Failed to write install specs to " .. temp_file .. ": " .. tostring(err), vim.log.levels.ERROR)
-            return
+            clear_lane()
+            return false
         end
 
         local lua_cmd = string.format(
@@ -64,7 +69,8 @@ function M.run(type, payload, on_complete)
         table.insert(cmd, "qa")
     else
         vim.notify("Unknown job type: " .. tostring(type), vim.log.levels.ERROR)
-        return
+        clear_lane()
+        return false
     end
 
     local function handle_output(data)
@@ -81,7 +87,7 @@ function M.run(type, payload, on_complete)
         end
     end
 
-    vim.fn.jobstart(cmd, {
+    local job_id = vim.fn.jobstart(cmd, {
         on_stdout = function(_, data)
             handle_output(data)
         end,
@@ -104,6 +110,14 @@ function M.run(type, payload, on_complete)
             end)
         end,
     })
+
+    if job_id <= 0 then
+        clear_lane()
+        vim.notify("Failed to start leanpack background job", vim.log.levels.ERROR)
+        return false
+    end
+
+    return true
 end
 
 return M
