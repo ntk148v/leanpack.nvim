@@ -427,7 +427,12 @@ function M.setup(opts)
 
     -- Save main module cache on exit
     vim.api.nvim_create_autocmd("VimLeavePre", {
+        desc = "leanpack save cache",
         callback = function()
+            local ok_cache, cache = pcall(require, "leanpack.cache")
+            if ok_cache and cache.save then
+                cache.save()
+            end
             state.save_main_cache()
         end,
     })

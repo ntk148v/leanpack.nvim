@@ -1,3 +1,4 @@
+local cache = require("leanpack.cache")
 local state = require("leanpack.state")
 
 local M = {}
@@ -157,33 +158,59 @@ function M.setup(lazy_packs)
 
             if path and path ~= "" then
                 local lua_dir = path .. "/lua"
-                local fd = vim.uv.fs_scandir(lua_dir)
-                if fd then
-                    while true do
-                        local name, type = vim.uv.fs_scandir_next(fd)
-                        if not name then
-                            break
+
+                -- Check cache first with invalidation stamp
+                local stamp = cache.stamp_for_dir(path)
+                local map_key = pack_spec.name .. ":" .. path
+                local cached_modules = cache.get("module_map", map_key, stamp)
+
+                if cached_modules then
+                    -- Use cached module list
+                    for _, mod in ipairs(cached_modules) do
+                        local owner = primary_modules[mod]
+                        if owner and owner ~= src then
+                            -- Integration directory for another plugin, skip
+                        elseif not module_to_src[mod] then
+                            module_to_src[mod] = src
+                            count = count + 1
                         end
-                        local mod = nil
-                        if type == "file" and name:match("%.lua$") then
-                            mod = name:sub(1, -5)
-                        elseif type == "directory" then
-                            mod = name
-                        end
-                        if mod and mod ~= "init" then
-                            -- Skip if this module is "owned" by a different plugin.
-                            -- This prevents cross-registration of integration directories
-                            -- (e.g., lua/lualine/ inside rose-pine should not map
-                            --  "lualine" to rose-pine; it belongs to the lualine plugin).
-                            local owner = primary_modules[mod]
-                            if owner and owner ~= src then
-                                -- Integration directory for another plugin, skip
-                            elseif not module_to_src[mod] then
-                                module_to_src[mod] = src
-                                count = count + 1
+                    end
+                else
+                    -- Scan and cache
+                    local discovered = {}
+                    local fd = vim.uv.fs_scandir(lua_dir)
+                    local discovered = {}
+                    local fd = vim.uv.fs_scandir(lua_dir)
+                    if fd then
+                        while true do
+                            local name, type = vim.uv.fs_scandir_next(fd)
+                            if not name then
+                                break
+                            end
+                            local mod = nil
+                            if type == "file" and name:match("%.lua$") then
+                                mod = name:sub(1, -5)
+                            elseif type == "directory" then
+                                mod = name
+                            end
+                            if mod and mod ~= "init" then
+                                table.insert(discovered, mod)
+                                -- Skip if this module is "owned" by a different plugin.
+                                -- This prevents cross-registration of integration directories
+                                -- (e.g., lua/lualine/ inside rose-pine should not map
+                                --  "lualine" to rose-pine; it belongs to the lualine plugin).
+                                local owner = primary_modules[mod]
+                                if owner and owner ~= src then
+                                    -- Integration directory for another plugin, skip
+                                elseif not module_to_src[mod] then
+                                    module_to_src[mod] = src
+                                    count = count + 1
+                                end
                             end
                         end
                     end
+                    -- Save discovered modules to cache
+                    cache.set("module_map", map_key, stamp, discovered)
                 end
             end
 

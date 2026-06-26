@@ -1,3 +1,4 @@
+local cache = require("leanpack.cache")
 local log = require("leanpack.log")
 local state = require("leanpack.state")
 
@@ -272,8 +273,10 @@ local function detect_main(name, dir)
     -- Expand ~ in directory path
     dir = vim.fn.expand(dir)
 
-    -- Check cache first
-    local cached = state.get_cached_main(name, dir)
+    -- Check cache first with invalidation stamp
+    local stamp = cache.stamp_for_dir(dir)
+    local cache_key = name .. ":" .. dir
+    local cached = cache.get("main", cache_key, stamp)
     if cached then
         return cached
     end
@@ -318,20 +321,20 @@ local function detect_main(name, dir)
 
     -- Strategy 0: Exact root file match (e.g., lualine.lua)
     if root_files[normalized] then
-        state.cache_main(name, dir, root_files[normalized])
+        cache.set("main", cache_key, stamp, root_files[normalized])
         return root_files[normalized]
     end
 
     -- Strategy 1: Exact normalized module directory match
     if modules[normalized] then
-        state.cache_main(name, dir, modules[normalized])
+        cache.set("main", cache_key, stamp, modules[normalized])
         return modules[normalized]
     end
 
     -- Strategy 4: Single module directory fallback
     if module_count == 1 then
         local only = module_list[1].original
-        state.cache_main(name, dir, only)
+        cache.set("main", cache_key, stamp, only)
         return only
     end
 
