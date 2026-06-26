@@ -92,9 +92,9 @@ Common issues and their solutions when using leanpack.nvim.
    { 'dep', optional = true }  -- Won't error if missing
    ```
 
-### "Circular dependency detected"
+### Circular Dependency Errors
 
-**Cause:** Plugin A depends on B, B depends on A.
+If setup fails with `Circular dependency: a -> b -> a`, remove the cycle from your plugin specs. A plugin dependency graph must be acyclic because leanpack loads dependencies before dependents.
 
 **Solution:** Fix your dependency graph - remove circular reference.
 
@@ -195,6 +195,10 @@ Common issues and their solutions when using leanpack.nvim.
 1. Check UI is open
 2. Try `<Esc>` to exit
 3. Check for keymap conflicts
+
+## Background Job Already Running
+
+If `Leanpack background job is already running` appears, wait for the current install, update, or sync job to complete before starting another package operation.
 
 ## Performance Issues
 

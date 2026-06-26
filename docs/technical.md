@@ -121,6 +121,12 @@ All operations logged to `stdpath("log")/leanpack.log`:
 - `log.error()` - Errors
 - `log.debug()` - Debug info
 
+## Reliability Notes
+
+leanpack.nvim prevents concurrent background package jobs in a single Neovim session. Install and update jobs still execute through Neovim's native `vim.pack`, but parent-session build hooks run after successful background installs so build behavior is deterministic from the user's active session.
+
+Dependency cycles are treated as configuration errors. Startup dependency sorting fails fast with a cycle path instead of continuing with partial ordering.
+
 ## Performance Characteristics
 
 | Metric                | Value                           |
