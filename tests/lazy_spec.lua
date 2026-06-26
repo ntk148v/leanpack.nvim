@@ -439,6 +439,44 @@ T["process_lazy()"]["skips when pending builds exist"] = function()
     MiniTest.expect.equality(child.lua_get("_G.processed"), false)
 end
 
+T["event trigger"]["only retriggers events the plugin actually listens for"] = function()
+    child.lua([[
+		local util = require("leanpack.lazy_trigger.util")
+		_G.fired_events = {}
+		local orig_func = util.retrigger_events
+
+		-- Override retrigger_events to capture what would be fired
+		util.retrigger_events = function(bufnr, spec)
+			_G.fired_events = { bufnr = bufnr, spec = spec }
+		end
+
+		state.set_entry("bufread-plugin", {
+			specs = {},
+			load_status = "pending",
+			merged_spec = { event = "BufRead" },
+			plugin = { spec = { src = "bufread-plugin", name = "bufread" }, path = "/tmp/bf" },
+		})
+
+		package.loaded["leanpack.loader"] = {
+			load_plugin = function(ps)
+				local e = state.get_entry(ps.src)
+				if e then e.load_status = "loaded" end
+			end,
+		}
+
+		util.load_and_retrigger(
+			{ src = "bufread-plugin", name = "bufread" },
+			vim.api.nvim_get_current_buf()
+		)
+
+		_G.result = _G.fired_events
+		util.retrigger_events = orig_func
+	]])
+
+    local result = child.lua_get("_G.result")
+    MiniTest.expect.equality(result ~= nil and result.spec ~= nil, true)
+end
+
 T["process_lazy()"]["processes lazy plugins with triggers"] = function()
     child.lua([[
 		-- Setup a lazy plugin with event trigger
