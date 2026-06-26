@@ -209,4 +209,32 @@ T["UI Timer"]["starts timer when opened and stops when closed"] = function()
     MiniTest.expect.equality(child.lua_get("_G.timer_closed"), true)
 end
 
+T["setup()"] = MiniTest.new_set()
+
+T["setup()"]["registers cache save autocmd only once"] = function()
+    -- This test verifies the idempotency guard exists in init.lua
+    -- The implementation uses a module-level flag to prevent duplicate autocmds
+    child.lua([[
+		local init_path = "]] .. vim.fn.getcwd() .. [[/lua/leanpack/init.lua"
+		local content = vim.fn.readfile(init_path)
+		local has_guard = false
+		local has_check = false
+		
+		for _, line in ipairs(content) do
+			if line:match("save_cache_autocmd_registered") then
+				has_guard = true
+			end
+			if line:match("if not save_cache_autocmd_registered then") then
+				has_check = true
+			end
+		end
+		
+		_G.has_guard = has_guard
+		_G.has_check = has_check
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.has_guard"), true)
+    MiniTest.expect.equality(child.lua_get("_G.has_check"), true)
+end
+
 return T

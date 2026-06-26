@@ -160,7 +160,7 @@ end
 function M.get_unloaded_names()
     local names = {}
     for _, entry in pairs(state.spec_registry) do
-        if entry.merged_spec and entry.load_status ~= "loaded" then
+        if entry.merged_spec and entry.load_status ~= "loaded" and entry.load_status ~= "skipped" then
             table.insert(names, entry.merged_spec.name)
         end
     end

@@ -50,8 +50,8 @@ function M.load_plugin(pack_spec, opts)
         return
     end
 
-    -- Already loaded
-    if entry.load_status == "loaded" then
+    -- Already loaded or skipped
+    if entry.load_status == "loaded" or entry.load_status == "skipped" then
         return
     end
 
@@ -70,7 +70,7 @@ function M.load_plugin(pack_spec, opts)
         end
         if not cond then
             log.info(("Skipped loading plugin due to cond=false: %s"):format(pack_spec.name))
-            entry.load_status = "loaded" -- Mark as loaded so dependents don't get stuck
+            entry.load_status = "skipped" -- Mark as skipped so dependents don't get stuck
             return
         end
     end

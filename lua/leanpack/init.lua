@@ -37,6 +37,9 @@ end
 
 local M = {}
 
+-- Guard: only register save autocmd once
+local save_cache_autocmd_registered = false
+
 ---@class leanpack.ProcessContext
 ---@field vim_packs vim.pack.Spec[]
 ---@field srcs_with_init string[]
@@ -425,17 +428,20 @@ function M.setup(opts)
     -- Process all plugins
     process_all(ctx)
 
-    -- Save main module cache on exit
-    vim.api.nvim_create_autocmd("VimLeavePre", {
-        desc = "leanpack save cache",
-        callback = function()
-            local ok_cache, cache = pcall(require, "leanpack.cache")
-            if ok_cache and cache.save then
-                cache.save()
-            end
-            state.save_main_cache()
-        end,
-    })
+    -- Save main module cache on exit (only register once)
+    if not save_cache_autocmd_registered then
+        save_cache_autocmd_registered = true
+        vim.api.nvim_create_autocmd("VimLeavePre", {
+            desc = "leanpack save cache",
+            callback = function()
+                local ok_cache, cache = pcall(require, "leanpack.cache")
+                if ok_cache and cache.save then
+                    cache.save()
+                end
+                state.save_main_cache()
+            end,
+        })
+    end
 
     log.info("leanpack.nvim setup completed")
 end

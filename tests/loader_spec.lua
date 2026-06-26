@@ -580,6 +580,24 @@ end
 -- Error recovery tests
 -- ============================================================================
 
+T["load_plugin()"]["marks cond false plugin as skipped not loaded"] = function()
+    child.lua([[
+		state.set_entry("skip-src", {
+			specs = {},
+			merged_spec = { src = "skip-src", name = "skip-plugin", cond = false },
+			load_status = "pending",
+			plugin = { spec = { src = "skip-src", name = "skip-plugin" }, path = "/tmp/skip-plugin" },
+		})
+		state.register_pack_spec({ src = "skip-src", name = "skip-plugin" })
+
+		loader.load_plugin({ src = "skip-src", name = "skip-plugin" })
+
+		_G.status = state.get_entry("skip-src").load_status
+	]])
+
+    MiniTest.expect.equality(child.lua_get("_G.status"), "skipped")
+end
+
 T["load_plugin()"]["continues loading when dependency has cond=false"] = function()
     child.lua([[
 		state.set_entry("dep-plugin", {
@@ -607,8 +625,8 @@ T["load_plugin()"]["continues loading when dependency has cond=false"] = functio
 	]])
 
     MiniTest.expect.equality(child.lua_get("_G.load_ok"), true)
-    -- Dep should be marked loaded (cond=false marks as loaded to unblock dependents)
-    MiniTest.expect.equality(child.lua_get("state.get_entry('dep-plugin').load_status"), "loaded")
+    -- Dep should be marked skipped (cond=false marks as skipped to unblock dependents)
+    MiniTest.expect.equality(child.lua_get("state.get_entry('dep-plugin').load_status"), "skipped")
 end
 
 return T
