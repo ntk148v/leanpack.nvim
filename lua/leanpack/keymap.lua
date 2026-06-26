@@ -1,6 +1,19 @@
 ---@module 'leanpack.keymap'
 local M = {}
 
+---Extract keymap options from key spec
+---@param key leanpack.KeySpec
+---@return table
+function M.key_opts(key)
+    return {
+        desc = key.desc,
+        remap = key.remap or false,
+        nowait = key.nowait or false,
+        silent = key.silent or false,
+        expr = key.expr or false,
+    }
+end
+
 ---Apply keymaps from keys spec
 ---@param keys leanpack.KeysValue
 function M.apply_keys(keys)
@@ -10,17 +23,10 @@ function M.apply_keys(keys)
         local rhs = key[2]
         local mode = key.mode or "n"
         local modes = type(mode) == "table" and mode or { mode }
-        local desc = key.desc
-        local remap = key.remap or false
-        local nowait = key.nowait or false
 
         for _, m in ipairs(modes) do
             if rhs then
-                vim.keymap.set(m, lhs, rhs, {
-                    desc = desc,
-                    remap = remap,
-                    nowait = nowait,
-                })
+                vim.keymap.set(m, lhs, rhs, M.key_opts(key))
             end
         end
     end

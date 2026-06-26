@@ -56,9 +56,6 @@ function M.setup(registered_pack_specs)
     for _, info in pairs(key_to_info) do
         local lhs = info.key_spec[1]
         local rhs = info.key_spec[2]
-        local desc = info.key_spec.desc
-        local remap = info.key_spec.remap or false
-        local nowait = info.key_spec.nowait or false
 
         -- Build mode lookup table on first encounter
         if not existing_by_mode[info.mode] then
@@ -85,21 +82,18 @@ function M.setup(registered_pack_specs)
                 end
             end
 
-            -- Re-execute the keypress
+            -- Re-execute the keypress with count
+            local count = vim.v.count and vim.v.count > 0 and tostring(vim.v.count) or ""
             if rhs then
                 if type(rhs) == "function" then
                     rhs()
                 else
-                    vim.api.nvim_feedkeys(vim.keycode(lhs), "m", false)
+                    vim.api.nvim_feedkeys(vim.keycode(count .. lhs), "m", false)
                 end
             else
-                vim.api.nvim_feedkeys(vim.keycode(lhs), "m", false)
+                vim.api.nvim_feedkeys(vim.keycode(count .. lhs), "m", false)
             end
-        end, {
-            desc = desc,
-            remap = remap,
-            nowait = nowait,
-        })
+        end, keymap.key_opts(info.key_spec))
 
         ::skip_keymap::
     end

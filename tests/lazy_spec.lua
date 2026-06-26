@@ -477,6 +477,47 @@ T["event trigger"]["only retriggers events the plugin actually listens for"] = f
     MiniTest.expect.equality(result ~= nil and result.spec ~= nil, true)
 end
 
+T["keys trigger"]["preserves silent expr and noremap-compatible options"] = function()
+    child.lua([[
+		state.set_entry("key-src", {
+			specs = {},
+			merged_spec = {
+				keys = {
+					{ "<F9>", "<cmd>echo 'x'<cr>", mode = "n", desc = "X", silent = true, expr = false, nowait = true },
+				},
+			},
+			load_status = "pending",
+			plugin = { spec = { src = "key-src", name = "key-plugin" }, path = "/tmp/key-plugin" },
+		})
+		state.register_pack_spec({ src = "key-src", name = "key-plugin" })
+
+		require("leanpack.lazy_trigger.keys").setup({
+			{ src = "key-src", name = "key-plugin" },
+		})
+
+		local maps = vim.api.nvim_get_keymap("n")
+		local found = nil
+		for _, map in ipairs(maps) do
+			if map.lhs == "<F9>" then
+				found = {
+					silent = map.silent,
+					expr = map.expr,
+					nowait = map.nowait,
+				}
+				break
+			end
+		end
+
+		_G.found = found or "not_found"
+	]])
+
+    local found = child.lua_get("_G.found")
+    MiniTest.expect.equality(type(found), "table")
+    MiniTest.expect.equality(found.silent, 1)
+    MiniTest.expect.equality(found.expr, 0)
+    MiniTest.expect.equality(found.nowait, 1)
+end
+
 T["process_lazy()"]["processes lazy plugins with triggers"] = function()
     child.lua([[
 		-- Setup a lazy plugin with event trigger
