@@ -76,6 +76,7 @@ end
 local config = {
     cmd_prefix = "Leanpack",
     defaults = { confirm = true },
+    sync = false,
     performance = {
         vim_loader = true,
         rtp_prune = true,
@@ -378,6 +379,9 @@ function M.setup(opts)
     if opts.performance ~= nil then
         config.performance = vim.tbl_extend("force", config.performance, opts.performance)
     end
+    if opts.sync ~= nil then
+        config.sync = opts.sync
+    end
 
     -- Store plugins for direct specification
     local direct_plugins = opts.plugins
@@ -424,6 +428,37 @@ function M.setup(opts)
 
     -- Process all plugins
     process_all(ctx)
+
+    -- Auto-clean orphaned plugins (installed but not in config)
+    if config.sync then
+        local opt_path = vim.fn.stdpath("data") .. "/site/pack/core/opt/"
+        local scan = vim.uv.fs_scandir(opt_path)
+        if scan then
+            local registered_names = {}
+            for _, pack_spec in ipairs(state.get_all_pack_specs()) do
+                registered_names[pack_spec.name] = true
+            end
+            -- Always protect leanpack itself
+            registered_names["leanpack.nvim"] = true
+
+            local orphans = {}
+            while true do
+                local name, type = vim.uv.fs_scandir_next(scan)
+                if not name then
+                    break
+                end
+                if type == "directory" and not registered_names[name] then
+                    table.insert(orphans, name)
+                end
+            end
+
+            if #orphans > 0 then
+                log.info(("Sync: removing %d orphaned plugin(s): %s"):format(#orphans, table.concat(orphans, ", ")))
+                vim.pack.del(orphans)
+                vim.notify(("Removed %d plugin(s) no longer in config"):format(#orphans), vim.log.levels.INFO)
+            end
+        end
+    end
 
     -- Save main module cache on exit (only register once)
     if not save_cache_autocmd_registered then

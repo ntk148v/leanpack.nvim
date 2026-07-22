@@ -119,6 +119,7 @@ require('leanpack').setup({
   defaults = {
     confirm = true,
   },
+  sync = true, -- Auto-remove plugins no longer in config on startup
   performance = {
     vim_loader = true,
     rtp_prune = true, -- Disable built-in plugins for faster startup

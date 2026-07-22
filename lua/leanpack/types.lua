@@ -71,5 +71,6 @@
 ---@field defaults? leanpack.Config.Defaults
 ---@field performance? leanpack.Config.Performance
 ---@field profiling? boolean|{ enabled: boolean } Enable startup profiling
+---@field sync? boolean Automatically remove plugins not in config on startup, default false
 
 return {}

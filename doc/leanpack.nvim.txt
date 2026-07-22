@@ -99,6 +99,9 @@ Setup with options: >
       cond = nil, -- Global condition for all plugins
     },
 
+    -- Auto-remove plugins no longer in config on startup (default: false)
+    sync = true,
+
     -- Performance options
     performance = {
       vim_loader = true, -- Enable vim.loader for faster startup

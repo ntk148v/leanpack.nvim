@@ -49,6 +49,16 @@ performance = {
 }
 ```
 
+### `sync`
+
+- **Type**: `boolean`
+- **Default**: `false`
+- **Description**: Automatically remove plugins that are installed on disk but no longer present in your config. When set to `true`, leanpack will scan the plugin directory during `setup()` and delete any orphaned plugins. This keeps your plugin directory in sync with your config — you no longer need to manually run `:Leanpack clean` after removing a plugin from your spec.
+
+```lua
+sync = true,  -- Auto-remove plugins no longer in config on startup
+```
+
 ## Full Configuration Example
 
 ```lua
@@ -61,6 +71,9 @@ require('leanpack').setup({
     confirm = true,   -- Ask for confirmation
     cond = nil,       -- No global condition
   },
+
+  -- Auto-remove orphaned plugins on startup
+  sync = true,
 
   -- Performance tuning
   performance = {
