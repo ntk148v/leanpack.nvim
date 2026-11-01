@@ -11,19 +11,20 @@ local DEFAULT_EVENTS = { "BufReadPre", "BufReadPost", "FileType" }
 ---@param pack_spec vim.pack.Spec
 ---@param bufnr? number
 ---@param event_name? string
-function M.load_and_retrigger(pack_spec, bufnr, event_name)
+---@param data? any Event data to pass to the re-triggered event
+function M.load_and_retrigger(pack_spec, bufnr, event_name, data)
     local entry = state.get_entry(pack_spec.src)
     -- Skip loading if already loading or loaded (e.g., another event fired during packadd)
     if entry and entry.load_status ~= "pending" then
         if event_name then
-            M.retrigger_event(event_name, bufnr or vim.api.nvim_get_current_buf())
+            M.retrigger_event(event_name, bufnr or vim.api.nvim_get_current_buf(), data)
         end
         return
     end
 
     require("leanpack.loader").load_plugin(pack_spec)
     if event_name then
-        M.retrigger_event(event_name, bufnr or vim.api.nvim_get_current_buf())
+        M.retrigger_event(event_name, bufnr or vim.api.nvim_get_current_buf(), data)
     end
 end
 
@@ -52,10 +53,11 @@ end
 ---Re-trigger one event for the current buffer to ensure plugins attach correctly.
 ---@param event_name string
 ---@param bufnr number
-function M.retrigger_event(event_name, bufnr)
+---@param data? any
+function M.retrigger_event(event_name, bufnr, data)
     vim.schedule(function()
         if vim.api.nvim_buf_is_valid(bufnr) then
-            vim.api.nvim_exec_autocmds(event_name, { buffer = bufnr, modeline = false })
+            vim.api.nvim_exec_autocmds(event_name, { buffer = bufnr, modeline = false, data = data })
         end
     end)
 end

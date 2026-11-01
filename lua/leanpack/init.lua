@@ -40,6 +40,10 @@ local M = {}
 -- Guard: only register save autocmd once
 local save_cache_autocmd_registered = false
 
+-- Sync state that must outlive one setup() call
+local import_failed = false
+local sync_scheduled = false
+
 ---@class leanpack.ProcessContext
 ---@field vim_packs vim.pack.Spec[]
 ---@field srcs_with_init string[]
@@ -189,51 +193,76 @@ local function process_all(ctx)
     -- Background install missing plugins
     if #missing_packs > 0 then
         vim.notify(("Installing %d missing plugin(s) in background..."):format(#missing_packs), vim.log.levels.INFO)
-        require("leanpack.job").run("install", missing_packs, function(success)
-            if success then
-                local m_startup = {}
-                local m_lazy = {}
-                for _, p in ipairs(missing_packs) do
-                    if startup_srcs[p.src] then
-                        table.insert(m_startup, p)
-                    else
-                        table.insert(m_lazy, p)
+        -- Stays set if the install is declined or fails, so load_plugin never runs packadd on a missing plugin
+        for _, p in ipairs(missing_packs) do
+            state.get_entry(p.src).installing = true
+        end
+        require("leanpack.job").run("install", missing_packs, function()
+            -- One bad clone fails the whole job, but the other plugins can be on disk
+            local m_startup = {}
+            local m_lazy = {}
+            local installed = {}
+            local failed = {}
+            for _, p in ipairs(missing_packs) do
+                -- The disk shows which plugins were installed
+                if not vim.uv.fs_stat(opt_path .. p.name) then
+                    table.insert(failed, p.name)
+                elseif startup_srcs[p.src] then
+                    state.get_entry(p.src).installing = nil
+                    table.insert(installed, p)
+                    table.insert(m_startup, p)
+                else
+                    state.get_entry(p.src).installing = nil
+                    table.insert(installed, p)
+                    table.insert(m_lazy, p)
+                end
+            end
+
+            if #m_startup > 0 then
+                -- load = false: load_plugin below runs packadd
+                vim.pack.add(m_startup, { load = false, confirm = false })
+            end
+
+            if #m_lazy > 0 then
+                local old_rtp = vim.o.rtp
+                local old_path = package.path
+                vim.pack.add(m_lazy, { load = false, confirm = false })
+                vim.o.rtp = old_rtp
+                package.path = old_path
+
+                for _, p in ipairs(m_lazy) do
+                    local ftdetect_dir = opt_path .. p.name .. "/ftdetect"
+                    if fs.is_dir(ftdetect_dir) then
+                        fs.source_ftdetect_dir(ftdetect_dir)
                     end
                 end
+                module_trigger.setup(m_lazy)
+            end
 
-                if #m_startup > 0 then
-                    vim.pack.add(m_startup, { load = ctx.load, confirm = false })
-                    for _, p in ipairs(m_startup) do
-                        local entry = state.get_entry(p.src)
-                        if entry and entry.load_status ~= "loaded" then
-                            require("leanpack.loader").load_plugin(p)
-                        end
-                    end
+            -- Load what was held back while files were missing, startup plugins included
+            local waiting = {}
+            for _, p in ipairs(state.get_all_pack_specs()) do
+                local entry = state.get_entry(p.src)
+                if entry and entry.load_after_install then
+                    entry.load_after_install = nil
+                    table.insert(waiting, p)
                 end
+            end
+            for _, p in ipairs(deps_mod.toposort_startup(waiting)) do
+                loader.load_plugin(p)
+            end
 
-                if #m_lazy > 0 then
-                    local old_rtp = vim.o.rtp
-                    local old_path = package.path
-                    vim.pack.add(m_lazy, { load = false, confirm = false })
-                    vim.o.rtp = old_rtp
-                    package.path = old_path
+            hooks.run_builds_for_packs(installed)
 
-                    for _, p in ipairs(m_lazy) do
-                        local ftdetect_dir = opt_path .. p.name .. "/ftdetect"
-                        if fs.is_dir(ftdetect_dir) then
-                            fs.source_ftdetect_dir(ftdetect_dir)
-                        end
-                    end
-                    module_trigger.setup(m_lazy)
-                end
-
-                hooks.run_builds_for_packs(missing_packs)
-
-                local ui_ok, ui = pcall(require, "leanpack.ui")
-                if ui_ok and ui.refresh then
-                    ui.refresh()
-                end
-                vim.notify(("Successfully installed %d plugin(s)"):format(#missing_packs), vim.log.levels.INFO)
+            local ui_ok, ui = pcall(require, "leanpack.ui")
+            if ui_ok and ui.refresh then
+                ui.refresh()
+            end
+            if #failed > 0 then
+                vim.notify(("Failed to install: %s"):format(table.concat(failed, ", ")), vim.log.levels.ERROR)
+            end
+            if #installed > 0 then
+                vim.notify(("Successfully installed %d plugin(s)"):format(#installed), vim.log.levels.INFO)
             end
         end)
     end
@@ -286,8 +315,9 @@ local function register_spec(spec, ctx, is_dependency)
     -- Add spec to entry (may have multiple specs for same plugin)
     table.insert(entry.specs, normalized)
 
-    -- Track init hooks (only once per src)
-    if normalized.init and is_new then
+    -- Track init hooks (only once per src, from any mention)
+    if normalized.init and not entry.init_tracked then
+        entry.init_tracked = true
         table.insert(ctx.srcs_with_init, src)
     end
 
@@ -327,6 +357,10 @@ local function finalize_specs()
         -- Create plugin object
         local pack_spec = state.get_pack_spec(src)
         if pack_spec then
+            -- The pack spec came from the first mention; apply values from all mentions
+            pack_spec.version = entry.merged_spec.version
+            pack_spec.data.priority = entry.merged_spec.priority or 50
+            pack_spec.load = entry.merged_spec.lazy == true and false or nil
             entry.plugin = {
                 spec = pack_spec,
                 path = "", -- Will be set after vim.pack.add
@@ -347,6 +381,38 @@ local function categorize_plugins(ctx)
                 table.insert(ctx.startup_packs, pack_spec)
             end
         end
+    end
+end
+
+---Remove installed plugins that are not in the config
+local function remove_orphans()
+    local opt_path = vim.fn.stdpath("data") .. "/site/pack/core/opt/"
+    local scan = vim.uv.fs_scandir(opt_path)
+    if not scan then
+        return
+    end
+    local registered_names = {}
+    for _, pack_spec in ipairs(state.get_all_pack_specs()) do
+        registered_names[pack_spec.name] = true
+    end
+    -- Always protect leanpack itself
+    registered_names["leanpack.nvim"] = true
+
+    local orphans = {}
+    while true do
+        local name, type = vim.uv.fs_scandir_next(scan)
+        if not name then
+            break
+        end
+        if type == "directory" and not registered_names[name] then
+            table.insert(orphans, name)
+        end
+    end
+
+    if #orphans > 0 then
+        log.info(("Sync: removing %d orphaned plugin(s): %s"):format(#orphans, table.concat(orphans, ", ")))
+        vim.pack.del(orphans)
+        vim.notify(("Removed %d plugin(s) no longer in config"):format(#orphans), vim.log.levels.INFO)
     end
 end
 
@@ -382,6 +448,7 @@ function M.setup(opts)
     if opts.sync ~= nil then
         config.sync = opts.sync
     end
+    require("leanpack.job").set_confirm(config.defaults.confirm ~= false)
 
     -- Store plugins for direct specification
     local direct_plugins = opts.plugins
@@ -405,8 +472,9 @@ function M.setup(opts)
 
     -- Import specs
     local spec = direct_plugins or opts.spec or (opts[1] and opts) or nil
+    local import_ctx = { import_order = 0, seen = {} }
     if spec then
-        local specs = import_mod.process_import_result(spec, { import_order = 0, seen = {} })
+        local specs = import_mod.process_import_result(spec, import_ctx)
         for _, s in ipairs(specs) do
             register_spec(s, ctx)
         end
@@ -414,7 +482,7 @@ function M.setup(opts)
 
     -- Auto-import from lua/plugins/ if no spec provided
     if not spec then
-        local specs = import_mod.import_specs("plugins", { import_order = 0, seen = {} })
+        local specs = import_mod.import_specs("plugins", import_ctx)
         for _, s in ipairs(specs) do
             register_spec(s, ctx)
         end
@@ -429,35 +497,24 @@ function M.setup(opts)
     -- Process all plugins
     process_all(ctx)
 
-    -- Auto-clean orphaned plugins (installed but not in config)
-    if config.sync then
-        local opt_path = vim.fn.stdpath("data") .. "/site/pack/core/opt/"
-        local scan = vim.uv.fs_scandir(opt_path)
-        if scan then
-            local registered_names = {}
-            for _, pack_spec in ipairs(state.get_all_pack_specs()) do
-                registered_names[pack_spec.name] = true
-            end
-            -- Always protect leanpack itself
-            registered_names["leanpack.nvim"] = true
-
-            local orphans = {}
-            while true do
-                local name, type = vim.uv.fs_scandir_next(scan)
-                if not name then
-                    break
+    -- A spec file that failed to import makes its plugins look like orphans
+    import_failed = import_failed or import_ctx.failed
+    if import_failed and config.sync then
+        vim.notify("Sync skipped: fix the spec import errors first", vim.log.levels.WARN)
+    elseif config.sync and vim.v.vim_did_enter == 1 then
+        remove_orphans()
+    elseif config.sync and not sync_scheduled then
+        -- setup() can run more than once during init; wait until the whole config is known
+        sync_scheduled = true
+        vim.api.nvim_create_autocmd("VimEnter", {
+            once = true,
+            callback = function()
+                sync_scheduled = false
+                if not import_failed then
+                    remove_orphans()
                 end
-                if type == "directory" and not registered_names[name] then
-                    table.insert(orphans, name)
-                end
-            end
-
-            if #orphans > 0 then
-                log.info(("Sync: removing %d orphaned plugin(s): %s"):format(#orphans, table.concat(orphans, ", ")))
-                vim.pack.del(orphans)
-                vim.notify(("Removed %d plugin(s) no longer in config"):format(#orphans), vim.log.levels.INFO)
-            end
-        end
+            end,
+        })
     end
 
     -- Save main module cache on exit (only register once)

@@ -71,13 +71,14 @@ T["Background Installation"]["runs build hooks in parent after missing plugin in
 		local built = {}
 
 		vim.uv.fs_stat = function(path)
-			if path:match("build%-plugin$") then
+			if path:match("build%-plugin$") and not _G.install_done then
 				return nil
 			end
 			return { type = "directory" }
 		end
 
 		require("leanpack.job").run = function(kind, payload, cb)
+			_G.install_done = true
 			cb(true)
 		end
 
@@ -108,13 +109,14 @@ T["Background Installation"]["runs startup build hooks in parent after missing p
 		local built = {}
 
 		vim.uv.fs_stat = function(path)
-			if path:match("startup%-build$") then
+			if path:match("startup%-build$") and not _G.install_done then
 				return nil
 			end
 			return { type = "directory" }
 		end
 
 		require("leanpack.job").run = function(kind, payload, cb)
+			_G.install_done = true
 			cb(true)
 		end
 
@@ -150,6 +152,10 @@ T["Background Installation"]["runs build hooks after targeted background update 
 			end
 			return {}
 		end
+		_G.current_rev = "old"
+		package.loaded["leanpack.hooks"].snapshot_revs = function()
+			return { ["update-build"] = _G.current_rev }
+		end
 
 		state.set_entry("owner/update-build", {
 			specs = {},
@@ -164,6 +170,7 @@ T["Background Installation"]["runs build hooks after targeted background update 
 
 		require("leanpack.job").run = function(kind, payload, cb)
 			_G.job_payload = payload
+			_G.current_rev = "new"
 			cb(true)
 		end
 
@@ -191,10 +198,12 @@ T["Background Installation"]["registers lazy plugins with vim.pack.add(..., { lo
 
 		-- Mock leanpack.job.run to execute synchronously
 		package.loaded["leanpack.job"] = {
+			set_confirm = function() end,
 			run = function(cmd, packs, cb)
 				cb(true)
 			end
 		}
+		vim.uv.fs_stat = function() return { type = "directory" } end
 
 		leanpack.setup({
 			performance = { rtp_prune = false, vim_loader = false },

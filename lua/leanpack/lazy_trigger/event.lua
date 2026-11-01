@@ -101,13 +101,14 @@ function M.setup(pack_spec, spec, event)
                 group = state.lazy_group,
                 pattern = normalized.pattern,
                 callback = function(ev)
-                    -- Skip empty buffers (e.g. initial [No Name] buffer)
-                    if ev.file == "" then
+                    -- Skip Buf* events for empty buffers (e.g. initial [No Name] buffer).
+                    -- Others such as VimEnter and InsertEnter can have no file name.
+                    if ev.file == "" and ev.event:match("^Buf") then
                         return
                     end
                     -- Delete the autocmd manually since we don't use 'once = true'
                     pcall(vim.api.nvim_del_autocmd, id)
-                    require("leanpack.lazy_trigger.util").load_and_retrigger(pack_spec, ev.buf, ev.event)
+                    require("leanpack.lazy_trigger.util").load_and_retrigger(pack_spec, ev.buf, ev.event, ev.data)
                 end,
             })
         end

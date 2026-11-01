@@ -188,6 +188,9 @@ end
 local function resolve_src(spec)
     -- Dev mode: use local ~/projects/{plugin-name}
     if spec.dev then
+        if spec.dir then
+            return vim.fn.expand(spec.dir)
+        end
         local name = spec.name or extract_name(spec[1] or spec.src or "")
         return vim.fn.expand("~/projects/" .. name)
     end
@@ -377,6 +380,7 @@ function M.normalize_spec(spec, defaults)
         ft = M.normalize_list(spec.ft),
         pattern = spec.pattern,
         dev = spec.dev,
+        dir = spec.dir,
         optional = spec.optional,
     }
 
@@ -460,7 +464,7 @@ function M.merge_specs(specs)
         if spec.opts then
             if type(spec.opts) == "function" then
                 merged.opts = spec.opts
-            else
+            elseif type(merged.opts) ~= "function" then
                 merged.opts = vim.tbl_deep_extend("force", merged.opts or {}, spec.opts)
             end
         end
@@ -479,7 +483,12 @@ function M.merge_specs(specs)
         -- Merge arrays (event, cmd, keys, ft) - inline append
         for _, key in ipairs({ "event", "cmd", "keys", "ft" }) do
             if spec[key] then
-                merged[key] = vim.list_extend(merged[key] or {}, M.normalize_list(spec[key]) or {})
+                -- shortcut: a function value replaces the lists from other specs, merge after resolving if needed
+                if type(spec[key]) == "function" or type(merged[key]) == "function" then
+                    merged[key] = type(merged[key]) == "function" and merged[key] or spec[key]
+                else
+                    merged[key] = vim.list_extend(merged[key] or {}, M.normalize_list(spec[key]) or {})
+                end
             end
         end
 
@@ -489,8 +498,6 @@ function M.merge_specs(specs)
             "name",
             "version",
             "cond",
-            "lazy",
-            "priority",
             "init",
             "config",
             "build",
@@ -502,6 +509,23 @@ function M.merge_specs(specs)
             if spec[key] ~= nil and merged[key] == nil then
                 merged[key] = spec[key]
             end
+        end
+    end
+
+    -- normalize_spec fills in 50, so only another value shows an explicit choice
+    for _, spec in ipairs(specs) do
+        if not merged.priority or (merged.priority == 50 and spec.priority) then
+            merged.priority = spec.priority
+        end
+    end
+
+    -- A top-level spec decides lazy; a value from a dependency mention may be inherited from a lazy parent
+    local has_top_level = vim.iter(specs):any(function(s)
+        return not s._is_dependency
+    end)
+    for _, spec in ipairs(specs) do
+        if merged.lazy == nil and (not has_top_level or not spec._is_dependency) then
+            merged.lazy = spec.lazy
         end
     end
 

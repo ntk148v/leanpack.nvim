@@ -7,16 +7,16 @@ local ui_state = { buf = nil, win = nil, plugins = {}, filter = "", refresh_time
 local NS = vim.api.nvim_create_namespace("leanpack-ui")
 
 local function define_highlights()
-    vim.api.nvim_set_hl(NS, "LeanpackHeader", { link = "Title", default = true })
-    vim.api.nvim_set_hl(NS, "LeanpackPlugin", { link = "String", default = true })
-    vim.api.nvim_set_hl(NS, "LeanpackCommit", { link = "Comment", default = true })
-    vim.api.nvim_set_hl(NS, "LeanpackSource", { link = "Comment", default = true })
-    vim.api.nvim_set_hl(NS, "LeanpackStatusLoaded", { link = "DiagnosticOk", default = true })
-    vim.api.nvim_set_hl(NS, "LeanpackStatusPending", { link = "Comment", default = true })
-    vim.api.nvim_set_hl(NS, "LeanpackStatusLoading", { link = "DiagnosticWarn", default = true })
-    vim.api.nvim_set_hl(NS, "LeanpackStatusMissing", { link = "DiagnosticError", default = true })
-    vim.api.nvim_set_hl(NS, "LeanpackLazy", { link = "Special", default = true })
-    vim.api.nvim_set_hl(NS, "LeanpackKeybind", { link = "Keyword", default = true })
+    vim.api.nvim_set_hl(0, "LeanpackHeader", { link = "Title", default = true })
+    vim.api.nvim_set_hl(0, "LeanpackPlugin", { link = "String", default = true })
+    vim.api.nvim_set_hl(0, "LeanpackCommit", { link = "Comment", default = true })
+    vim.api.nvim_set_hl(0, "LeanpackSource", { link = "Comment", default = true })
+    vim.api.nvim_set_hl(0, "LeanpackStatusLoaded", { link = "DiagnosticOk", default = true })
+    vim.api.nvim_set_hl(0, "LeanpackStatusPending", { link = "Comment", default = true })
+    vim.api.nvim_set_hl(0, "LeanpackStatusLoading", { link = "DiagnosticWarn", default = true })
+    vim.api.nvim_set_hl(0, "LeanpackStatusMissing", { link = "DiagnosticError", default = true })
+    vim.api.nvim_set_hl(0, "LeanpackLazy", { link = "Special", default = true })
+    vim.api.nvim_set_hl(0, "LeanpackKeybind", { link = "Keyword", default = true })
 end
 
 local function get_status(entry)
@@ -203,9 +203,10 @@ local function update(opts)
         or opts.loaded and (#names .. " loaded plugins")
         or "all plugins"
     vim.notify("Updating " .. label .. " in background...", vim.log.levels.INFO)
+    local before = require("leanpack.hooks").snapshot_revs()
     require("leanpack.job").run("update", names, function(success)
         if success then
-            require("leanpack.hooks").run_builds_for_names(names)
+            require("leanpack.hooks").run_builds_for_names(names, before)
             vim.notify(label .. " updated", vim.log.levels.INFO)
             M.refresh()
         end

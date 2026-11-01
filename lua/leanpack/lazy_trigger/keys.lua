@@ -49,26 +49,10 @@ function M.setup(registered_pack_specs)
         end
     end
 
-    -- Pre-fetch existing keymaps per mode for O(1) lookup
-    local existing_by_mode = {}
-
     -- Create lazy keymaps
     for _, info in pairs(key_to_info) do
         local lhs = info.key_spec[1]
         local rhs = info.key_spec[2]
-
-        -- Build mode lookup table on first encounter
-        if not existing_by_mode[info.mode] then
-            existing_by_mode[info.mode] = {}
-            for _, km in ipairs(vim.api.nvim_get_keymap(info.mode)) do
-                existing_by_mode[info.mode][km.lhs] = true
-            end
-        end
-
-        -- Skip if keymap already exists (plugin may define it itself)
-        if existing_by_mode[info.mode][lhs] then
-            goto skip_keymap
-        end
 
         vim.keymap.set(info.mode, lhs, function()
             -- Delete the keymap
@@ -94,8 +78,6 @@ function M.setup(registered_pack_specs)
                 vim.api.nvim_feedkeys(vim.keycode(count .. lhs), "m", false)
             end
         end, keymap.key_opts(info.key_spec))
-
-        ::skip_keymap::
     end
 end
 

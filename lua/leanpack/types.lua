@@ -50,7 +50,7 @@
 ---@field dev? boolean Development mode, use ~/projects/{plugin-name} as source
 ---@field optional? boolean Optional dependency, warn instead of error if not found
 
----@alias leanpack.LoadStatus "pending"|"loading"|"loaded"
+---@alias leanpack.LoadStatus "pending"|"loading"|"loaded"|"skipped"|"failed"
 
 ---@class leanpack.RegistryEntry
 ---@field specs leanpack.Spec[] Raw specs for this plugin

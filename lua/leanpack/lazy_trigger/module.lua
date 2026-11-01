@@ -104,7 +104,8 @@ function M.setup(lazy_packs)
     -- a module to the wrong plugin.
     local primary_modules = {} -- module_name -> src of the owning plugin
 
-    for _, pack_spec in ipairs(lazy_packs or {}) do
+    -- All plugins, not only lazy ones: a lazy plugin must not claim a startup plugin's module
+    for _, pack_spec in ipairs(state.get_all_pack_specs()) do
         local entry = state.get_entry(pack_spec.src)
         if entry and entry.merged_spec then
             local spec = entry.merged_spec
@@ -177,8 +178,6 @@ function M.setup(lazy_packs)
                     end
                 else
                     -- Scan and cache
-                    local discovered = {}
-                    local fd = vim.uv.fs_scandir(lua_dir)
                     local discovered = {}
                     local fd = vim.uv.fs_scandir(lua_dir)
                     if fd then

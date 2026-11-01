@@ -31,7 +31,7 @@ cmd_prefix = 'Leanpack',  -- Commands: :Leanpack update, :Leanpack clean, etc.
 
 ```lua
 defaults = {
-  confirm = true,   -- Ask for confirmation on install/update
+  confirm = true,   -- Ask before background install/update (not in headless mode)
   cond = nil,       -- Global condition function for all plugins
 }
 ```
@@ -53,7 +53,7 @@ performance = {
 
 - **Type**: `boolean`
 - **Default**: `false`
-- **Description**: Automatically remove plugins that are installed on disk but no longer present in your config. When set to `true`, leanpack will scan the plugin directory during `setup()` and delete any orphaned plugins. This keeps your plugin directory in sync with your config — you no longer need to manually run `:Leanpack clean` after removing a plugin from your spec.
+- **Description**: Automatically remove plugins that are installed on disk but no longer present in your config. When set to `true`, leanpack will scan the plugin directory after startup and delete any orphaned plugins. It skips this removal if a spec file fails to import. This keeps your plugin directory in sync with your config — you no longer need to manually run `:Leanpack clean` after removing a plugin from your spec.
 
 ```lua
 sync = true,  -- Auto-remove plugins no longer in config on startup

@@ -77,7 +77,12 @@ function M.run_config(src)
     -- Resolve opts
     local opts = spec.opts
     if type(opts) == "function" then
-        opts = opts(plugin, {}) or {}
+        local ok, resolved = pcall(opts, plugin, {})
+        if not ok then
+            vim.notify(("opts failed for %s: %s"):format(src, resolved), vim.log.levels.ERROR)
+            return false
+        end
+        opts = resolved or {}
     else
         opts = opts or {}
     end
@@ -130,7 +135,8 @@ function M.run_config(src)
 
         local setup_ok, err = pcall(mod.setup, opts)
         if not setup_ok then
-            error(("setup() failed for %s: %s"):format(src, err))
+            vim.notify(("setup() failed for %s: %s"):format(src, err), vim.log.levels.ERROR)
+            return false
         end
     end
 
@@ -145,6 +151,8 @@ function M.run_builds_for_packs(packs)
     for _, pack_spec in ipairs(packs or {}) do
         local entry = state.get_entry(pack_spec.src)
         if entry and entry.merged_spec and entry.merged_spec.build then
+            -- A ":Cmd" build needs the plugin loaded
+            get_loader().load_plugin(pack_spec, { bang = true })
             M.execute_build(entry.merged_spec.build, entry.plugin)
             count = count + 1
         end
@@ -152,22 +160,39 @@ function M.run_builds_for_packs(packs)
     return count
 end
 
+---Record the git revision of plugins with a build hook, to compare after an update
+---@return table<string, string>
+function M.snapshot_revs()
+    local revs = {}
+    for src, entry in pairs(state.get_all_entries()) do
+        if entry.merged_spec and entry.merged_spec.build and entry.plugin then
+            local ok, result = pcall(function()
+                return vim.system({ "git", "-C", entry.plugin.path, "rev-parse", "HEAD" }, { text = true }):wait()
+            end)
+            local pack_spec = state.get_pack_spec(src)
+            if ok and pack_spec then
+                revs[pack_spec.name] = result.stdout
+            end
+        end
+    end
+    return revs
+end
+
 ---Run builds for plugins by name. Nil means all registered pack specs.
 ---@param names? string[]
+---@param before? table<string, string> Snapshot from snapshot_revs(); limits builds to changed plugins
 ---@return number count
-function M.run_builds_for_names(names)
-    if not names then
-        return M.run_builds_for_packs(state.get_all_pack_specs())
-    end
-
+function M.run_builds_for_names(names, before)
     local name_lookup = {}
-    for _, name in ipairs(names) do
+    for _, name in ipairs(names or {}) do
         name_lookup[name] = true
     end
+    local after = before and M.snapshot_revs()
 
     local packs = {}
     for _, pack_spec in ipairs(state.get_all_pack_specs()) do
-        if name_lookup[pack_spec.name] then
+        local selected = not names or name_lookup[pack_spec.name]
+        if selected and (not before or before[pack_spec.name] ~= after[pack_spec.name]) then
             table.insert(packs, pack_spec)
         end
     end
@@ -193,16 +218,20 @@ function M.execute_build(build, plugin)
             -- Vim command
             ok, err = pcall(vim.cmd, build)
         else
-            -- Shell command via vim.system for safe async execution
-            local obj = vim.system({ "sh", "-c", build }, {
+            -- Shell command runs async so a long build does not block the UI
+            ok, err = pcall(vim.system, { "sh", "-c", build }, {
                 cwd = plugin.path,
                 text = true,
-            })
-            local result = obj:wait()
-            ok = result.code == 0
-            if not ok then
-                err = ("exit code %d: %s"):format(result.code, result.stderr)
-            end
+            }, function(result)
+                if result.code ~= 0 then
+                    vim.schedule(function()
+                        vim.notify(
+                            ("Build failed for %s: exit code %d: %s"):format(plugin.spec.name, result.code, result.stderr),
+                            vim.log.levels.ERROR
+                        )
+                    end)
+                end
+            end)
         end
     elseif type(build) == "function" then
         get_log().info(("Executing build function for %s"):format(plugin.spec.name))

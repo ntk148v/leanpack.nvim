@@ -42,25 +42,22 @@ function M.import_specs(import_path, ctx)
     table.sort(sorted_paths)
 
     for _, path in ipairs(sorted_paths) do
-        -- Convert path to module name
-        -- Find the lua/ directory in the path and extract module name
-        local module_name = path:match("lua/(.+)%.lua$")
-        if module_name then
-            module_name = module_name:gsub("/", ".")
-            -- Handle init.lua
-            module_name = module_name:gsub("%.init$", "")
-        end
+        -- Derive the module from import_path: the path itself may contain other "lua/" parts
+        local base = path:match("([^/]+)%.lua$")
+        local is_root = base == "init" or vim.endswith(path, "/" .. dir_path .. ".lua")
+        local module_name = is_root and import_path or (import_path .. "." .. base)
 
-        if module_name then
-            local ok, result = pcall(require, module_name)
-            if ok then
-                local file_specs = M.process_import_result(result, ctx)
-                for _, spec in ipairs(file_specs) do
-                    spec._import_order = ctx.import_order
-                    ctx.import_order = ctx.import_order + 1
-                    table.insert(specs, spec)
-                end
+        local ok, result = pcall(require, module_name)
+        if ok then
+            local file_specs = M.process_import_result(result, ctx)
+            for _, spec in ipairs(file_specs) do
+                spec._import_order = ctx.import_order
+                ctx.import_order = ctx.import_order + 1
+                table.insert(specs, spec)
             end
+        else
+            ctx.failed = true
+            vim.notify(("Failed to import %s: %s"):format(module_name, result), vim.log.levels.ERROR)
         end
     end
 
@@ -72,7 +69,8 @@ end
 ---@param ctx table Context
 ---@return leanpack.Spec[]
 function M.process_import_result(result, ctx)
-    if result == nil then
+    -- Helper modules may return nothing (require gives `true`)
+    if type(result) ~= "table" then
         return {}
     end
 
@@ -94,30 +92,26 @@ function M.process_import_result(result, ctx)
     end
 
     -- Single spec
-    if result[1] and type(result[1]) == "string" then
+    if type(result[1]) == "string" or result.src or result.url or result.dir or result.dev then
         return { result }
     end
 
     -- List of specs
-    if type(result) == "table" then
-        local specs = {}
-        for _, item in ipairs(result) do
-            if type(item) == "table" then
-                -- Check if it's a nested import
-                if item.import then
-                    local nested = M.import_specs(item.import, ctx)
-                    for _, s in ipairs(nested) do
-                        table.insert(specs, s)
-                    end
-                else
-                    table.insert(specs, item)
+    local specs = {}
+    for _, item in ipairs(result) do
+        if type(item) == "table" then
+            -- Check if it's a nested import
+            if item.import then
+                local nested = M.import_specs(item.import, ctx)
+                for _, s in ipairs(nested) do
+                    table.insert(specs, s)
                 end
+            else
+                table.insert(specs, item)
             end
         end
-        return specs
     end
-
-    return {}
+    return specs
 end
 
 return M
